@@ -1,0 +1,5 @@
+#!/bin/sh
+# PPSSPP compilado, usando a pasta do Flatpak (mesma versão): saves, config e
+# controles iguais nos dois.
+export XDG_CONFIG_HOME="@VAR_APP@/org.ppsspp.PPSSPP/config"
+exec "@BUILD@/ppsspp/PPSSPPSDL" "$@"

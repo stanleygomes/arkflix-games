@@ -1,0 +1,7 @@
+libretro_directory = "@CORES@"
+libretro_info_path = "@SRC@/libretro-core-info"
+assets_directory = "@SRC@/retroarch-assets"
+joypad_autoconfig_dir = "@SRC@/retroarch-joypad-autoconfig"
+savefile_directory = "@VAR_APP@/org.libretro.RetroArch/config/retroarch/saves"
+savestate_directory = "@VAR_APP@/org.libretro.RetroArch/config/retroarch/states"
+system_directory = "@VAR_APP@/org.libretro.RetroArch/config/retroarch/system"
