@@ -1,4 +1,4 @@
-# arkflix-games: ES-DE + RetroArch (8 cores) + PPSSPP + PCSX2 compilados do fonte.
+# arkflix-games: app de jogos + RetroArch (8 cores) + PPSSPP + PCSX2 compilados do fonte.
 # Fonte em src/ (submodules travados em versão), build em build/, nada vai pro sistema.
 
 SHELL := /bin/bash
@@ -12,7 +12,6 @@ PREFIX  := $(BUILD)/prefix
 BIN     := $(BUILD)/bin
 CORES   := $(PREFIX)/lib/libretro
 STATE   := $(ROOT)/home
-ESDE_DIR := $(STATE)/ES-DE
 VAR_APP := $(HOME)/.var/app
 GAMES   := $(HOME)/Games/arkflix
 JOBS    ?= $(shell nproc)
@@ -38,8 +37,7 @@ PPSSPP_SKIP := SDL/macOS ext/libadrenotools ios/MoltenVK \
 
 APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext ccache \
   libsdl2-dev libsdl2-ttf-dev libsdl3-dev libfreetype-dev libfontconfig-dev \
-  libharfbuzz-dev libicu-dev libfreeimage-dev libgit2-dev libcurl4-openssl-dev \
-  libpugixml-dev libpoppler-cpp-dev libbluetooth-dev \
+  libharfbuzz-dev libicu-dev libcurl4-openssl-dev \
   libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev \
   libswscale-dev \
   libasound2-dev libpulse-dev libpipewire-0.3-dev libjack-jackd2-dev \
@@ -55,11 +53,11 @@ APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext ccache \
   libplutovg-dev directx-headers-dev libshaderc-dev extra-cmake-modules \
   libgtk-3-dev libwebkit2gtk-4.1-dev
 
-.PHONY: help deps fetch build es-de retroarch ppsspp pcsx2 rapidyaml cores \
-        $(addprefix core-,$(CORE_LIST)) wrappers home run status \
-        patch-save patch-apply clean check check-cores check-update check-es-de \
+.PHONY: help deps fetch build retroarch ppsspp pcsx2 rapidyaml cores \
+        $(addprefix core-,$(CORE_LIST)) wrappers run status \
+        patch-save patch-apply clean check check-cores check-update \
         check-ppsspp check-pcsx2 release-notes release-binaries \
-        release-install app-deps app-web app run-web run-esde check-app check-app-desktop
+        release-install app-deps app-web app run-web check-app check-app-desktop
 
 ##@ Começo
 
@@ -82,15 +80,7 @@ fetch: ## Baixa os fontes (submodules rasos, nas versões travadas)
 
 ##@ Build
 
-build: es-de retroarch cores ppsspp pcsx2 app wrappers $(BUILD)/coretest ## Compila tudo
-
-es-de: ## Frontend ES-DE
-	$(CMAKE) -S src/es-de -B $(BUILD)/es-de -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
-	  -DAPPLICATION_UPDATER=OFF
-	cmake --build $(BUILD)/es-de -j $(JOBS)
-	cmake --install $(BUILD)/es-de
-	# o ES-DE também procura resources/ ao lado do binário: release roda em qualquer pasta
-	ln -sfn ../share/es-de/resources $(PREFIX)/bin/resources
+build: retroarch cores ppsspp pcsx2 app wrappers $(BUILD)/coretest ## Compila tudo
 
 retroarch: ## RetroArch (build dentro de src/retroarch, é o jeito dele)
 	cd src/retroarch && $(CC_VARS) ./configure --prefix=$(PREFIX) --disable-update_cores \
@@ -164,18 +154,12 @@ wrappers: ## Lançadores em build/bin (saves no mesmo lugar dos Flatpaks)
 	@touch $(STATE)/retroarch.cfg
 	@echo "wrappers em $(BIN)"
 
-home: ## Pasta do ES-DE local (links pro ~/ES-DE, regras próprias)
-	@bin/esde-home.sh "$(HOME)/ES-DE" "$(ESDE_DIR)" "$(BIN)" "$(CORES)"
-
 run: wrappers ## Abre o app: biblioteca, saves, controles e configurações
 	@test -x $(APP_BIN) || { echo "❌ app não compilado: make app"; exit 1; }
 	$(APP_BIN) --bin $(BIN) --cores $(CORES)
 
 run-web: wrappers app-web ## O mesmo app no navegador (desenvolvimento): http://127.0.0.1:8484
 	cd $(APP) && go run . --web 127.0.0.1:8484 --bin $(BIN) --cores $(CORES)
-
-run-esde: wrappers home ## Abre o ES-DE compilado (frontend antigo)
-	ESDE_APPDATA_DIR=$(ESDE_DIR) $(PREFIX)/bin/es-de
 
 ##@ App (frontend)
 
@@ -196,8 +180,8 @@ app: app-web ## Compila o app desktop (Go + Wails) em build/prefix/bin/arkflix-g
 ##@ Validar
 
 # CASOS=nes snes ... restringe os cores testados (padrão: todos + retroarch)
-check: ## Valida tudo: app, cores com jogo de verdade, ES-DE, PPSSPP, PCSX2
-	@$(MAKE) --no-print-directory -k check-app check-cores check-es-de check-ppsspp check-pcsx2 \
+check: ## Valida tudo: app, cores com jogo de verdade, PPSSPP, PCSX2
+	@$(MAKE) --no-print-directory -k check-app check-cores check-ppsspp check-pcsx2 \
 	  && echo "✅ check passou" || { echo "❌ check falhou (detalhe acima)"; exit 1; }
 
 check-app: app-web ## App: Go (vet, testes, race), tipos, unitários, ponta a ponta e janela
@@ -216,10 +200,6 @@ check-cores: $(BUILD)/coretest ## Cada core roda um jogo seu sem janela (CASOS=.
 
 check-update: $(BUILD)/coretest ## Igual ao check-cores, e grava o resultado como baseline
 	python3 -I tests/check.py --update $(CASOS)
-
-check-es-de: home ## ES-DE abre a versão e as regras de busca apontam pra binário existente
-	$(PREFIX)/bin/es-de --version
-	python3 -I tests/check_esde.py $(ESDE_DIR)/custom_systems/es_find_rules.xml
 
 check-ppsspp: ## Suíte oficial do PPSSPP (pspautotests) + testes unitários
 	ln -sfn $(BUILD)/ppsspp src/ppsspp/build-arkflix
@@ -263,7 +243,7 @@ release-install: ## Baixa os binários do último release que tiver (VERSION=vX 
 	tar -C $(BUILD) -xzf $(DIST)/download/*.tar.gz
 	git submodule update --init --depth 1 src/retroarch-assets \
 	  src/retroarch-joypad-autoconfig src/libretro-core-info
-	$(MAKE) --no-print-directory wrappers home
+	$(MAKE) --no-print-directory wrappers
 	@echo "✅ pronto: make run"
 
 ##@ Fonte

@@ -5,9 +5,9 @@
 
 Ambiente de emulação para Linux compilado a partir do código-fonte: um app
 próprio de biblioteca de jogos (Go + Svelte), o [RetroArch](https://www.retroarch.com)
-com oito cores, o [PPSSPP](https://www.ppsspp.org), o [PCSX2](https://pcsx2.net) e,
-como alternativa, o frontend [ES-DE](https://es-de.org). Tudo fica em versões
-fixas, com um único `Makefile` para compilar, executar, testar e publicar.
+com oito cores, o [PPSSPP](https://www.ppsspp.org) e o [PCSX2](https://pcsx2.net).
+Tudo fica em versões fixas, com um único `Makefile` para compilar, executar,
+testar e publicar.
 
 O objetivo é poder alterar o código de qualquer um desses projetos, validar a
 alteração com testes automatizados que rodam jogos de verdade e usar o
@@ -97,8 +97,7 @@ make run            # dentro do repositório
 
 O app procura jogos em `~/Games/roms/<console>/` (`snes/`, `psx/`, `ps2/`...) e
 traz ROMs de qualquer outra pasta pela tela de importação. As BIOS ficam nas
-pastas usuais de cada emulador (veja [Como funciona](#como-funciona)). O ES-DE
-continua disponível em `make run-esde`.
+pastas usuais de cada emulador (veja [Como funciona](#como-funciona)).
 
 ## O app
 
@@ -125,9 +124,15 @@ desenhada para baixa visão, em todo o texto corrido. Toda tela é testada com o
 [axe](https://github.com/dequelabs/axe-core) (WCAG 2.1 AA) e toda paleta de console
 tem contraste AA verificado em teste.
 
-**Capas e descrições.** Vêm de arquivos locais: os `gamelist.xml` e a mídia do
-ES-DE (`~/ES-DE`), ou uma imagem com o nome do jogo em `<pasta>/<console>/covers/`.
-Sem nada disso, o app desenha o cartucho, disco ou UMD do console com o título.
+**Capas e descrições.** Com "Baixar capas" ligado (configurações da biblioteca),
+o app baixa capa, print e tela de título do acervo aberto do RetroArch
+([thumbnails.libretro.com](https://thumbnails.libretro.com)), sem conta: o jogo é
+reconhecido pelo CRC da ROM (cartuchos), pelo serial do disco (PS1, PS2, PSP) ou
+pelo nome do zip (arcade), usando o banco do libretro, e tudo fica em cache em
+`~/.cache/arkflix-games`. Uma imagem com o nome do jogo em
+`<pasta>/<console>/covers/` tem prioridade, assim como os `gamelist.xml` e a
+mídia de uma instalação antiga do ES-DE em `~/ES-DE`, se existir. Sem capa, o app
+desenha o cartucho, disco ou UMD do console com o título.
 
 **Scripts de evento.** Executáveis em
 `~/.config/arkflix-games/scripts/game-start/` e `.../game-end/` rodam em segundo
@@ -188,7 +193,6 @@ Também é possível compilar um componente por vez:
 | Alvo | Componente |
 | --- | --- |
 | `make app` | o app (interface + janela desktop) |
-| `make es-de` | frontend ES-DE (alternativo) |
 | `make retroarch` | RetroArch |
 | `make cores` | os oito cores; `make core-<nome>` compila um só |
 | `make ppsspp` | PPSSPP, incluindo `PPSSPPHeadless` e testes unitários |
@@ -206,7 +210,6 @@ após `make clean` ou ao trocar de versão, leva poucos minutos. O cache fica em
 
 | Caminho | Projeto | Sistema | Versão | Licença |
 | --- | --- | --- | --- | --- |
-| `src/es-de` | ES-DE | frontend | v3.5.0 | MIT |
 | `src/retroarch` | RetroArch | frontend libretro | v1.22.2 | GPL-3.0 |
 | `src/ppsspp` | PPSSPP | PlayStation Portable | v1.20.4 | GPL-2.0-or-later |
 | `src/pcsx2` | PCSX2 | PlayStation 2 | v2.8.2 | GPL-3.0 |
@@ -223,23 +226,17 @@ após `make clean` ou ao trocar de versão, leva poucos minutos. O cache fica em
 | `src/libretro-core-info` | Core Info | metadados dos cores | master | MIT |
 | `src/deps/rapidyaml` | rapidyaml | dependência do PCSX2 | v0.12.1 | MIT |
 
-As versões de ES-DE, RetroArch, PPSSPP e PCSX2 acompanham as dos pacotes
+As versões de RetroArch, PPSSPP e PCSX2 acompanham as dos pacotes
 Flatpak correspondentes, para manter a configuração e os saves compatíveis. O
 melonDS DS baixa o melonDS e algumas bibliotecas durante o `cmake`
 (FetchContent), nas versões fixadas pelo próprio projeto.
 
 ## Como funciona
 
-O app e o `make run-esde` usam os emuladores compilados, sem alterar a
-instalação existente:
+O app usa os emuladores compilados, sem alterar a instalação existente:
 
 - **App.** Abre cada jogo pelos lançadores de `build/bin`, com o core certo e,
   no RetroArch, a configuração de controle gerada pela tela de controles.
-- **ES-DE.** Usa `home/ES-DE` como pasta de dados, por meio de
-  `ESDE_APPDATA_DIR`. O conteúdo dessa pasta são links para `~/ES-DE`
-  (gamelists, configurações, mídia e scripts), exceto
-  `custom_systems/es_find_rules.xml`, que aponta para os binários de
-  `build/bin`.
 - **RetroArch.** Usa uma configuração própria (`home/retroarch.cfg`), porque a
   do Flatpak referencia caminhos internos do sandbox. Saves, save states e BIOS
   continuam nas pastas do Flatpak.
@@ -294,7 +291,6 @@ git commit -m "build: atualiza PCSX2 para v2.8.3"
 | --- | --- |
 | `check-app` | app: `go vet`, testes Go com detector de race, tipos (svelte-check), testes unitários da interface, testes de ponta a ponta no Chromium com axe em toda tela e, se o app desktop estiver compilado, a janela de verdade |
 | `check-cores` | executa cada core com um jogo, sem janela, por cerca de 15 segundos |
-| `check-es-de` | versão do ES-DE e existência de todos os caminhos das regras de busca |
 | `check-ppsspp` | suíte oficial [pspautotests](https://github.com/hrydgard/pspautotests) e testes unitários do PPSSPP |
 | `check-pcsx2` | testes unitários do PCSX2 |
 
@@ -349,7 +345,7 @@ código-fonte de cada binário é o da tag correspondente (submódulos mais
 .
 ├── .github/workflows/  release automático
 ├── app/                o app: backend Go (app/internal) e interface (app/web)
-├── bin/                scripts: versão, download de release, pasta do ES-DE
+├── bin/                scripts: versão e download de release
 ├── config/             modelos dos lançadores e das configurações
 ├── patches/            alterações locais sobre os submódulos
 ├── src/                código-fonte dos componentes (submódulos)
@@ -358,7 +354,7 @@ código-fonte de cada binário é o da tag correspondente (submódulos mais
 └── Makefile            ponto de entrada de todas as tarefas
 ```
 
-`build/` (compilação) e `home/` (estado local do ES-DE e do RetroArch) são
+`build/` (compilação) e `home/` (estado local do RetroArch) são
 gerados e ignorados pelo Git.
 
 ## Solução de problemas
@@ -371,9 +367,9 @@ grupo `input`. Conectar com o app aberto funciona (ele procura a cada 2 s).
 **`make app` reclama do WebKitGTK.** Faltam os pacotes de desenvolvimento:
 `make deps`.
 
-**O ES-DE informa que não encontrou o emulador ou o core.** O componente não foi
-compilado ou os lançadores estão desatualizados. Execute `make build` (ou o
-alvo específico) e depois `make check-es-de`, que lista os caminhos ausentes.
+**O app diz que não encontrou o emulador ou o core.** O componente não foi
+compilado ou os lançadores estão desatualizados: `make build` (ou o alvo
+específico, como `make core-snes9x`) e `make wrappers`.
 
 **Um caso do `check-cores` foi pulado.** A ROM não está no caminho esperado ou
 falta a BIOS. O motivo aparece na saída do teste.
@@ -386,8 +382,8 @@ a `scph5501.bin`, em
 `make deps` novamente; a lista de pacotes é atualizada junto com o projeto. O
 PCSX2 2.8 requer Qt 6.10 ou mais recente, presente no Ubuntu 26.04.
 
-**Logs.** Cada caso do `check-cores` grava `build/check/<caso>.log`. O ES-DE
-grava em `home/ES-DE/logs`.
+**Logs.** Cada caso do `check-cores` grava `build/check/<caso>.log`. Os scripts
+de evento do app gravam em `~/.config/arkflix-games/logs/scripts.log`.
 
 ## Contribuindo
 
