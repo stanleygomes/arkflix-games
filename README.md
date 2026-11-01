@@ -119,6 +119,11 @@ Também é possível compilar um componente por vez:
 `make help` lista todos os alvos. A variável `JOBS` controla o paralelismo
 (padrão: número de CPUs).
 
+Se o [ccache](https://ccache.dev) estiver instalado (o `make deps` instala), todos
+os alvos o usam: depois da primeira compilação, recompilar do zero, por exemplo
+após `make clean` ou ao trocar de versão, leva poucos minutos. O cache fica em
+`~/.cache/ccache` (limite padrão de 5 GB; `ccache -s` mostra o uso).
+
 ## Componentes
 
 | Caminho | Projeto | Sistema | Versão | Licença |
