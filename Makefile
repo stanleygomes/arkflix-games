@@ -177,9 +177,10 @@ run-esde: wrappers home ## Abre o ES-DE compilado (frontend antigo)
 
 ##@ App (frontend)
 
-app-deps: ## Dependências da interface (npm) e o Chromium dos testes
+app-deps: ## Dependências da interface (npm; precisa de Node 20+ e Go 1.26+)
+	@command -v npm >/dev/null || { echo "❌ falta Node.js (npm) pra compilar a interface"; exit 1; }
+	@command -v go >/dev/null || { echo "❌ falta Go pra compilar o app"; exit 1; }
 	cd $(WEB) && npm ci --no-fund --no-audit
-	cd $(WEB) && npx playwright install chromium
 
 app-web: ## Compila a interface (Svelte + TypeScript) em app/web/dist
 	@test -d $(WEB)/node_modules || $(MAKE) --no-print-directory app-deps
@@ -199,6 +200,7 @@ check: ## Valida tudo: app, cores com jogo de verdade, ES-DE, PPSSPP, PCSX2
 
 check-app: app-web ## App: Go (vet, testes, race), tipos, unitários, ponta a ponta e janela
 	cd $(APP) && go vet ./... && go test -race -count=1 ./...
+	cd $(WEB) && npx playwright install chromium >/dev/null
 	cd $(WEB) && npm run check && npm test && npx playwright test
 	@if [ -x $(APP_BIN) ]; then $(MAKE) --no-print-directory check-app-desktop; \
 	  else echo "⏭️  app desktop não compilado (make app): teste da janela pulado"; fi
