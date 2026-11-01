@@ -86,3 +86,17 @@ test.describe('emulador com erro', () => {
     await expect(page.locator('.toasts')).toContainText('fechou com erro 3')
   })
 })
+
+test('contador de partidas e histórico de sessões', async ({ page, app }) => {
+  await openGame(page, app, 'Mega Man X')
+  await expect(page.locator('.facts')).toContainText('0 partidas')
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole('button', { name: 'Jogar do início' }).click()
+    await expect(page.getByRole('dialog', { name: /Jogando/ })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: /Jogando/ })).toBeHidden({ timeout: 8000 })
+  }
+  await expect(page.locator('.facts')).toContainText('2 partidas')
+  const lines = app.read(`${app.data}/sessions.jsonl`).trim().split('\n').map((l) => JSON.parse(l))
+  expect(lines).toHaveLength(2)
+  expect(lines[0]).toMatchObject({ system: 'snes', name: 'Mega Man X', mode: 'start', code: 0 })
+})

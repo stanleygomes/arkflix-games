@@ -109,6 +109,7 @@
           {#if g.year}<li class="chip">{g.year}</li>{/if}
           {#if g.players}<li class="chip">{g.players} jogador{g.players === '1' ? '' : 'es'}</li>{/if}
           {#each g.genres as genre (genre)}<li class="chip">{genre}</li>{/each}
+          <li class="chip">{g.plays} partida{g.plays === 1 ? '' : 's'}</li>
           <li class="chip">Tempo: {playTime(g.playTime)}</li>
           <li class="chip">Última vez: {ago(g.lastPlayed)}</li>
           <li class="chip">{bytes(g.size)}</li>

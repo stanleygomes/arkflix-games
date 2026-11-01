@@ -83,7 +83,7 @@ func (w *window) PickFiles() ([]string, error) {
 
 func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke bool) int {
 	win := &window{}
-	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win})
+	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop})
 	if err != nil {
 		log.Print(err)
 		return 1

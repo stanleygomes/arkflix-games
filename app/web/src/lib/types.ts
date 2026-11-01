@@ -40,6 +40,7 @@ export interface Game {
   favorite: boolean
   lastPlayed: number
   playTime: number
+  plays: number
 }
 
 export interface LibraryDir {

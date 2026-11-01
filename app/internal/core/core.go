@@ -21,6 +21,7 @@ import (
 
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
+	"github.com/stanleygomes/arkflix-games/app/internal/history"
 	"github.com/stanleygomes/arkflix-games/app/internal/hooks"
 	"github.com/stanleygomes/arkflix-games/app/internal/importer"
 	"github.com/stanleygomes/arkflix-games/app/internal/input"
@@ -96,6 +97,7 @@ type GameView struct {
 	Favorite   bool     `json:"favorite"`
 	LastPlayed int64    `json:"lastPlayed"`
 	PlayTime   int64    `json:"playTime"`
+	Plays      int      `json:"plays"`
 }
 
 // Options vem de quem inicia o app (main). Fonte, metadados e saves vazios
@@ -111,6 +113,8 @@ type Options struct {
 	Meta    MetaProvider
 	Saves   SaveStore
 	Hooks   Hooks
+	// MinPlay: duração mínima de uma partida (0 = 10 s; negativo = tudo conta, testes).
+	MinPlay time.Duration
 }
 
 type entry struct {
@@ -126,9 +130,12 @@ type Service struct {
 	ready   chan struct{}
 	readyMu sync.Once
 
+	hist *history.Log
+
 	mu      sync.Mutex
 	entries []entry
 	running string
+	plays   map[string]int
 }
 
 // New prepara o serviço: gera a config de entrada do RetroArch, liga os
@@ -158,6 +165,12 @@ func New(opt Options) (*Service, error) {
 		opt.Hooks = runner
 	}
 	s := &Service{opt: opt, inputs: input.Store{Dir: store.Dir()}, ready: make(chan struct{})}
+	s.hist = &history.Log{Path: filepath.Join(store.Dir(), "sessions.jsonl"), MinPlay: opt.MinPlay}
+	sessions, err := s.hist.All()
+	if err != nil {
+		return nil, err
+	}
+	s.plays = s.hist.Plays(sessions)
 	m, err := s.inputs.Load()
 	if err != nil {
 		m = input.Default()
@@ -190,6 +203,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	v := GameView{
 		Game: g, Name: g.Title, Summary: e.info.Summary, Year: e.info.Year, Genres: e.info.Genres,
 		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
+		Plays: s.plays[g.ID],
 	}
 	if e.info.Name != "" {
 		v.Name = e.info.Name
@@ -285,7 +299,10 @@ func (s *Service) SetFavorite(id string, fav bool) (GameView, error) {
 	if err != nil {
 		return GameView{}, err
 	}
-	return s.view(e, s.opt.Store.State()), nil
+	st := s.opt.Store.State()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.view(e, st), nil
 }
 
 // GameEvent avisa a interface sobre o jogo em execução.
@@ -317,11 +334,13 @@ func (s *Service) Play(id, stateID string) error {
 	}
 	g := e.game
 	var resume *launcher.Resume
+	mode := "start"
 	switch stateID {
 	case "":
 	case "auto":
-		resume = &launcher.Resume{Slot: -1}
+		resume, mode = &launcher.Resume{Slot: -1}, "auto"
 	default:
+		mode = "slot"
 		path, err := s.decodeToken(stateID)
 		if err != nil {
 			return err
@@ -352,7 +371,10 @@ func (s *Service) Play(id, stateID string) error {
 	s.running = id
 	s.mu.Unlock()
 
+	s.mu.Lock()
 	name := s.view(e, settings.State{}).Name
+	s.mu.Unlock()
+	started := time.Now()
 	s.opt.Emitter.Emit("game", GameEvent{State: "running", ID: id, Name: name})
 	s.opt.Hooks.Run(hooks.GameStart, g.Launch, name, sys.Slug)
 	s.opt.Window.Hide()
@@ -360,8 +382,16 @@ func (s *Service) Play(id, stateID string) error {
 		res, err := launcher.Run(context.Background(), args, env)
 		s.opt.Window.Show()
 		s.opt.Store.RecordPlay(id, res.Duration, time.Now())
+		session := history.Session{Game: id, System: sys.Slug, Name: name, Start: started.Unix(), Seconds: int64(res.Duration.Seconds()), Mode: mode, Code: res.Code}
+		if err != nil {
+			session.Code = -1
+		}
+		s.hist.Append(session)
 		s.mu.Lock()
 		s.running = ""
+		if s.hist.Counts(session) {
+			s.plays[id]++
+		}
 		s.mu.Unlock()
 		ev := GameEvent{State: "exited", ID: id, Name: name, Seconds: int64(res.Duration.Seconds()), Code: res.Code}
 		if err != nil {

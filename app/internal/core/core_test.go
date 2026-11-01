@@ -68,7 +68,7 @@ func setup(t *testing.T) harness {
 	// scripts de evento rodam em segundo plano: espera antes do TempDir ser apagado
 	runner := &hooks.Runner{Dir: filepath.Join(env.Data, "scripts"), Log: filepath.Join(env.Data, "logs", "scripts.log")}
 	t.Cleanup(runner.Wait)
-	svc, err := core.New(core.Options{Version: "test", Mode: "web", Store: store, Emitter: rec, Pads: pads, Hooks: runner})
+	svc, err := core.New(core.Options{Version: "test", Mode: "web", Store: store, Emitter: rec, Pads: pads, Hooks: runner, MinPlay: -1})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,8 +144,12 @@ func TestPlayAndResume(t *testing.T) {
 	if info := h.svc.Scripts(); len(info.Events["game-end"]) != 1 || info.Events["game-start"] == nil {
 		t.Fatalf("scripts: %+v", info)
 	}
-	if h.game(t, "Super Mario World").LastPlayed == 0 {
-		t.Fatal("último jogado não registrado")
+	if g := h.game(t, "Super Mario World"); g.LastPlayed == 0 || g.Plays != 1 {
+		t.Fatalf("último jogado/partidas: %+v", g)
+	}
+	sessions, _ := os.ReadFile(filepath.Join(h.env.Data, "sessions.jsonl"))
+	if !strings.Contains(string(sessions), `"mode":"start"`) || !strings.Contains(string(sessions), `"system":"snes"`) {
+		t.Fatalf("sessão não gravada: %s", sessions)
 	}
 	calls := h.env.Calls()
 	if !strings.Contains(calls, "retroarch|--fullscreen -L") || !strings.Contains(calls, "snes9x_libretro.so") || !strings.Contains(calls, "retroarch-input.cfg") {

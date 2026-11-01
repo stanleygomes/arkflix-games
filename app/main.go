@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/stanleygomes/arkflix-games/app/internal/core"
 	"github.com/stanleygomes/arkflix-games/app/internal/fixture"
@@ -104,6 +105,14 @@ func openStore(f flags) (*settings.Store, error) {
 	return settings.Open(data, defaults)
 }
 
+// No ambiente falso toda sessão conta como partida (emulador falso fecha em 1 s).
+func minPlay(f flags) time.Duration {
+	if f.fixture != "" {
+		return -1
+	}
+	return 0
+}
+
 func main() {
 	log.SetFlags(0)
 	f := parseFlags()
@@ -123,7 +132,7 @@ func main() {
 
 	if f.web != "" {
 		broker := httpapi.NewBroker()
-		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker})
+		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f)})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -136,3 +145,6 @@ func main() {
 	}
 	os.Exit(runDesktop(store, pads, ui, f.smoke))
 }
+
+// O desktop nunca roda com o ambiente falso: partida mínima padrão (10 s).
+const minPlayDesktop time.Duration = 0
