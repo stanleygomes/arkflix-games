@@ -180,11 +180,12 @@ check-ppsspp: ## Suíte oficial do PPSSPP (pspautotests) + testes unitários
 	cd $(BUILD)/ppsspp && ./PPSSPPUnitTest ALL
 
 check-pcsx2: ## Testes unitários do PCSX2
-	ctest --test-dir $(BUILD)/pcsx2 --output-on-failure -j $(JOBS)
+	cmake --build $(BUILD)/pcsx2 --target unittests -j $(JOBS)
+	ctest --test-dir $(BUILD)/pcsx2/tests/ctest --output-on-failure --no-tests=error -j $(JOBS)
 
 $(BUILD)/coretest: tests/coretest.c
 	@mkdir -p $(BUILD)
-	cc -O2 -Wall -Wextra -I src/retroarch/libretro-common/include -o $@ $< -ldl
+	cc -O2 -Wall -Wextra -I src/retroarch/libretro-common/include -o $@ $< -ldl -lEGL
 
 ##@ Release
 
