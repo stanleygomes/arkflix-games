@@ -32,8 +32,10 @@ APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext \
   libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev \
   libswscale-dev \
   libasound2-dev libpulse-dev libpipewire-0.3-dev libjack-jackd2-dev \
-  libgl-dev libgl1-mesa-dev libegl-dev libgles-dev libvulkan-dev libdrm-dev libgbm-dev \
-  libx11-dev libxext-dev libxrandr-dev libxi-dev libxinerama-dev libxxf86vm-dev \
+  libgl-dev libgl1-mesa-dev libglu1-mesa-dev libegl-dev libgles-dev libvulkan-dev \
+  libdrm-dev libgbm-dev \
+  libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxi-dev libxinerama-dev \
+  libxxf86vm-dev \
   libxkbcommon-dev libwayland-dev wayland-protocols \
   libudev-dev libusb-1.0-0-dev libdbus-1-dev zlib1g-dev libzstd-dev liblz4-dev \
   libpng-dev libjpeg-dev libwebp-dev libpcap-dev libbacktrace-dev \
@@ -59,7 +61,7 @@ deps: ## Instala os pacotes de compilação (apt, pede sudo)
 fetch: ## Baixa os fontes (submodules rasos, nas versões travadas)
 	git submodule update --init --depth 1 --jobs 4
 	git -C src/deps/rapidyaml submodule update --init --depth 1 --recursive
-	cd src/ppsspp && git submodule update --init --depth 1 --jobs 4 \
+	cd src/ppsspp && git submodule update --init --recursive --depth 1 --jobs 4 \
 	  $$(git config -f .gitmodules --get-regexp '\.path$$' | awk '{print $$2}' \
 	     | grep -vxF $(addprefix -e ,$(PPSSPP_SKIP)))
 	$(MAKE) --no-print-directory patch-apply
@@ -94,8 +96,16 @@ rapidyaml: ## Única dependência do PCSX2 que o apt não tem
 	cmake --build $(BUILD)/rapidyaml -j $(JOBS)
 	cmake --install $(BUILD)/rapidyaml
 
+# O PCSX2 abre "libshaderc_shared.so.1" em tempo de execução; o Ubuntu chama de
+# libshaderc. O shim é só um link, usado no build e no lançador (LD_LIBRARY_PATH).
+SHADERC := $(shell pkg-config --variable=libdir shaderc 2>/dev/null)/libshaderc.so
+
 pcsx2: rapidyaml ## PCSX2 (PS2)
+	@mkdir -p $(BUILD)/shim
+	ln -sf $(SHADERC) $(BUILD)/shim/libshaderc_shared.so
+	ln -sf $(SHADERC).1 $(BUILD)/shim/libshaderc_shared.so.1
 	$(CMAKE) -S src/pcsx2 -B $(BUILD)/pcsx2 -DCMAKE_PREFIX_PATH=$(BUILD)/deps \
+	  -DSHADERC_LIBRARY=$(BUILD)/shim/libshaderc_shared.so \
 	  -DENABLE_TESTS=ON -DPACKAGE_MODE=OFF
 	cmake --build $(BUILD)/pcsx2 -j $(JOBS)
 
@@ -182,7 +192,7 @@ $(BUILD)/coretest: tests/coretest.c
 # qualquer pasta: os lançadores são gerados na instalação.
 DIST := $(BUILD)/dist
 GH_REPO ?= stanleygomes/arkflix-games
-RELEASE_FILES := prefix ppsspp/PPSSPPSDL ppsspp/assets pcsx2/bin coretest
+RELEASE_FILES := prefix ppsspp/PPSSPPSDL ppsspp/assets pcsx2/bin shim coretest
 
 release-notes: ## Mostra a próxima versão e o changelog (o CI publica no push)
 	@bin/release.sh

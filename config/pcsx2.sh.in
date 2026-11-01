@@ -2,4 +2,6 @@
 # PCSX2 compilado, usando a pasta do Flatpak (mesma versão): BIOS, memory cards
 # e config iguais nos dois.
 export XDG_CONFIG_HOME="@VAR_APP@/net.pcsx2.PCSX2/config"
+# shim: o PCSX2 procura libshaderc_shared, o Ubuntu entrega libshaderc
+export LD_LIBRARY_PATH="@BUILD@/shim${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 exec "@BUILD@/pcsx2/bin/pcsx2-qt" "$@"
