@@ -32,6 +32,13 @@ type Accessibility struct {
 	MusicVolume  int     `json:"musicVolume"`
 }
 
+// Covers liga o download de capas do acervo aberto do libretro.
+type Covers struct {
+	Enabled bool   `json:"enabled"`
+	Images  string `json:"images"` // servidor das imagens
+	DB      string `json:"db"`     // servidor do banco (DATs)
+}
+
 // SaveDirs são as pastas de save de cada emulador (as dos Flatpaks, que os
 // lançadores compartilham).
 type SaveDirs struct {
@@ -51,6 +58,7 @@ type Settings struct {
 	CoresDir    string        `json:"coresDir"`
 	Fullscreen  bool          `json:"fullscreen"`
 	ESDEDir     string        `json:"esdeDir"` // capas e descrições locais (gamelists do ES-DE)
+	Covers      Covers        `json:"covers"`
 	A11y        Accessibility `json:"a11y"`
 	Saves       SaveDirs      `json:"saves"`
 }
@@ -70,6 +78,10 @@ func Defaults(home, bin, cores string) Settings {
 		CoresDir:    cores,
 		Fullscreen:  true,
 		ESDEDir:     filepath.Join(home, "ES-DE"),
+		Covers: Covers{
+			Images: "https://thumbnails.libretro.com",
+			DB:     "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat",
+		},
 		A11y: Accessibility{
 			FontScale: 1, Scanlines: true, PixelTitles: true,
 			Sounds: true, SoundVolume: 60, Music: true, MusicVolume: 25,

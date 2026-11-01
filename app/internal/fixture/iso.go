@@ -173,3 +173,33 @@ func PS2ISO(serial string) []byte {
 		path.Join(code + ""): []byte("\x7fELF"),
 	})
 }
+
+// RawBin converte uma ISO (setores de 2048) em .bin cru de CD (2352 por setor):
+// modo 2 tem 24 bytes de cabeçalho, modo 1 tem 16.
+func RawBin(iso []byte, mode2 bool) []byte {
+	head := 16
+	if mode2 {
+		head = 24
+	}
+	n := len(iso) / sector
+	out := make([]byte, n*2352)
+	for i := range n {
+		raw := out[i*2352:]
+		copy(raw, []byte{0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0})
+		if mode2 {
+			raw[15] = 2
+		} else {
+			raw[15] = 1
+		}
+		copy(raw[head:head+sector], iso[i*sector:(i+1)*sector])
+	}
+	return out
+}
+
+// PS1Bin é um .bin de PS1 falso (modo 2) com o serial dado (SLUS-00067).
+func PS1Bin(serial string) []byte {
+	code := strings.ReplaceAll(serial, "-", "_")
+	code = code[:8] + "." + code[8:]
+	cnf := "BOOT = cdrom:\\" + code + ";1\r\nTCB = 4\r\nEVENT = 10\r\n"
+	return RawBin(BuildISO(map[string][]byte{"SYSTEM.CNF": []byte(cnf), code: []byte("PS-X EXE")}), true)
+}

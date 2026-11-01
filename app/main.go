@@ -19,6 +19,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"time"
@@ -97,6 +98,10 @@ func openStore(f flags) (*settings.Store, error) {
 	data := f.data
 	if f.fixture != "" {
 		env := fixture.NewEnv(f.fixture)
+		// libretro falso (banco e imagens), pra testar capas sem internet
+		thumbsSrv := httptest.NewServer(&fixture.FakeThumbs{})
+		env.Settings.Covers.Images = thumbsSrv.URL + "/thumbs"
+		env.Settings.Covers.DB = thumbsSrv.URL + "/metadat"
 		defaults, data = env.Settings, env.Data
 	}
 	if data == "" {
@@ -132,7 +137,7 @@ func main() {
 
 	if f.web != "" {
 		broker := httpapi.NewBroker()
-		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f)})
+		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f)})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -146,5 +151,20 @@ func main() {
 	os.Exit(runDesktop(store, pads, ui, f.smoke))
 }
 
+// cacheDir: capas baixadas e bancos do libretro (~/.cache/arkflix-games).
+// No ambiente falso, fica dentro dele.
+func cacheDir(f flags) string {
+	if f.fixture != "" {
+		return filepath.Join(f.fixture, "cache")
+	}
+	if dir := os.Getenv("XDG_CACHE_HOME"); dir != "" {
+		return filepath.Join(dir, "arkflix-games")
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".cache", "arkflix-games")
+}
+
 // O desktop nunca roda com o ambiente falso: partida mínima padrão (10 s).
 const minPlayDesktop time.Duration = 0
+
+func cacheDirDesktop() string { return cacheDir(flags{}) }

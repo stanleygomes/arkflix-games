@@ -23,6 +23,9 @@ type Info struct {
 	Genres  []string `json:"genres"`
 	Players string   `json:"players"`
 	Cover   string   `json:"-"`
+	// Snap (print do jogo) e TitleShot (tela de título): caminhos locais.
+	Snap      string `json:"-"`
+	TitleShot string `json:"-"`
 }
 
 type gameList struct {

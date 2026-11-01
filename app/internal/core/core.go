@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -30,6 +31,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/saves"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
+	"github.com/stanleygomes/arkflix-games/app/internal/thumbs"
 )
 
 // GameSource lista os jogos disponíveis.
@@ -94,6 +96,8 @@ type GameView struct {
 	Genres     []string `json:"genres"`
 	Players    string   `json:"players"`
 	Cover      string   `json:"cover"`
+	Snap       string   `json:"snap"`
+	TitleShot  string   `json:"titleShot"`
 	Favorite   bool     `json:"favorite"`
 	LastPlayed int64    `json:"lastPlayed"`
 	PlayTime   int64    `json:"playTime"`
@@ -115,6 +119,8 @@ type Options struct {
 	Hooks   Hooks
 	// MinPlay: duração mínima de uma partida (0 = 10 s; negativo = tudo conta, testes).
 	MinPlay time.Duration
+	// Cache: pasta de cache (capas baixadas, bancos do libretro).
+	Cache string
 }
 
 type entry struct {
@@ -130,12 +136,14 @@ type Service struct {
 	ready   chan struct{}
 	readyMu sync.Once
 
-	hist *history.Log
+	hist   *history.Log
+	thumbs *thumbs.Store
 
 	mu      sync.Mutex
 	entries []entry
 	running string
 	plays   map[string]int
+	tasks   map[string]bool
 }
 
 // New prepara o serviço: gera a config de entrada do RetroArch, liga os
@@ -151,8 +159,13 @@ func New(opt Options) (*Service, error) {
 	if opt.Source == nil {
 		opt.Source = library.LocalSource{Dirs: func() []settings.LibraryDir { return store.Settings().LibraryDirs }}
 	}
+	if opt.Cache == "" {
+		opt.Cache = filepath.Join(store.Dir(), "cache")
+	}
+	covers := &thumbs.Store{Cache: opt.Cache}
 	if opt.Meta == nil {
-		opt.Meta = &meta.Local{ESDEDir: func() string { return store.Settings().ESDEDir }}
+		local := &meta.Local{ESDEDir: func() string { return store.Settings().ESDEDir }}
+		opt.Meta = &thumbs.Provider{Base: local, Store: covers}
 	}
 	if opt.Saves == nil {
 		opt.Saves = saves.Local{Dirs: func() settings.SaveDirs { return store.Settings().Saves }}
@@ -164,7 +177,7 @@ func New(opt Options) (*Service, error) {
 		}
 		opt.Hooks = runner
 	}
-	s := &Service{opt: opt, inputs: input.Store{Dir: store.Dir()}, ready: make(chan struct{})}
+	s := &Service{opt: opt, inputs: input.Store{Dir: store.Dir()}, ready: make(chan struct{}), thumbs: covers, tasks: map[string]bool{}}
 	s.hist = &history.Log{Path: filepath.Join(store.Dir(), "sessions.jsonl"), MinPlay: opt.MinPlay}
 	sessions, err := s.hist.All()
 	if err != nil {
@@ -213,6 +226,12 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	}
 	if e.info.Cover != "" {
 		v.Cover = "/media/cover/" + g.ID
+	}
+	if e.info.Snap != "" {
+		v.Snap = "/media/snap/" + g.ID
+	}
+	if e.info.TitleShot != "" {
+		v.TitleShot = "/media/title/" + g.ID
 	}
 	return v
 }
@@ -490,6 +509,9 @@ func (s *Service) Import(items []importer.Item) ([]importer.Result, error) {
 	res := importer.Import(items, dest)
 	s.scan()
 	s.opt.Emitter.Emit("library", s.views())
+	if s.opt.Store.Settings().Covers.Enabled {
+		s.startCovers(false)
+	}
 	return res, nil
 }
 
@@ -584,15 +606,107 @@ func (s *Service) serveMedia(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", ctype)
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Write(data)
-	case "cover":
+	case "cover", "snap", "title":
 		e, _, err := s.find(parts[1])
-		if err != nil || e.info.Cover == "" {
+		path := map[string]string{"cover": e.info.Cover, "snap": e.info.Snap, "title": e.info.TitleShot}[parts[0]]
+		if err != nil || path == "" {
 			http.NotFound(w, r)
 			return
 		}
 		w.Header().Set("Cache-Control", "no-cache")
-		http.ServeFile(w, r, e.info.Cover)
+		http.ServeFile(w, r, path)
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+// TaskEvent mostra o progresso de uma tarefa longa (capas).
+type TaskEvent struct {
+	ID       string  `json:"id"`
+	Label    string  `json:"label"`
+	State    string  `json:"state"` // running, done, error
+	Progress float64 `json:"progress"`
+	Message  string  `json:"message,omitempty"`
+}
+
+// runTask roda fn em segundo plano, uma de cada id por vez, avisando o progresso.
+func (s *Service) runTask(id, label string, fn func(progress func(float64)) (string, error)) bool {
+	s.mu.Lock()
+	if s.tasks[id] {
+		s.mu.Unlock()
+		return false
+	}
+	s.tasks[id] = true
+	s.mu.Unlock()
+	s.opt.Emitter.Emit("task", TaskEvent{ID: id, Label: label, State: "running"})
+	go func() {
+		msg, err := fn(func(p float64) {
+			s.opt.Emitter.Emit("task", TaskEvent{ID: id, Label: label, State: "running", Progress: p})
+		})
+		s.mu.Lock()
+		delete(s.tasks, id)
+		s.mu.Unlock()
+		ev := TaskEvent{ID: id, Label: label, State: "done", Progress: 1, Message: msg}
+		if err != nil {
+			ev.State, ev.Message = "error", err.Error()
+		}
+		s.opt.Emitter.Emit("task", ev)
+	}()
+	return true
+}
+
+// startCovers baixa as capas dos jogos que ainda não passaram pelo libretro
+// (all = todos de novo).
+func (s *Service) startCovers(all bool) bool {
+	cfg := s.opt.Store.Settings().Covers
+	s.thumbs.Configure(cfg.Images, cfg.DB)
+	var todo []library.Game
+	s.mu.Lock()
+	for _, e := range s.entries {
+		if thumbs.Supported(e.game.System) && (all || !s.thumbs.Fetched(e.game)) {
+			todo = append(todo, e.game)
+		}
+	}
+	s.mu.Unlock()
+	return s.runTask("covers", "Baixando capas", func(progress func(float64)) (string, error) {
+		found, missing := 0, 0
+		defer func() {
+			s.scan()
+			s.opt.Emitter.Emit("library", s.views())
+		}()
+		for i, g := range todo {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			m, n, err := s.thumbs.Fetch(ctx, g)
+			cancel()
+			if err != nil {
+				return "", err
+			}
+			if m.Name != "" && n > 0 {
+				found++
+			} else {
+				missing++
+			}
+			progress(float64(i+1) / float64(len(todo)))
+		}
+		if len(todo) == 0 {
+			return "todas as capas já estão em dia", nil
+		}
+		msg := fmt.Sprintf("%d jogo(s) com capa", found)
+		if missing > 0 {
+			msg += fmt.Sprintf(", %d sem capa no acervo do libretro", missing)
+		}
+		return msg, nil
+	})
+}
+
+// UpdateCovers baixa capas, prints e telas de título do libretro
+// (thumbnails.libretro.com). all = tenta de novo até as que não acharam.
+func (s *Service) UpdateCovers(all bool) error {
+	if !s.opt.Store.Settings().Covers.Enabled {
+		return errors.New("ligue \"Baixar capas\" nas configurações da biblioteca")
+	}
+	if !s.startCovers(all) {
+		return errors.New("as capas já estão sendo baixadas")
+	}
+	return nil
 }

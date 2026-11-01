@@ -73,3 +73,19 @@ func TestSFOTruncated(t *testing.T) {
 		t.Fatal("SFO truncado devia falhar")
 	}
 }
+
+func TestPS1RawBin(t *testing.T) {
+	info, err := isoinfo.Read(bytes.NewReader(fixture.PS1Bin("SCUS-94900")))
+	if err != nil || info.System != "psx" || info.Serial != "SCUS-94900" {
+		t.Fatalf("PS1 .bin: %+v %v", info, err)
+	}
+	// PS2 em .bin modo 1 também
+	iso := fixture.PS2ISO("SLUS-21431")
+	info, err = isoinfo.Read(bytes.NewReader(fixture.RawBin(iso, false)))
+	if err != nil || info.Serial != "SLUS-21431" {
+		t.Fatalf("PS2 .bin modo 1: %+v %v", info, err)
+	}
+	if s, err := isoinfo.PS1Serial([]byte("BOOT=cdrom:SLES-123.45;1")); err != nil || s != "SLES-12345" {
+		t.Fatalf("variação do BOOT: %q %v", s, err)
+	}
+}

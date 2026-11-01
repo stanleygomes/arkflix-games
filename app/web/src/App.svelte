@@ -2,6 +2,7 @@
   import { onMount, tick } from 'svelte'
   import ConfirmDialog from './components/ConfirmDialog.svelte'
   import Playing from './components/Playing.svelte'
+  import Tasks from './components/Tasks.svelte'
   import Toasts from './components/Toasts.svelte'
   import { api, on } from './lib/api'
   import { startInput } from './lib/input'
@@ -109,6 +110,7 @@
 {/if}
 
 <Playing />
+<Tasks />
 <Toasts />
 <ConfirmDialog />
 

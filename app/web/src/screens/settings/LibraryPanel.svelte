@@ -41,6 +41,26 @@
     }
   }
 
+  async function toggleCovers() {
+    const enabled = !draft.covers.enabled
+    draft.covers.enabled = enabled
+    try {
+      app.settings = await api.saveSettings({ ...(app.settings as Settings), covers: { ...app.settings!.covers, enabled } })
+      play('toggle')
+      if (enabled) await api.updateCovers(false)
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  async function updateCovers(all: boolean) {
+    try {
+      await api.updateCovers(all)
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
   async function reset() {
     if (!(await confirm('Voltar todas as configurações ao padrão? Pastas, acessibilidade e emuladores.', 'Restaurar'))) return
     app.settings = await api.resetSettings()
@@ -98,6 +118,22 @@
       <input id="cores-dir" type="text" data-nav bind:value={draft.coresDir} spellcheck="false" />
     </div>
   </details>
+
+  <fieldset>
+    <legend>Capas</legend>
+    <button type="button" class="switch-row btn" data-nav role="switch" aria-checked={draft.covers.enabled} aria-describedby="covers-help" onclick={toggleCovers}>
+      Baixar capas automaticamente: {draft.covers.enabled ? 'sim' : 'não'}
+    </button>
+    <p id="covers-help" class="muted">
+      Capa, print e tela de título do acervo aberto do RetroArch (thumbnails.libretro.com), sem conta. O jogo é reconhecido pelo
+      conteúdo da ROM ou pelo código do disco. Precisa de internet só pra baixar; depois fica tudo no PC. Capa sua em
+      <code>covers/</code> ou do ES-DE tem prioridade.
+    </p>
+    <div class="actions">
+      <button type="button" class="btn small" data-nav disabled={!draft.covers.enabled} onclick={() => updateCovers(false)}>Atualizar capas agora</button>
+      <button type="button" class="btn small" data-nav disabled={!draft.covers.enabled} onclick={() => updateCovers(true)}>Tentar de novo as que faltam</button>
+    </div>
+  </fieldset>
 
   <button
     type="button"

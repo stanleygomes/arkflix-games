@@ -104,6 +104,7 @@ export const api = {
   resetInput: () => call<InputResult>('ResetInput'),
   pads: () => call<Pad[]>('Pads'),
   scripts: () => call<ScriptsInfo>('Scripts'),
+  updateCovers: (all = false) => call<void>('UpdateCovers', all),
   toggleFullscreen: () => call<void>('ToggleFullscreen'),
   quit: () => call<void>('Quit'),
 }

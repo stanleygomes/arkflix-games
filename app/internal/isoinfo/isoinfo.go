@@ -1,5 +1,6 @@
-// Package isoinfo lê o mínimo de uma imagem ISO 9660 pra identificar o jogo:
-// PSP (PSP_GAME/PARAM.SFO: DISC_ID, título) e PS2 (SYSTEM.CNF: serial).
+// Package isoinfo lê o mínimo de uma imagem de disco ISO 9660 pra identificar o
+// jogo: PSP (PSP_GAME/PARAM.SFO: DISC_ID, título), PS2 e PS1 (SYSTEM.CNF: serial).
+// Aceita .iso (setor de 2048 bytes) e .bin cru de CD (2352 bytes, modo 1 ou 2).
 // Serve pra achar os save states de cada jogo e pra detectar o console ao importar.
 package isoinfo
 
@@ -34,15 +35,41 @@ type record struct {
 	name   string
 }
 
-type image struct{ r io.ReaderAt }
+// image lê setores lógicos de 2048 bytes de um .iso ou de um .bin cru.
+type image struct {
+	r      io.ReaderAt
+	raw    int64 // tamanho do setor no arquivo (2048 ou 2352)
+	offset int64 // onde começam os dados dentro do setor cru
+}
+
+// open descobre o formato procurando o descritor "CD001" no setor 16.
+func open(r io.ReaderAt) (image, error) {
+	head := make([]byte, 6)
+	for _, f := range []struct{ raw, offset int64 }{{sector, 0}, {2352, 24}, {2352, 16}} {
+		if _, err := r.ReadAt(head, 16*f.raw+f.offset); err == nil && head[0] == 1 && string(head[1:6]) == "CD001" {
+			return image{r: r, raw: f.raw, offset: f.offset}, nil
+		}
+	}
+	return image{}, errors.New("não é uma imagem de disco ISO 9660")
+}
+
+// readAt lê n bytes a partir do setor lógico, pulando os cabeçalhos do setor cru.
+func (im image) readAt(lba uint32, n int) ([]byte, error) {
+	out := make([]byte, 0, n)
+	buf := make([]byte, sector)
+	for s := int64(lba); len(out) < n; s++ {
+		if _, err := im.r.ReadAt(buf, s*im.raw+im.offset); err != nil && !(errors.Is(err, io.EOF) && len(out)+sector >= n) {
+			return nil, err
+		}
+		out = append(out, buf[:min(sector, n-len(out))]...)
+	}
+	return out, nil
+}
 
 func (im image) root() (record, error) {
-	pvd := make([]byte, sector)
-	if _, err := im.r.ReadAt(pvd, 16*sector); err != nil {
+	pvd, err := im.readAt(16, sector)
+	if err != nil {
 		return record{}, fmt.Errorf("sem descritor ISO 9660: %w", err)
-	}
-	if pvd[0] != 1 || string(pvd[1:6]) != "CD001" {
-		return record{}, errors.New("não é uma imagem ISO 9660")
 	}
 	return parseRecord(pvd[156:190])
 }
@@ -71,8 +98,8 @@ func (im image) list(dir record) ([]record, error) {
 	if dir.size > 4<<20 {
 		return nil, errors.New("diretório grande demais")
 	}
-	data := make([]byte, dir.size)
-	if _, err := im.r.ReadAt(data, int64(dir.extent)*sector); err != nil {
+	data, err := im.readAt(dir.extent, int(dir.size))
+	if err != nil {
 		return nil, err
 	}
 	var out []record
@@ -132,14 +159,15 @@ func (im image) read(path string, limit uint32) ([]byte, error) {
 	if rec.size > limit {
 		return nil, fmt.Errorf("%s grande demais", path)
 	}
-	buf := make([]byte, rec.size)
-	_, err = im.r.ReadAt(buf, int64(rec.extent)*sector)
-	return buf, err
+	return im.readAt(rec.extent, int(rec.size))
 }
 
 // Read identifica o jogo de uma ISO aberta.
 func Read(r io.ReaderAt) (Info, error) {
-	im := image{r}
+	im, err := open(r)
+	if err != nil {
+		return Info{}, err
+	}
 	if sfo, err := im.read("PSP_GAME/PARAM.SFO", 64<<10); err == nil {
 		fields, err := ParseSFO(sfo)
 		if err != nil {
@@ -156,11 +184,14 @@ func Read(r io.ReaderAt) (Info, error) {
 	if err != nil {
 		return Info{}, err
 	}
-	serial, err := PS2Serial(cnf)
+	if serial, err := PS2Serial(cnf); err == nil {
+		return Info{System: "ps2", Serial: serial}, nil
+	}
+	serial, err := PS1Serial(cnf)
 	if err != nil {
 		return Info{}, err
 	}
-	return Info{System: "ps2", Serial: serial}, nil
+	return Info{System: "psx", Serial: serial}, nil
 }
 
 // ReadFile identifica o jogo de um arquivo .iso.
@@ -215,7 +246,19 @@ func cString(b []byte) string {
 	return string(b)
 }
 
-var bootLine = regexp.MustCompile(`(?im)^\s*BOOT2\s*=\s*cdrom0?:\\?([A-Z]{4})_(\d{3})\.(\d{2})`)
+var (
+	bootLine  = regexp.MustCompile(`(?im)^\s*BOOT2\s*=\s*cdrom0?:\\?([A-Z]{4})_(\d{3})\.(\d{2})`)
+	boot1Line = regexp.MustCompile(`(?im)^\s*BOOT\s*=\s*cdrom:\\?([A-Z]{4})[_-](\d{3})\.(\d{2})`)
+)
+
+// PS1Serial tira o serial (SLUS-00067) da linha BOOT do SYSTEM.CNF de PS1.
+func PS1Serial(cnf []byte) (string, error) {
+	m := boot1Line.FindSubmatch(cnf)
+	if m == nil {
+		return "", errors.New("SYSTEM.CNF sem BOOT de PS1")
+	}
+	return fmt.Sprintf("%s-%s%s", m[1], m[2], m[3]), nil
+}
 
 // PS2Serial tira o serial (SLUS-21431) da linha BOOT2 do SYSTEM.CNF.
 func PS2Serial(cnf []byte) (string, error) {

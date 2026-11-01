@@ -296,3 +296,68 @@ func TestLocalMetadata(t *testing.T) {
 		t.Fatal("capa de jogo inexistente devia dar 404")
 	}
 }
+
+func (r *recorder) waitTask(t *testing.T, id string) core.TaskEvent {
+	t.Helper()
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		r.mu.Lock()
+		for i, e := range r.events {
+			if ev, ok := r.data[i].(core.TaskEvent); ok && e == "task" && ev.ID == id && ev.State != "running" {
+				r.mu.Unlock()
+				return ev
+			}
+		}
+		r.mu.Unlock()
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("tarefa %s não terminou", id)
+	return core.TaskEvent{}
+}
+
+func TestUpdateCovers(t *testing.T) {
+	h := setup(t)
+	if err := h.svc.UpdateCovers(false); err == nil {
+		t.Fatal("desligado, devia pedir pra ligar nas configurações")
+	}
+	srv := httptest.NewServer(&fixture.FakeThumbs{})
+	defer srv.Close()
+	cfg := h.svc.GetSettings()
+	cfg.Covers = settings.Covers{Enabled: true, Images: srv.URL + "/thumbs", DB: srv.URL + "/metadat"}
+	if _, err := h.svc.SaveSettings(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if h.game(t, "Mega Man X").Cover != "" {
+		t.Fatal("Mega Man X não tinha capa antes")
+	}
+	if err := h.svc.UpdateCovers(false); err != nil {
+		t.Fatal(err)
+	}
+	ev := h.rec.waitTask(t, "covers")
+	if ev.State != "done" || !strings.Contains(ev.Message, "com capa") {
+		t.Fatalf("tarefa: %+v", ev)
+	}
+	mmx := h.game(t, "Mega Man X")
+	if mmx.Cover == "" || mmx.Snap == "" || mmx.TitleShot == "" {
+		t.Fatalf("capa/print/título do libretro: %+v", mmx)
+	}
+	for _, u := range []string{mmx.Cover, mmx.Snap, mmx.TitleShot} {
+		rec := httptest.NewRecorder()
+		core.Media(h.svc).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
+		if rec.Code != 200 {
+			t.Errorf("%s: %d", u, rec.Code)
+		}
+	}
+	// a capa do ES-DE continua valendo pro Super Mario World
+	if smw := h.game(t, "Super Mario World"); !strings.Contains(smw.Cover, "/media/cover/") {
+		t.Fatalf("smw: %+v", smw)
+	}
+	// segunda vez: nada novo pra baixar
+	h.rec.mu.Lock()
+	h.rec.events, h.rec.data = nil, nil
+	h.rec.mu.Unlock()
+	h.svc.UpdateCovers(false)
+	if ev := h.rec.waitTask(t, "covers"); !strings.Contains(ev.Message, "em dia") {
+		t.Fatalf("segunda vez: %+v", ev)
+	}
+}

@@ -37,6 +37,8 @@ export interface Game {
   genres: string[]
   players: string
   cover: string
+  snap: string
+  titleShot: string
   favorite: boolean
   lastPlayed: number
   playTime: number
@@ -70,6 +72,20 @@ export interface SaveDirs {
   pcsx2States: string
 }
 
+export interface Covers {
+  enabled: boolean
+  images: string
+  db: string
+}
+
+export interface TaskEvent {
+  id: string
+  label: string
+  state: 'running' | 'done' | 'error'
+  progress: number
+  message?: string
+}
+
 export interface Settings {
   libraryDirs: LibraryDir[]
   importDir: string
@@ -77,6 +93,7 @@ export interface Settings {
   coresDir: string
   fullscreen: boolean
   esdeDir: string
+  covers: Covers
   a11y: Accessibility
   saves: SaveDirs
 }
