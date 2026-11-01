@@ -11,6 +11,7 @@ import type {
   Listing,
   Mapping,
   Pad,
+  ScriptsInfo,
   Settings,
 } from './types'
 
@@ -102,6 +103,7 @@ export const api = {
   saveInput: (m: Mapping) => call<InputResult>('SaveInput', m),
   resetInput: () => call<InputResult>('ResetInput'),
   pads: () => call<Pad[]>('Pads'),
+  scripts: () => call<ScriptsInfo>('Scripts'),
   toggleFullscreen: () => call<void>('ToggleFullscreen'),
   quit: () => call<void>('Quit'),
 }

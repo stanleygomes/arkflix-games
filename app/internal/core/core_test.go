@@ -13,6 +13,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/core"
 	"github.com/stanleygomes/arkflix-games/app/internal/fixture"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
+	"github.com/stanleygomes/arkflix-games/app/internal/hooks"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
 
@@ -64,7 +65,10 @@ func setup(t *testing.T) harness {
 	}
 	rec := &recorder{}
 	pads := gamepad.New(t.TempDir())
-	svc, err := core.New(core.Options{Version: "test", Mode: "web", Store: store, Emitter: rec, Pads: pads})
+	// scripts de evento rodam em segundo plano: espera antes do TempDir ser apagado
+	runner := &hooks.Runner{Dir: filepath.Join(env.Data, "scripts"), Log: filepath.Join(env.Data, "logs", "scripts.log")}
+	t.Cleanup(runner.Wait)
+	svc, err := core.New(core.Options{Version: "test", Mode: "web", Store: store, Emitter: rec, Pads: pads, Hooks: runner})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,6 +128,21 @@ func TestPlayAndResume(t *testing.T) {
 	ev := h.rec.waitGame(t, "exited")
 	if ev.Error != "" || ev.ID != g.ID {
 		t.Fatalf("saída: %+v", ev)
+	}
+	hookLog := filepath.Join(filepath.Dir(h.env.Home), "hook.log")
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		data, _ := os.ReadFile(hookLog)
+		if strings.Contains(string(data), "Super Mario World (U) [!].zip|Super Mario World|snes|") {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("script de fim de jogo não rodou com os argumentos certos: %q", data)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if info := h.svc.Scripts(); len(info.Events["game-end"]) != 1 || info.Events["game-start"] == nil {
+		t.Fatalf("scripts: %+v", info)
 	}
 	if h.game(t, "Super Mario World").LastPlayed == 0 {
 		t.Fatal("último jogado não registrado")

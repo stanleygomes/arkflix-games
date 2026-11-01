@@ -56,6 +56,7 @@ test('sobre: versão e atalhos', async ({ page, app }) => {
   await page.keyboard.press('e')
   await page.keyboard.press('e')
   await expect(page.getByRole('heading', { name: 'Sobre' })).toBeVisible()
-  await expect(page.locator('.facts')).toContainText('Navegador')
+  await expect(page.locator('.facts').first()).toContainText('Navegador')
+  await expect(page.getByRole('definition').filter({ hasText: '10-registra.sh' })).toBeVisible()
   await axe(page, 'configurações: sobre')
 })

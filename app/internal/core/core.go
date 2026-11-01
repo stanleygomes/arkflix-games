@@ -21,6 +21,7 @@ import (
 
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
+	"github.com/stanleygomes/arkflix-games/app/internal/hooks"
 	"github.com/stanleygomes/arkflix-games/app/internal/importer"
 	"github.com/stanleygomes/arkflix-games/app/internal/input"
 	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
@@ -47,6 +48,12 @@ type SaveStore interface {
 	Delete(path string) error
 	Owns(path string) bool
 	Thumbnail(path string) ([]byte, string, error)
+}
+
+// Hooks roda scripts do usuário nos eventos de jogo.
+type Hooks interface {
+	Run(event string, args ...string)
+	Scripts() map[string][]string
 }
 
 // Emitter manda eventos pra interface.
@@ -103,6 +110,7 @@ type Options struct {
 	Source  GameSource
 	Meta    MetaProvider
 	Saves   SaveStore
+	Hooks   Hooks
 }
 
 type entry struct {
@@ -141,6 +149,13 @@ func New(opt Options) (*Service, error) {
 	}
 	if opt.Saves == nil {
 		opt.Saves = saves.Local{Dirs: func() settings.SaveDirs { return store.Settings().Saves }}
+	}
+	if opt.Hooks == nil {
+		runner := &hooks.Runner{Dir: filepath.Join(store.Dir(), "scripts"), Log: filepath.Join(store.Dir(), "logs", "scripts.log")}
+		if err := runner.Prepare(); err != nil {
+			return nil, err
+		}
+		opt.Hooks = runner
 	}
 	s := &Service{opt: opt, inputs: input.Store{Dir: store.Dir()}, ready: make(chan struct{})}
 	m, err := s.inputs.Load()
@@ -339,6 +354,7 @@ func (s *Service) Play(id, stateID string) error {
 
 	name := s.view(e, settings.State{}).Name
 	s.opt.Emitter.Emit("game", GameEvent{State: "running", ID: id, Name: name})
+	s.opt.Hooks.Run(hooks.GameStart, g.Launch, name, sys.Slug)
 	s.opt.Window.Hide()
 	go func() {
 		res, err := launcher.Run(context.Background(), args, env)
@@ -357,8 +373,25 @@ func (s *Service) Play(id, stateID string) error {
 			}
 		}
 		s.opt.Emitter.Emit("game", ev)
+		s.opt.Hooks.Run(hooks.GameEnd, g.Launch, name, sys.Slug, strconv.FormatInt(ev.Seconds, 10))
 	}()
 	return nil
+}
+
+// ScriptsInfo mostra onde ficam os scripts de evento e quais existem.
+type ScriptsInfo struct {
+	Dir    string              `json:"dir"`
+	Log    string              `json:"log"`
+	Events map[string][]string `json:"events"`
+}
+
+// Scripts lista os scripts de evento instalados.
+func (s *Service) Scripts() ScriptsInfo {
+	return ScriptsInfo{
+		Dir:    filepath.Join(s.opt.Store.Dir(), "scripts"),
+		Log:    filepath.Join(s.opt.Store.Dir(), "logs", "scripts.log"),
+		Events: s.opt.Hooks.Scripts(),
+	}
 }
 
 // Running diz qual jogo está aberto.

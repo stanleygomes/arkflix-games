@@ -166,6 +166,12 @@ export interface ImportResult extends ImportItem {
   ok: boolean
 }
 
+export interface ScriptsInfo {
+  dir: string
+  log: string
+  events: Record<string, string[]>
+}
+
 export interface InputResult {
   mapping: Mapping
   conflicts: string[]

@@ -4,7 +4,7 @@
   import Icon, { type IconName } from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
   import { pushHandler } from '../lib/input'
-  import { focusEl } from '../lib/nav'
+  import { current, focusEl } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { app, type SettingsTab } from '../lib/state.svelte'
@@ -42,6 +42,13 @@
 
   $effect(() =>
     pushHandler((a) => {
+      // painel em foco: cima/baixo rolam o texto; na borda, voltam a navegar
+      const el = current()
+      if (el?.hasAttribute('data-panel') && (a === 'up' || a === 'down')) {
+        const before = el.scrollTop
+        el.scrollBy({ top: a === 'down' ? 120 : -120 })
+        if (el.scrollTop !== before) return true
+      }
       if (a === 'prevTab') {
         cycle(-1)
         return true
@@ -73,7 +80,9 @@
         </button>
       {/each}
     </nav>
-    <section class="panel content" aria-label={tabs.find((t) => t.id === active)?.label}>
+    <!-- focável: dá pra rolar o painel com teclado/controle mesmo sem botão dentro -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <section class="panel content" tabindex="0" data-nav={active === 'about' ? '' : undefined} data-panel aria-label={tabs.find((t) => t.id === active)?.label}>
       {#if active === 'library'}
         <LibraryPanel />
       {:else if active === 'controls'}
@@ -139,6 +148,7 @@
   }
   .content {
     overflow-y: auto;
+    outline-offset: -4px;
     min-height: 0;
   }
 </style>

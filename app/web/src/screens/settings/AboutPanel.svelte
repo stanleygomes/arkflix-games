@@ -1,8 +1,15 @@
 <script lang="ts">
   import Glyph from '../../components/Glyph.svelte'
+  import { api } from '../../lib/api'
   import { app, glyphFamily } from '../../lib/state.svelte'
+  import type { ScriptsInfo } from '../../lib/types'
 
   const family = $derived(glyphFamily())
+  let scripts = $state<ScriptsInfo | null>(null)
+  $effect(() => {
+    api.scripts().then((s) => (scripts = s)).catch(() => {})
+  })
+  const labels: Record<string, string> = { 'game-start': 'Ao abrir um jogo', 'game-end': 'Ao fechar um jogo' }
 </script>
 
 <div class="panel-body">
@@ -35,6 +42,20 @@
     <li><Glyph button="select" {family} /> + <Glyph button="north" {family} /> menu · F1</li>
   </ul>
 
+  <h3>Scripts de evento</h3>
+  {#if scripts}
+    <p class="muted">
+      Executáveis em <code>{scripts.dir}/&lt;evento&gt;/</code> rodam em segundo plano, em ordem alfabética, recebendo o caminho da ROM, o
+      nome e o console (ao fechar, também os segundos jogados). Log em <code>{scripts.log}</code>.
+    </p>
+    <dl class="facts" aria-label="Scripts instalados">
+      {#each Object.entries(scripts.events) as [event, names] (event)}
+        <dt>{labels[event] ?? event}</dt>
+        <dd>{names.length ? names.join(', ') : 'nenhum'}</dd>
+      {/each}
+    </dl>
+  {/if}
+
   <h3>Créditos</h3>
   <p class="muted">
     Fontes Pixelify Sans e Atkinson Hyperlegible (SIL Open Font License). Emuladores: RetroArch, PPSSPP e PCSX2, cada um com a
@@ -66,6 +87,10 @@
   }
   dd {
     margin: 0;
+  }
+  code {
+    color: var(--accent-2);
+    overflow-wrap: anywhere;
   }
   .keys {
     list-style: none;

@@ -167,6 +167,11 @@ func NewEnv(root string) Env {
 			put(filepath.Join(e.Cores, sys.Core+"_libretro.so"), nil)
 		}
 	}
+	// script de fim de jogo (como o backup do solomon): registra os argumentos
+	hook := filepath.Join(e.Data, "scripts", "game-end", "10-registra.sh")
+	log := filepath.Join(root, "hook.log")
+	put(hook, []byte("#!/bin/sh\nprintf '%s|' \"$@\" >> \""+log+"\"\necho >> \""+log+"\"\n"))
+	must(os.Chmod(hook, 0o755))
 	must(os.MkdirAll(e.Data, 0o700))
 	return e
 }
