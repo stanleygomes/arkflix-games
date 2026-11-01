@@ -88,8 +88,9 @@ arkflix-games       # após a instalação
 make run            # dentro do repositório
 ```
 
-O app abre em tela cheia; F11 alterna. `--windowed` (ou
-`make run ARGS=--windowed`) abre em janela.
+O app abre em tela cheia; F11 alterna. O botão de energia, no topo, minimiza,
+sai da tela cheia ou fecha o app (com confirmação), também pelo controle.
+`--windowed` (ou `make run ARGS=--windowed`) abre em janela.
 
 O app procura jogos em `~/Games/roms/<console>/` (`snes/`, `psx/`, `ps2/`...) e
 traz ROMs de qualquer outra pasta pela tela de importação. As BIOS ficam nas

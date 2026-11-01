@@ -75,6 +75,8 @@ type Window interface {
 	Show()
 	PickFiles() ([]string, error)
 	ToggleFullscreen()
+	IsFullscreen() bool
+	Minimize()
 	Quit()
 	OpenFile(path string) error
 }
@@ -85,6 +87,10 @@ func (noWindow) Hide()             {}
 func (noWindow) Show()             {}
 func (noWindow) ToggleFullscreen() {}
 func (noWindow) Quit()             {}
+func (noWindow) Minimize()         {}
+func (noWindow) IsFullscreen() bool {
+	return false
+}
 func (noWindow) OpenFile(string) error {
 	return errors.New("abrir no sistema só no app desktop")
 }
@@ -644,6 +650,12 @@ func (s *Service) PickFiles() ([]string, error) {
 
 // ToggleFullscreen alterna tela cheia (desktop).
 func (s *Service) ToggleFullscreen() { s.opt.Window.ToggleFullscreen() }
+
+// IsFullscreen diz se a janela está em tela cheia (desktop).
+func (s *Service) IsFullscreen() bool { return s.opt.Window.IsFullscreen() }
+
+// Minimize minimiza a janela (desktop).
+func (s *Service) Minimize() { s.opt.Window.Minimize() }
 
 // Quit fecha o app (desktop).
 func (s *Service) Quit() { s.opt.Window.Quit() }

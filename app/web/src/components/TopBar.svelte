@@ -42,6 +42,11 @@
         </button>
       {/if}
     {/if}
+    {#if app.mode === 'desktop'}
+      <button class="icon-btn" data-nav aria-label="Energia: minimizar, tela cheia ou fechar" aria-haspopup="dialog" onclick={() => (app.power = true)}>
+        <Icon name="power" />
+      </button>
+    {/if}
     <span class="status" role="img" aria-label={padLabel} title={padLabel}>
       <Icon name="pad" />
       <span class="count">{app.pads.length}</span>

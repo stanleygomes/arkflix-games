@@ -63,6 +63,19 @@ func (w *window) ToggleFullscreen() {
 	}
 }
 
+func (w *window) Minimize() {
+	if ctx := w.get(); ctx != nil {
+		runtime.WindowMinimise(ctx)
+	}
+}
+
+func (w *window) IsFullscreen() bool {
+	if ctx := w.get(); ctx != nil {
+		return runtime.WindowIsFullscreen(ctx)
+	}
+	return false
+}
+
 func (w *window) Quit() {
 	if ctx := w.get(); ctx != nil {
 		runtime.Quit(ctx)

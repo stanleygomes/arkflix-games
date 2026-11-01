@@ -4,6 +4,7 @@
   import Playing from './components/Playing.svelte'
   import PromptDialog from './components/PromptDialog.svelte'
   import PinDialog from './components/PinDialog.svelte'
+  import PowerMenu from './components/PowerMenu.svelte'
   import Screensaver from './components/Screensaver.svelte'
   import Tasks from './components/Tasks.svelte'
   import Toasts from './components/Toasts.svelte'
@@ -133,6 +134,7 @@
 <ConfirmDialog />
 <PromptDialog />
 <PinDialog />
+<PowerMenu />
 <Screensaver />
 
 <style>

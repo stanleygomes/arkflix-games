@@ -137,4 +137,6 @@ export const api = {
   resetMeta: (id: string) => call<Game>('ResetMeta', id),
   toggleFullscreen: () => call<void>('ToggleFullscreen'),
   quit: () => call<void>('Quit'),
+  minimize: () => call<void>('Minimize'),
+  isFullscreen: () => call<boolean>('IsFullscreen'),
 }

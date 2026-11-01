@@ -64,6 +64,7 @@ export const app = $state({
   confirm: null as Confirm | null,
   prompt: null as Prompt | null,
   pin: null as PinAsk | null,
+  power: false,
   profile: null as ProfileState | null,
   lists: [] as GameList[],
   homeTab: 'home',
