@@ -43,7 +43,8 @@ APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext \
 
 .PHONY: help deps fetch build es-de retroarch ppsspp pcsx2 rapidyaml cores \
         $(addprefix core-,$(CORE_LIST)) wrappers home run status \
-        patch-save patch-apply clean
+        patch-save patch-apply clean check check-cores check-update check-es-de \
+        check-ppsspp check-pcsx2
 
 ##@ Começo
 
@@ -142,6 +143,35 @@ home: ## Pasta do ES-DE local (links pro ~/ES-DE, regras próprias)
 run: wrappers home ## Abre o ES-DE compilado com os emuladores compilados
 	@mountpoint -q $(GAMES) || echo "⚠️  $(GAMES) não está montado: make arkflix-mount no solomon"
 	ESDE_APPDATA_DIR=$(ESDE_DIR) $(PREFIX)/bin/es-de
+
+##@ Validar
+
+# CASOS=nes snes ... restringe os cores testados (padrão: todos + retroarch)
+check: ## Valida tudo: cores com jogo de verdade, ES-DE, PPSSPP, PCSX2
+	@$(MAKE) --no-print-directory -k check-cores check-es-de check-ppsspp check-pcsx2 \
+	  && echo "✅ check passou" || { echo "❌ check falhou (detalhe acima)"; exit 1; }
+
+check-cores: $(BUILD)/coretest ## Cada core roda um jogo seu sem janela (CASOS=...)
+	python3 -I tests/check.py $(CASOS)
+
+check-update: $(BUILD)/coretest ## Igual ao check-cores, e grava o resultado como baseline
+	python3 -I tests/check.py --update $(CASOS)
+
+check-es-de: home ## ES-DE abre a versão e as regras de busca apontam pra binário existente
+	$(PREFIX)/bin/es-de --version
+	python3 -I tests/check_esde.py $(ESDE_DIR)/custom_systems/es_find_rules.xml
+
+check-ppsspp: ## Suíte oficial do PPSSPP (pspautotests) + testes unitários
+	ln -sfn $(BUILD)/ppsspp src/ppsspp/build-arkflix
+	cd src/ppsspp && python3 test.py
+	cd $(BUILD)/ppsspp && ./PPSSPPUnitTest ALL
+
+check-pcsx2: ## Testes unitários do PCSX2
+	ctest --test-dir $(BUILD)/pcsx2 --output-on-failure -j $(JOBS)
+
+$(BUILD)/coretest: tests/coretest.c
+	@mkdir -p $(BUILD)
+	cc -O2 -Wall -Wextra -I src/retroarch/libretro-common/include -o $@ $< -ldl
 
 ##@ Fonte
 
