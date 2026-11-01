@@ -13,5 +13,16 @@ Leia o [README](README.md) antes. Resumo do que importa:
 - Não mexa nas pastas dos Flatpaks (`~/.var/app/...`) nem no `~/ES-DE` além do
   que o `make home` já faz: são os saves e a config reais do dono.
 - `make deps` usa sudo: peça pro dono rodar (`! make deps`).
-- Commit: Conventional Commits em português, 72 colunas, sem Co-Authored-By.
-  Um commit por mudança lógica.
+
+## Git: commit + push sempre
+
+Toda iteração que mudar arquivo termina com commit e push. Sem perguntar.
+
+- Antes de responder: `git status`, `git add` só do que você mudou, commit,
+  `git push` no `master`. Nada de `git add -A` às cegas.
+- Mudou fonte em `src/`? `make patch-save` e commite o `patches/*.patch`, não o
+  submodule. Bump de versão de submodule = commit próprio.
+- Conventional Commits em português, imperativo, 72 colunas por linha, sem emoji,
+  sem Co-Authored-By. Um commit por mudança lógica.
+- Push falhou? Diga ao dono. Nunca `--force`.
+- `make release` publica no GitHub: só quando o dono pedir.
