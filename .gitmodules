@@ -3,11 +3,6 @@
 	path = src/retroarch
 	url = https://github.com/libretro/RetroArch.git
 	ignore = untracked
-[submodule "src/es-de"]
-	path = src/es-de
-	url = https://gitlab.com/es-de/emulationstation-de.git
-	shallow = true
-	ignore = untracked
 [submodule "src/pcsx2"]
 	path = src/pcsx2
 	url = https://github.com/PCSX2/pcsx2.git
