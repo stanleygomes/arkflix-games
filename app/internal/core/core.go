@@ -28,6 +28,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/input"
 	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
 	"github.com/stanleygomes/arkflix-games/app/internal/library"
+	"github.com/stanleygomes/arkflix-games/app/internal/lists"
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/saves"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
@@ -138,6 +139,7 @@ type Service struct {
 	readyMu sync.Once
 
 	hist   *history.Log
+	lists  *lists.Store
 	thumbs *thumbs.Store
 
 	mu      sync.Mutex
@@ -180,6 +182,7 @@ func New(opt Options) (*Service, error) {
 	}
 	s := &Service{opt: opt, inputs: input.Store{Dir: store.Dir()}, ready: make(chan struct{}), thumbs: covers, tasks: map[string]bool{}}
 	s.hist = &history.Log{Path: filepath.Join(store.Dir(), "sessions.jsonl"), MinPlay: opt.MinPlay}
+	s.lists = &lists.Store{Path: filepath.Join(store.Dir(), "lists.json")}
 	sessions, err := s.hist.All()
 	if err != nil {
 		return nil, err
@@ -289,6 +292,7 @@ type Boot struct {
 	RetroPad []input.Button    `json:"retroPad"`
 	Pads     []gamepad.Pad     `json:"pads"`
 	Running  string            `json:"running"`
+	Lists    []lists.List      `json:"lists"`
 }
 
 // Bootstrap devolve o estado inicial.
@@ -299,7 +303,9 @@ func (s *Service) Bootstrap() (Boot, error) {
 		Games: s.views(), Settings: s.opt.Store.Settings(), Input: m, RetroPad: input.RetroPad,
 		Pads: s.Pads(), Running: s.Running(),
 	}
-	return b, nil
+	var err error
+	b.Lists, err = s.lists.All()
+	return b, err
 }
 
 // Ready é chamado pela interface depois de desenhar a primeira tela.
@@ -728,4 +734,24 @@ func (s *Service) UpdateCovers(all bool) error {
 		return errors.New("as capas já estão sendo baixadas")
 	}
 	return nil
+}
+
+// Lists devolve as listas pessoais.
+func (s *Service) Lists() ([]lists.List, error) { return s.lists.All() }
+
+// CreateList cria uma lista vazia.
+func (s *Service) CreateList(name string) (lists.List, error) { return s.lists.Create(name) }
+
+// RenameList troca o nome da lista.
+func (s *Service) RenameList(id, name string) (lists.List, error) { return s.lists.Rename(id, name) }
+
+// DeleteList apaga a lista (os jogos continuam na biblioteca).
+func (s *Service) DeleteList(id string) error { return s.lists.Delete(id) }
+
+// SetInList põe ou tira o jogo da lista.
+func (s *Service) SetInList(id, gameID string, in bool) (lists.List, error) {
+	if _, _, err := s.find(gameID); err != nil {
+		return lists.List{}, err
+	}
+	return s.lists.Set(id, gameID, in)
 }

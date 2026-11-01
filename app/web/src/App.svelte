@@ -2,6 +2,7 @@
   import { onMount, tick } from 'svelte'
   import ConfirmDialog from './components/ConfirmDialog.svelte'
   import Playing from './components/Playing.svelte'
+  import PromptDialog from './components/PromptDialog.svelte'
   import Tasks from './components/Tasks.svelte'
   import Toasts from './components/Toasts.svelte'
   import { api, on } from './lib/api'
@@ -31,6 +32,7 @@
         input: boot.input,
         retroPad: boot.retroPad,
         pads: boot.pads ?? [],
+        lists: boot.lists ?? [],
         ready: true,
       })
       if (boot.pads?.length) app.family = boot.pads[0].family
@@ -119,6 +121,7 @@
 <Tasks />
 <Toasts />
 <ConfirmDialog />
+<PromptDialog />
 
 <style>
   .fatal,

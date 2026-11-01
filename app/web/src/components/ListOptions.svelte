@@ -15,6 +15,7 @@
     filters = [],
     onfilter,
     onclear,
+    extra = [],
   }: {
     sort: string
     onsort: (key: string) => void
@@ -23,6 +24,7 @@
     filters?: string[]
     onfilter?: (id: string) => void
     onclear?: () => void
+    extra?: { label: string; danger?: boolean; onclick: () => void }[]
   } = $props()
 
   $effect(() => {
@@ -70,6 +72,13 @@
         </div>
       </fieldset>
     {/each}
+    {#if extra.length}
+      <div class="actions extra">
+        {#each extra as x (x.label)}
+          <button class="btn" class:danger={x.danger} data-nav onclick={x.onclick}>{x.label}</button>
+        {/each}
+      </div>
+    {/if}
     <div class="actions">
       {#if filters.length}
         <button class="btn" data-nav onclick={() => onclear?.()}>Limpar filtros ({filters.length})</button>
@@ -149,6 +158,11 @@
     display: flex;
     gap: 0.8rem;
     justify-content: flex-end;
+  }
+  .actions.extra {
+    justify-content: flex-start;
+    border-top: 2px dashed color-mix(in srgb, var(--text) 25%, transparent);
+    padding-top: 0.8rem;
   }
   .dot {
     width: 0.9rem;

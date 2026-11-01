@@ -33,6 +33,7 @@ export function sourceTitle(source: string): string {
   const [kind, id] = source.split(':')
   if (kind === 'system') return system(id)?.name ?? id
   if (kind === 'collection') return collection(id)?.label ?? id
+  if (kind === 'list') return app.lists.find((l) => l.id === id)?.name ?? 'Lista'
   return id
 }
 
@@ -42,6 +43,11 @@ export function sourceGames(source: string): Game[] {
   if (kind === 'collection') {
     const c = collection(id)
     return c ? app.games.filter(c.pick) : []
+  }
+  if (kind === 'list') {
+    // jogo apagado do disco some da lista sem erro
+    const ids = new Set(app.lists.find((l) => l.id === id)?.games ?? [])
+    return app.games.filter((g) => ids.has(g.id))
   }
   return []
 }

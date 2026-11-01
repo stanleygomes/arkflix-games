@@ -130,6 +130,13 @@ export interface PadEvent {
   source?: string
 }
 
+export interface GameList {
+  id: string
+  name: string
+  games: string[]
+  created: number
+}
+
 export interface Boot {
   version: string
   mode: 'desktop' | 'web'
@@ -140,6 +147,7 @@ export interface Boot {
   retroPad: RetroPadButton[]
   pads: Pad[]
   running: string
+  lists: GameList[]
 }
 
 export interface GameEvent {

@@ -1,5 +1,5 @@
 // Estado global da interface (Svelte 5 runes).
-import type { Family, Game, GameEvent, Mapping, Pad, Settings, System, RetroPadButton } from './types'
+import type { Family, Game, GameEvent, GameList, Mapping, Pad, Settings, System, RetroPadButton } from './types'
 
 export type Screen =
   | { name: 'home' }
@@ -24,6 +24,15 @@ export interface Confirm {
   resolve: (v: boolean) => void
 }
 
+export interface Prompt {
+  title: string
+  value: string
+  ok: string
+  error: string
+  submit: (v: string) => Promise<string | null>
+  resolve: (v: string | null) => void
+}
+
 export const app = $state({
   ready: false,
   version: '',
@@ -39,6 +48,8 @@ export const app = $state({
   playing: null as GameEvent | null,
   toasts: [] as Toast[],
   confirm: null as Confirm | null,
+  prompt: null as Prompt | null,
+  lists: [] as GameList[],
   homeTab: 'home',
   selected: '',
   error: '',
@@ -92,4 +103,17 @@ export function putGame(g: Game) {
 /** Família de controle pros símbolos de botão (genérico usa os do Xbox). */
 export function glyphFamily(): Family {
   return app.family === 'generic' ? 'xbox' : app.family
+}
+
+/** Pede um texto (com teclado na tela). submit valida/salva: devolve erro ou null. */
+export function prompt(title: string, value: string, ok: string, submit: (v: string) => Promise<string | null>): Promise<string | null> {
+  return new Promise((resolve) => {
+    app.prompt = { title, value, ok, error: '', submit, resolve }
+  })
+}
+
+export function putList(l: GameList) {
+  const i = app.lists.findIndex((x) => x.id === l.id)
+  if (i >= 0) app.lists[i] = l
+  else app.lists.push(l)
 }

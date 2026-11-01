@@ -12,7 +12,8 @@
   import { play } from '../lib/sound'
   import { filtersOf, sortOf, sourceGames, sourceTitle } from '../lib/sources'
   import { focusEl } from '../lib/nav'
-  import { app, system, toast } from '../lib/state.svelte'
+  import { api } from '../lib/api'
+  import { app, back, confirm, prompt, putList, system, toast } from '../lib/state.svelte'
   import type { Settings } from '../lib/types'
   import { saveSoon } from './settings/save.svelte'
 
@@ -43,6 +44,42 @@
   const toggleFilter = (id: string) => saveUI(sort, filters.includes(id) ? filters.filter((f) => f !== id) : [...filters, id])
   const clearFilters = () => saveUI(sort, [])
 
+  const listId = $derived(source.startsWith('list:') ? source.slice(5) : '')
+  const extra = $derived(
+    listId
+      ? [
+          { label: 'Renomear lista', onclick: renameList },
+          { label: 'Apagar lista', danger: true, onclick: deleteList },
+        ]
+      : [],
+  )
+
+  async function renameList() {
+    options = false
+    await prompt('Renomear lista', title, 'Salvar', async (name) => {
+      try {
+        putList(await api.renameList(listId, name))
+        return null
+      } catch (err) {
+        return (err as Error).message
+      }
+    })
+  }
+
+  async function deleteList() {
+    options = false
+    if (!(await confirm(`Apagar a lista "${title}"? Os jogos continuam na biblioteca.`, 'Apagar', true))) return
+    try {
+      await api.deleteList(listId)
+      app.lists = app.lists.filter((l) => l.id !== listId)
+      if (app.homeTab === source) app.homeTab = 'home'
+      toast('Lista apagada', 'ok', 2500)
+      back()
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
   $effect(() =>
     pushHandler((a) => {
       if (a === 'fav') {
@@ -59,6 +96,7 @@
         }
         return true
       }
+      if (app.prompt || app.confirm) return false
       if (a === 'menu' && !options) {
         options = true
         play('accept')
@@ -104,7 +142,7 @@
 </div>
 
 {#if options}
-  <ListOptions {sort} onsort={setSort} onclose={() => (options = false)} {groups} {filters} onfilter={toggleFilter} onclear={clearFilters} />
+  <ListOptions {sort} onsort={setSort} onclose={() => (options = false)} {groups} {filters} onfilter={toggleFilter} onclear={clearFilters} {extra} />
 {/if}
 
 <style>

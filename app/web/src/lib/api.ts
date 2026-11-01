@@ -5,6 +5,7 @@
 import type {
   Boot,
   Game,
+  GameList,
   ImportItem,
   ImportResult,
   InputResult,
@@ -105,6 +106,11 @@ export const api = {
   pads: () => call<Pad[]>('Pads'),
   scripts: () => call<ScriptsInfo>('Scripts'),
   updateCovers: (all = false) => call<void>('UpdateCovers', all),
+  lists: () => call<GameList[]>('Lists'),
+  createList: (name: string) => call<GameList>('CreateList', name),
+  renameList: (id: string, name: string) => call<GameList>('RenameList', id, name),
+  deleteList: (id: string) => call<void>('DeleteList', id),
+  setInList: (id: string, game: string, inList: boolean) => call<GameList>('SetInList', id, game, inList),
   toggleFullscreen: () => call<void>('ToggleFullscreen'),
   quit: () => call<void>('Quit'),
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte'
   import GameArt from '../components/GameArt.svelte'
+  import ListPicker from '../components/ListPicker.svelte'
   import HelpBar from '../components/HelpBar.svelte'
   import Icon from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
@@ -19,6 +20,8 @@
   let listing = $state<Listing | null>(null)
   let loadError = $state('')
   let stamp = $state(Date.now())
+  let picking = $state(false)
+  const inLists = $derived(app.lists.filter((l) => l.games.includes(id)).length)
 
   async function load() {
     try {
@@ -82,6 +85,7 @@
 
   $effect(() =>
     pushHandler((a) => {
+      if (picking) return false
       if (a === 'fav') {
         const stateId = current()?.dataset.state
         const st = listing?.states.find((s) => s.id === stateId)
@@ -122,6 +126,9 @@
           {/if}
           <button class="btn" data-nav aria-pressed={g.favorite} onclick={toggleFav}>
             <Icon name="star" /> {g.favorite ? 'Favorito' : 'Favoritar'}
+          </button>
+          <button class="btn" data-nav aria-haspopup="dialog" onclick={() => (picking = true)}>
+            <Icon name="plus" /> Listas{inLists ? ` (${inLists})` : ''}
           </button>
           <button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>
         </div>
@@ -181,6 +188,9 @@
       ]}
     />
   </div>
+  {#if picking}
+    <ListPicker gameId={id} onclose={() => (picking = false)} />
+  {/if}
 {:else}
   <main class="layout">
     <p>Jogo não encontrado.</p>

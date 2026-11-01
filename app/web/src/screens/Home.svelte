@@ -15,10 +15,11 @@
   import { app, go, system, toast } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
 
-  type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'system' }
+  type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'list' | 'system' }
   const tabs = $derived<Tab[]>([
     { slug: 'home', short: 'Início', name: 'Início', kind: 'home' },
     ...activeCollections(app.games).map((c) => ({ slug: `collection:${c.id}`, short: c.short, name: c.label, kind: 'collection' as const })),
+    ...app.lists.map((l) => ({ slug: `list:${l.id}`, short: l.name, name: `Lista ${l.name}`, kind: 'list' as const })),
     ...app.systems
       .filter((s) => app.games.some((g) => g.system === s.slug))
       .map((s) => ({ slug: s.slug, short: s.short, name: s.name, kind: 'system' as const })),
@@ -26,7 +27,7 @@
 
   type Row = { id: string; title: string; games: Game[]; source?: string }
   const rows = $derived.by((): Row[] => {
-    if (app.homeTab.startsWith('collection:')) {
+    if (app.homeTab.startsWith('collection:') || app.homeTab.startsWith('list:')) {
       const games = sortGames(sourceGames(app.homeTab), sortOf(app.homeTab))
       return [{ id: app.homeTab, title: `${sourceTitle(app.homeTab)} · ${games.length} jogo${games.length === 1 ? '' : 's'}`, games, source: app.homeTab }]
     }
@@ -54,7 +55,7 @@
   // paleta: a do console da aba; no Início, a do jogo selecionado
   $effect(() => {
     if (app.settings?.a11y.highContrast) return applyPalette(highContrastPalette)
-    const sys = app.homeTab === 'home' || app.homeTab.startsWith('collection:') ? selSystem : system(app.homeTab)
+    const sys = app.homeTab === 'home' || app.homeTab.includes(':') ? selSystem : system(app.homeTab)
     applyPalette(sys?.palette ?? homePalette)
   })
 
@@ -180,7 +181,7 @@
       {#each tabs as t (t.slug)}
         <button
           class="tab pixel"
-          class:collection={t.kind === 'collection'}
+          class:collection={t.kind === 'collection' || t.kind === 'list'}
           class:first-system={t.kind === 'system' && tabs.find((x) => x.kind === 'system') === t}
           data-nav
           data-tab={t.slug}
