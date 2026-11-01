@@ -73,6 +73,8 @@ es-de: ## Frontend ES-DE
 	  -DAPPLICATION_UPDATER=OFF
 	cmake --build $(BUILD)/es-de -j $(JOBS)
 	cmake --install $(BUILD)/es-de
+	# o ES-DE também procura resources/ ao lado do binário: release roda em qualquer pasta
+	ln -sfn ../share/es-de/resources $(PREFIX)/bin/resources
 
 retroarch: ## RetroArch (build dentro de src/retroarch, é o jeito dele)
 	cd src/retroarch && ./configure --prefix=$(PREFIX) --disable-update_cores \
@@ -176,9 +178,10 @@ $(BUILD)/coretest: tests/coretest.c
 
 ##@ Release
 
-# Pacote = só o que o make run usa (sem objetos de compilação). Os caminhos são
-# absolutos: o release-install espera o repo neste mesmo lugar.
+# Pacote = só o que o make run usa (sem objetos de compilação). Roda em
+# qualquer pasta: os lançadores são gerados na instalação.
 DIST := $(BUILD)/dist
+GH_REPO ?= stanleygomes/arkflix-games
 RELEASE_FILES := prefix ppsspp/PPSSPPSDL ppsspp/assets pcsx2/bin coretest
 
 release-notes: ## Mostra a próxima versão e o changelog (o CI publica no push)
@@ -197,11 +200,11 @@ release-binaries: ## Valida, empacota o build e anexa na release da tag do HEAD
 	gh release upload $$tag $(DIST)/$$file $(DIST)/$$file.sha256 --clobber; \
 	echo "✅ binários anexados na $$tag"
 
-release-install: ## Baixa um release pronto pro build/ (VERSION=vX, padrão: o último)
-	@rm -rf $(DIST)/download; mkdir -p $(DIST)/download
-	gh release download $(VERSION) -D $(DIST)/download -p '*.tar.gz' -p '*.sha256'
-	cd $(DIST)/download && sha256sum -c *.sha256
+release-install: ## Baixa os binários do último release que tiver (VERSION=vX fixa)
+	@bin/release-download.sh "$(GH_REPO)" "$(VERSION)" "$(DIST)/download"
 	tar -C $(BUILD) -xzf $(DIST)/download/*.tar.gz
+	git submodule update --init --depth 1 src/retroarch-assets \
+	  src/retroarch-joypad-autoconfig src/libretro-core-info
 	$(MAKE) --no-print-directory wrappers home
 	@echo "✅ pronto: make run"
 
