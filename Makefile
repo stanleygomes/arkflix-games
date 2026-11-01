@@ -183,8 +183,8 @@ check-es-de: home ## ES-DE abre a versão e as regras de busca apontam pra biná
 
 check-ppsspp: ## Suíte oficial do PPSSPP (pspautotests) + testes unitários
 	ln -sfn $(BUILD)/ppsspp src/ppsspp/build-arkflix
-	cd src/ppsspp && python3 test.py
-	cd $(BUILD)/ppsspp && ./PPSSPPUnitTest ALL
+	cd src/ppsspp && python3 test.py -g --graphics=software
+	cd src/ppsspp && $(BUILD)/ppsspp/PPSSPPUnitTest ALL
 
 check-pcsx2: ## Testes unitários do PCSX2
 	cmake --build $(BUILD)/pcsx2 --target unittests -j $(JOBS)

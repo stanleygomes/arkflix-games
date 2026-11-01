@@ -216,8 +216,8 @@ O `check-cores` usa um frontend libretro mínimo (`tests/coretest.c`) que
 carrega o core, abre o jogo e pressiona START em intervalos fixos, o que torna o
 resultado reproduzível. Um caso falha quando o core não carrega o jogo, trava,
 encerra com erro, não produz imagem, termina com a tela de uma única cor ou
-mantém a imagem estática. O teste também executa o RetroArch completo, com
-drivers nulos, por 300 frames.
+mantém a imagem estática. O teste também executa o RetroArch completo, sem
+janela, por 5 segundos, e verifica que ele carrega o jogo e encerra normalmente.
 
 Cada caso salva o último frame em `build/check/<caso>.png` e compara o hash
 dele com `tests/baseline.json`. Uma diferença aparece como "mudou", sem falhar

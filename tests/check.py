@@ -13,6 +13,7 @@ Uso: python3 tests/check.py [--update] [caso ...]
 
 import json
 import os
+import signal
 import struct
 import subprocess
 import sys
@@ -139,7 +140,13 @@ def run_case(name: str, baseline: dict) -> tuple[str, str, dict]:
 
 
 def retroarch_null() -> tuple[str, str]:
-  """RetroArch inteiro (frontend + core), sem vídeo nem som, 300 frames."""
+  """RetroArch inteiro (frontend + core + jogo), sem janela nem som.
+
+  Com vídeo null o RetroArch avisa o core que o vídeo está desligado, o core
+  não entrega frame e o --max-frames nunca dispara. Então: abre, roda alguns
+  segundos e recebe SIGINT, que o RetroArch trata como fechar a janela. Passa
+  se carregou o jogo, continuou vivo e saiu com 0.
+  """
   exe = BUILD / "prefix" / "bin" / "retroarch"
   so = CORES / "snes9x_libretro.so"
   src = ROMS / CASES["snes"][1]
@@ -147,6 +154,7 @@ def retroarch_null() -> tuple[str, str]:
     return "falhou", "retroarch ou snes9x não compilado"
   if not src.exists():
     return "pulado", "jogo do teste não achado (mount montado?)"
+  log = OUT / "retroarch.log"
   with tempfile.TemporaryDirectory(prefix="check-ra-") as tmp:
     tmp = Path(tmp)
     cfg = tmp / "retroarch.cfg"
@@ -154,17 +162,34 @@ def retroarch_null() -> tuple[str, str]:
       'video_driver = "null"\naudio_driver = "null"\ninput_driver = "null"\n'
       f'savefile_directory = "{tmp}"\nsavestate_directory = "{tmp}"\n'
       f'system_directory = "{tmp}"\nconfig_save_on_exit = "false"\n'
+      'pause_nonactive = "false"\nhistory_list_enable = "false"\n'
+      'ui_companion_enable = "false"\n'
     )
     game = game_file("snes9x", src, tmp)
-    cmd = [str(exe), "--config", str(cfg), "-L", str(so), str(game), "--max-frames=300"]
-    try:
-      res = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT)
-    except subprocess.TimeoutExpired:
-      return "falhou", f"travou: passou de {TIMEOUT}s"
-  (OUT / "retroarch.log").write_text(res.stdout + res.stderr)
-  if res.returncode != 0:
-    return "falhou", f"exit {res.returncode}, ver build/check/retroarch.log"
-  return "ok", "abriu, rodou 300 frames e fechou"
+    cmd = [str(exe), "--verbose", "--config", str(cfg), "-L", str(so), str(game)]
+    # pastas padrão (playlists, histórico) no tmp, não no ~/.config do dono
+    env = {**os.environ, "XDG_CONFIG_HOME": str(tmp)}
+    with log.open("w") as out:
+      proc = subprocess.Popen(
+        cmd, stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, env=env
+      )
+      try:
+        proc.wait(timeout=5)
+        return "falhou", f"fechou sozinho (exit {proc.returncode}), ver retroarch.log"
+      except subprocess.TimeoutExpired:
+        pass  # vivo depois de 5 s: bom sinal
+      proc.send_signal(signal.SIGINT)
+      try:
+        code = proc.wait(timeout=30)
+      except subprocess.TimeoutExpired:
+        proc.kill()
+        return "falhou", "não fechou com SIGINT em 30 s, ver build/check/retroarch.log"
+  text = log.read_text(errors="replace")
+  if "SET_GEOMETRY" not in text and "[Core] Geometry" not in text:
+    return "falhou", "não carregou o jogo, ver build/check/retroarch.log"
+  if code != 0:
+    return "falhou", f"exit {code} ao fechar, ver build/check/retroarch.log"
+  return "ok", "carregou o jogo, rodou 5 s e fechou limpo"
 
 
 def main() -> int:
