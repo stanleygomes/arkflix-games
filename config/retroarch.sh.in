@@ -1,5 +1,7 @@
 #!/bin/sh
 # RetroArch compilado. Config própria (a do Flatpak aponta pra /app/...), mas
 # saves, states e BIOS nas pastas do Flatpak: o backup do solomon continua valendo.
+# pastas padrão do RetroArch (playlists, histórico) em home/, não no ~/.config
+export XDG_CONFIG_HOME="@STATE@/retroarch-xdg"
 exec "@PREFIX@/bin/retroarch" --config "@STATE@/retroarch.cfg" \
   --appendconfig "@STATE@/retroarch-paths.cfg" "$@"
