@@ -30,6 +30,8 @@ type Info struct {
 	TitleShot string `json:"-"`
 	// Manual em PDF (pasta manuals/ ou mídia do ES-DE).
 	Manual string `json:"-"`
+	// Video curto do jogo (pasta videos/ ou mídia do ES-DE).
+	Video string `json:"-"`
 }
 
 type gameList struct {
@@ -154,5 +156,27 @@ func (l *Local) Lookup(g library.Game) Info {
 			break
 		}
 	}
+	videos := []string{filepath.Join(g.Root, g.Folder, "videos")}
+	if esde := l.esde(); esde != "" {
+		videos = append(videos, filepath.Join(esde, "downloaded_media", g.Folder, "videos"), filepath.Join(esde, "downloaded_media", g.System, "videos"))
+	}
+	for _, dir := range videos {
+		if info.Video = findFile(dir, stem, videoExts); info.Video != "" {
+			break
+		}
+	}
 	return info
+}
+
+var videoExts = []string{".mp4", ".webm", ".mkv", ".m4v"}
+
+// findFile procura <dir>/<stem><ext> na ordem das extensões.
+func findFile(dir, stem string, exts []string) string {
+	for _, ext := range exts {
+		path := filepath.Join(dir, stem+ext)
+		if st, err := os.Stat(path); err == nil && !st.IsDir() {
+			return path
+		}
+	}
+	return ""
 }

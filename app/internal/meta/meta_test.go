@@ -46,6 +46,9 @@ func TestCoverNextToRoms(t *testing.T) {
 	if filepath.Base(filepath.Dir(info.Cover)) != "covers" || info.Name != "" {
 		t.Fatalf("capa da pasta covers/: %+v", info)
 	}
+	if filepath.Base(filepath.Dir(info.Video)) != "videos" {
+		t.Fatalf("vídeo da pasta videos/: %+v", info)
+	}
 }
 
 func TestRefresh(t *testing.T) {

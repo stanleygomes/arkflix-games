@@ -131,7 +131,8 @@ reconhecido pelo CRC da ROM (cartuchos), pelo serial do disco (PS1, PS2, PSP) ou
 pelo nome do zip (arcade), usando o banco do libretro, e tudo fica em cache em
 `~/.cache/arkflix-games`. Uma imagem com o nome do jogo em
 `<pasta>/<console>/covers/` tem prioridade (prints em `screenshots/` e manual em
-`manuals/<nome>.pdf` também entram), assim como os `gamelist.xml` e a
+`manuals/<nome>.pdf` também entram, e um vídeo em `videos/<nome>.mp4` toca
+mudo no fundo do Início depois de 2 s parado no jogo), assim como os `gamelist.xml` e a
 mídia de uma instalação antiga do ES-DE em `~/ES-DE`, se existir. Sem capa, o app
 desenha o cartucho, disco ou UMD do console com o título.
 

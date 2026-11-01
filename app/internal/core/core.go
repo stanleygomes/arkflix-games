@@ -105,6 +105,7 @@ type GameView struct {
 	Snap       string   `json:"snap"`
 	TitleShot  string   `json:"titleShot"`
 	Manual     string   `json:"manual"`
+	Video      string   `json:"video"`
 	Favorite   bool     `json:"favorite"`
 	LastPlayed int64    `json:"lastPlayed"`
 	PlayTime   int64    `json:"playTime"`
@@ -275,6 +276,9 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	}
 	if e.info.Manual != "" {
 		v.Manual = "/media/manual/" + g.ID
+	}
+	if e.info.Video != "" {
+		v.Video = "/media/video/" + g.ID
 	}
 	return v
 }
@@ -652,9 +656,9 @@ func (s *Service) serveMedia(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", ctype)
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Write(data)
-	case "cover", "snap", "title", "manual":
+	case "cover", "snap", "title", "manual", "video":
 		e, _, err := s.find(parts[1])
-		path := map[string]string{"cover": e.info.Cover, "snap": e.info.Snap, "title": e.info.TitleShot, "manual": e.info.Manual}[parts[0]]
+		path := map[string]string{"cover": e.info.Cover, "snap": e.info.Snap, "title": e.info.TitleShot, "manual": e.info.Manual, "video": e.info.Video}[parts[0]]
 		if err != nil || path == "" {
 			http.NotFound(w, r)
 			return

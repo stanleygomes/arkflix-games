@@ -2,6 +2,7 @@
   import { tick } from 'svelte'
   import GameArt from '../components/GameArt.svelte'
   import HelpBar from '../components/HelpBar.svelte'
+  import HeroVideo from '../components/HeroVideo.svelte'
   import Icon from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
   import { api } from '../lib/api'
@@ -176,6 +177,7 @@
 
 <div class="home">
   <div class="backdrop" style:background-image={hero ? `url("${hero}")` : 'none'} aria-hidden="true"></div>
+  <HeroVideo game={selected} />
   <TopBar>
     <nav class="tabs" aria-label="Consoles">
       {#each tabs as t (t.slug)}

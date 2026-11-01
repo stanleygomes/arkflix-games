@@ -41,6 +41,7 @@ export interface Game {
   snap: string
   titleShot: string
   manual?: string
+  video?: string
   favorite: boolean
   lastPlayed: number
   playTime: number
@@ -75,6 +76,8 @@ export interface Accessibility {
   soundVolume: number
   music: boolean
   musicVolume: number
+  videos: boolean
+  videoSound: boolean
 }
 
 export interface SaveDirs {

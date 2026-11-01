@@ -3,6 +3,7 @@ package fixture
 import (
 	"archive/zip"
 	"bytes"
+	_ "embed"
 	"image"
 	"image/color"
 	"image/png"
@@ -13,6 +14,11 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
+
+// Clip é um vídeo webm de 2 s (96x64, sem som) pros testes de vídeo.
+//
+//go:embed testdata/clip.webm
+var Clip []byte
 
 // Env é uma instalação falsa completa: pasta pessoal, duas pastas de jogos,
 // mídia do ES-DE, saves dos três emuladores e lançadores que só registram a chamada.
@@ -136,6 +142,7 @@ func NewEnv(root string) Env {
 	put(filepath.Join(e.ESDE, "downloaded_media", "snes", "covers", "Super Mario World (U) [!].png"), CoverPNG(color.RGBA{R: 220, G: 40, B: 40, A: 255}))
 	put(filepath.Join(e.ESDE, "downloaded_media", "snes", "manuals", "Super Mario World (U) [!].pdf"), []byte("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"))
 	put(filepath.Join(e.Local, "snes", "screenshots", "Super Mario World (U) [!].png"), CoverPNG(color.RGBA{R: 60, G: 160, B: 60, A: 255}))
+	put(filepath.Join(e.Local, "genesis", "videos", "Sonic The Hedgehog 2 (World) (Rev A).webm"), Clip)
 
 	put(filepath.Join(e.Inbox, "Tetris DX.gbc"), []byte("GBC"))
 	put(filepath.Join(e.Inbox, "Metal Slug X (USA).zip"), ZipBytes(map[string]string{

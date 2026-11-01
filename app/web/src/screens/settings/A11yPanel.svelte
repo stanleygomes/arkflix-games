@@ -19,6 +19,8 @@
     { key: 'pixelTitles', label: 'Títulos em fonte pixel', help: 'Desligado, todos os textos usam a fonte de leitura fácil.' },
     { key: 'sounds', label: 'Sons de navegação', help: 'Bipes 16-bit ao mover, confirmar e voltar.' },
     { key: 'music', label: 'Música de fundo', help: 'Trilha chiptune baixa nos menus; para durante o jogo.' },
+    { key: 'videos', label: 'Vídeo dos jogos', help: 'No Início, o vídeo do jogo toca no fundo depois de 2 s. Nunca com "Reduzir animações".' },
+    { key: 'videoSound', label: 'Som dos vídeos', help: 'Desligado, os vídeos tocam mudos.' },
   ]
 </script>
 

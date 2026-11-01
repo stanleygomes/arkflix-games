@@ -30,6 +30,8 @@ type Accessibility struct {
 	SoundVolume  int     `json:"soundVolume"`
 	Music        bool    `json:"music"`
 	MusicVolume  int     `json:"musicVolume"`
+	Videos       bool    `json:"videos"`     // vídeo do jogo no destaque
+	VideoSound   bool    `json:"videoSound"` // com som (padrão: mudo)
 }
 
 // Covers liga o download de capas do acervo aberto do libretro.
@@ -93,6 +95,7 @@ func Defaults(home, bin, cores string) Settings {
 		A11y: Accessibility{
 			FontScale: 1, Scanlines: true, PixelTitles: true,
 			Sounds: true, SoundVolume: 60, Music: true, MusicVolume: 25,
+			Videos: true,
 		},
 		Saves: SaveDirs{
 			RetroArchSaves:  filepath.Join(ra, "saves"),
