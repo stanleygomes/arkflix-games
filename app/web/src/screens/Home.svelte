@@ -11,9 +11,10 @@
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { toggleFavorite } from '../lib/actions'
+  import { downloadGame, downloads } from '../lib/downloads.svelte'
   import { pickRandom, sortGames } from '../lib/library'
   import { activeCollections, sortOf, sourceGames, sourceTitle } from '../lib/sources'
-  import { app, go, system, toast } from '../lib/state.svelte'
+  import { app, go, isKids, system, toast } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
 
   type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'list' | 'system' }
@@ -222,10 +223,17 @@
         </p>
         {#if selected.summary}<p class="summary">{selected.summary}</p>{/if}
         <div class="actions">
-          <button class="btn primary" data-nav data-nav-group="actions" onclick={() => launch(selected)}>
-            <Icon name="play" /> Jogar
-          </button>
-          {#if canResume}
+          {#if selected.remote}
+            <button class="btn primary" data-nav data-nav-group="actions" disabled={downloads[selected.id] !== undefined || isKids()} onclick={() => downloadGame(selected)}>
+              <Icon name="download" />
+              {downloads[selected.id] !== undefined ? `Baixando ${Math.round(downloads[selected.id] * 100)}%` : 'Baixar do servidor'}
+            </button>
+          {:else}
+            <button class="btn primary" data-nav data-nav-group="actions" onclick={() => launch(selected)}>
+              <Icon name="play" /> Jogar
+            </button>
+          {/if}
+          {#if canResume && !selected.remote}
             <button class="btn" data-nav data-nav-group="actions" onclick={() => launch(selected, 'auto')}>
               <Icon name="resume" /> Continuar
             </button>
@@ -260,12 +268,13 @@
                     data-nav
                     data-nav-inline="center"
                     data-game={g.id}
-                    aria-label={`${g.name}, ${sys?.short ?? g.system}${g.year ? `, ${g.year}` : ''}${g.favorite ? ', favorito' : ''}`}
+                    aria-label={`${g.name}, ${sys?.short ?? g.system}${g.year ? `, ${g.year}` : ''}${g.favorite ? ', favorito' : ''}${g.remote ? ', no servidor' : ''}`}
                     onfocus={() => (app.selected = g.id)}
                     onclick={() => go({ name: 'game', id: g.id })}
                   >
                     <GameArt game={g} system={sys} />
                     {#if g.favorite}<span class="badge" aria-hidden="true"><Icon name="star" /></span>{/if}
+                    {#if g.remote}<span class="badge cloud" aria-hidden="true"><Icon name="cloud" /></span>{/if}
                   </button>
                 </li>
               {/each}
@@ -485,6 +494,11 @@
     padding: 0.2rem;
     display: grid;
     place-items: center;
+  }
+  .badge.cloud {
+    right: auto;
+    left: -0.5rem;
+    background: var(--accent-2);
   }
   .empty {
     margin: auto;

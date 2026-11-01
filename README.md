@@ -147,6 +147,18 @@ jogo.
 rsync -a --update ~/.var/app/org.libretro.RetroArch/config/retroarch/saves/ /mnt/backup/saves/
 ```
 
+**Servidor RomM.** Em Configurações > Servidor, entre no seu
+[RomM](https://romm.app) (endereço, usuário e senha). A senha só é usada no
+login: o app cria um token próprio no RomM ("arkflix-games (<computador>)") e
+guarda só ele, em `~/.config/arkflix-games/romm.json` (permissão 600). Os jogos
+do servidor aparecem na biblioteca com um selo de nuvem e na coleção
+"Servidor"; "Baixar do servidor" copia o jogo pra `~/Games/roms/<console>/`
+(confere o espaço em disco antes). Os saves do RetroArch do perfil que conectou
+sincronizam sozinhos: antes de jogar, desce o que estiver mais novo no servidor;
+ao fechar, sobe o que mudou. Um arquivo daqui nunca é trocado por um mais velho.
+Saves de PSP e PS2 não sincronizam. Sem internet, os jogos baixados abrem
+normalmente. HTTP sem TLS só é aceito pra servidor nesta máquina.
+
 **Perfis.** Com mais de um perfil, o app abre em "Quem vai jogar?" (avatar em
 pixel art, cor e PIN opcional de 4 números). Cada perfil tem os próprios
 favoritos, listas, histórico, estatísticas, acessibilidade, mapeamento de

@@ -17,8 +17,10 @@ Leia o [README](README.md) antes. Resumo do que importa:
   Métodos exportados de `core.Service` são a API (Wails no desktop, HTTP no web):
   não exporte método que não deva ser chamado pela interface.
 - Fonte de jogos, metadados e saves entram por interface (`GameSource`,
-  `MetaProvider`, `SaveStore`). Hoje tudo é local, por pedido do dono; o servidor
-  vem depois. Não acople nada remoto nos pacotes locais.
+  `MetaProvider`, `SaveStore`). O servidor RomM fica em `internal/romm` (cliente)
+  e `internal/core/remote.go`; não acople nada remoto nos pacotes locais.
+- Nunca guarde senha: o login do RomM vira um token de dispositivo. Teste com o
+  RomM falso (`fixture.FakeRomM`, também em `/fake-romm` no `--fixture --test`).
 - Mudou o app? `make check-app` (Go com race, svelte-check, Vitest, Playwright
   com axe). Tela nova ou mudada = teste de ponta a ponta + `axe(page, ...)` nela.
 - Acessibilidade é requisito: contraste AA (paletas testadas no Go), nome

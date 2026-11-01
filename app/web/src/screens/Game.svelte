@@ -8,6 +8,7 @@
   import TopBar from '../components/TopBar.svelte'
   import { api, on } from '../lib/api'
   import { ago, bytes, dateTime, playTime } from '../lib/format'
+  import { downloadGame, downloads } from '../lib/downloads.svelte'
   import { pushHandler } from '../lib/input'
   import { current, focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
@@ -124,6 +125,7 @@
         <p class="system pixel">{sys?.name ?? g.system}</p>
         <h1 class="pixel">{g.name}</h1>
         <ul class="facts">
+          {#if g.remote}<li class="chip remote">No servidor</li>{/if}
           {#if g.rating}<li class="chip rating" aria-label={`Nota ${g.rating} de 5`}>{'★'.repeat(g.rating)}</li>{/if}
           {#if g.completed}<li class="chip done">Completo</li>{/if}
           {#if g.broken}<li class="chip broken">Quebrado</li>{/if}
@@ -138,7 +140,19 @@
         </ul>
         {#if g.summary}<p class="summary">{g.summary}</p>{/if}
         <div class="actions">
-          <button class="btn primary" data-nav data-nav-default onclick={() => launch()}><Icon name="play" /> Jogar do início</button>
+          {#if g.remote}
+            {#if downloads[g.id] !== undefined}
+              <p class="downloading" role="status"><Icon name="download" /> Baixando… {Math.round(downloads[g.id] * 100)}%</p>
+            {:else if isKids()}
+              <p class="muted">Este jogo está no servidor. Peça pra um adulto baixar.</p>
+            {:else}
+              <button class="btn primary" data-nav data-nav-default onclick={() => downloadGame(g)}>
+                <Icon name="download" /> Baixar do servidor ({bytes(g.size)})
+              </button>
+            {/if}
+          {:else}
+            <button class="btn primary" data-nav data-nav-default onclick={() => launch()}><Icon name="play" /> Jogar do início</button>
+          {/if}
           {#if auto}
             <button class="btn" data-nav onclick={() => launch('auto')}><Icon name="resume" /> Continuar de onde parei</button>
           {/if}
@@ -302,6 +316,17 @@
   .chip.done {
     color: var(--accent);
     border-color: currentColor;
+  }
+  .chip.remote {
+    color: var(--accent-2);
+    border-color: currentColor;
+  }
+  .downloading {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-weight: 700;
+    color: var(--accent);
   }
   .chip.broken {
     color: #ffb4b4;

@@ -149,7 +149,15 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Printf("arkflix-games %s em http://%s\n", version, ln.Addr())
-		log.Fatal(http.Serve(ln, httpapi.Handler(svc, broker, httpapi.Options{Assets: ui, Test: f.test, Pads: pads})))
+		handler := httpapi.Handler(svc, broker, httpapi.Options{Assets: ui, Test: f.test, Pads: pads})
+		if f.fixture != "" && f.test {
+			// RomM falso no mesmo endereço (testes de ponta a ponta do servidor)
+			mux := http.NewServeMux()
+			mux.Handle("/fake-romm/", http.StripPrefix("/fake-romm", fixture.NewFakeRomM()))
+			mux.Handle("/", handler)
+			handler = mux
+		}
+		log.Fatal(http.Serve(ln, handler))
 	}
 	os.Exit(runDesktop(store, pads, ui, f.smoke, emu))
 }

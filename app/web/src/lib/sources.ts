@@ -18,6 +18,7 @@ export const COLLECTIONS: Collection[] = [
   { id: 'most', label: 'Mais jogados', short: 'Mais jogados', pick: (g) => g.plays > 0, sort: 'plays' },
   { id: 'never', label: 'Nunca jogados', short: 'Nunca jogados', pick: (g) => !g.lastPlayed, sort: 'name' },
   { id: 'completed', label: 'Completos', short: 'Completos', pick: (g) => !!g.completed, sort: 'name' },
+  { id: 'server', label: 'No servidor', short: 'Servidor', pick: (g) => !!g.remote, sort: 'name' },
 ]
 
 export function collection(id: string): Collection | undefined {

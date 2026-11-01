@@ -118,6 +118,7 @@ type GameView struct {
 	Broken     bool     `json:"broken"`
 	Edited     bool     `json:"edited"`
 	KidsOK     bool     `json:"kidsOk"`
+	Remote     bool     `json:"remote"` // só no servidor (baixar antes de jogar)
 }
 
 // Options vem de quem inicia o app (main). Fonte, metadados e saves vazios
@@ -147,6 +148,8 @@ type entry struct {
 	info     meta.Info // auto + edição
 	edit     meta.Override
 	hasSaves bool
+	romID    int  // jogo no servidor RomM (0 = não está lá)
+	remote   bool // só no servidor: ainda não baixado
 }
 
 // Service é a API do app.
@@ -158,6 +161,7 @@ type Service struct {
 	over     *meta.Overrides
 	thumbs   *thumbs.Store
 	profiles *profiles.Store
+	remote   *remoteState
 
 	umu    sync.RWMutex
 	u      *user // perfil em uso
@@ -211,11 +215,16 @@ func New(opt Options) (*Service, error) {
 		return nil, err
 	}
 	s.u = u
+	s.remote = &remoteState{file: filepath.Join(store.Dir(), "romm.json"), dir: filepath.Join(opt.Cache, "romm")}
+	s.remote.load()
 	if opt.Pads != nil {
 		opt.Pads.Subscribe(func(e gamepad.Event) { s.opt.Emitter.Emit("pad", e) })
 		opt.Pads.OnPadsChanged(func(p []gamepad.Pad) { s.opt.Emitter.Emit("pads", p) })
 	}
 	s.scan()
+	if conn, _ := s.remote.snapshot(); conn != nil {
+		s.startRemoteRefresh() // catálogo em cache já aparece; o novo chega depois
+	}
 	return s, nil
 }
 
@@ -228,6 +237,7 @@ func (s *Service) scan() {
 		edit := s.over.Get(g.ID)
 		entries[i] = entry{game: g, auto: auto, info: edit.Apply(auto), edit: edit, hasSaves: s.hasSaves(g)}
 	}
+	entries = s.mergeRemote(entries)
 	s.mu.Lock()
 	s.entries = entries
 	s.mu.Unlock()
@@ -258,7 +268,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
 		Plays: s.cur().plays[g.ID], HasSaves: e.hasSaves, Developer: e.info.Developer,
 		Rating: e.edit.Rating, Completed: e.edit.Completed, Broken: e.edit.Broken, Edited: !e.edit.Empty(),
-		KidsOK: e.edit.KidsOK,
+		KidsOK: e.edit.KidsOK, Remote: e.remote,
 	}
 	if e.info.Name != "" {
 		v.Name = e.info.Name
@@ -415,6 +425,9 @@ func (s *Service) Play(id, stateID string) error {
 		return err
 	}
 	g := e.game
+	if e.remote {
+		return errors.New("este jogo está no servidor: baixe antes de jogar")
+	}
 	var resume *launcher.Resume
 	mode := "start"
 	switch stateID {
@@ -455,6 +468,17 @@ func (s *Service) Play(id, stateID string) error {
 	s.running = id
 	s.mu.Unlock()
 
+	if s.syncs(e, sys, u) {
+		// saves mais novos de outro aparelho; sem servidor, joga com o daqui
+		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+		if n, err := s.pullSaves(ctx, e, sys, s.saveDirs()); err != nil {
+			s.opt.Emitter.Emit("task", TaskEvent{ID: "sync:" + id, Label: "Saves do servidor", State: "error", Message: err.Error()})
+		} else if n > 0 {
+			s.opt.Emitter.Emit("task", TaskEvent{ID: "sync:" + id, Label: "Saves do servidor", State: "done", Progress: 1, Message: fmt.Sprintf("%d save(s) mais novo(s) baixado(s)", n)})
+		}
+		cancel()
+	}
+
 	s.mu.Lock()
 	name := s.view(e, settings.State{}).Name
 	s.mu.Unlock()
@@ -488,6 +512,15 @@ func (s *Service) Play(id, stateID string) error {
 		}
 		// o script dispara antes do aviso: quem espera o "exited" já o vê rodando
 		s.opt.Hooks.Run(hooks.GameEnd, g.Launch, name, sys.Slug, strconv.FormatInt(ev.Seconds, 10))
+		if s.syncs(e, sys, u) && err == nil {
+			listing := s.opt.Saves.List(saves.Game{System: sys, Launch: g.Launch})
+			s.runTask("sync:"+id, "Enviando saves pro servidor", func(func(float64)) (string, error) {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+				n, err := s.pushSaves(ctx, e, sys, listing, started.Unix()-2)
+				return fmt.Sprintf("%d save(s) enviado(s)", n), err
+			})
+		}
 		s.opt.Emitter.Emit("game", ev)
 	}()
 	return nil
@@ -521,6 +554,9 @@ func (s *Service) Saves(id string) (saves.Listing, error) {
 	e, sys, err := s.find(id)
 	if err != nil {
 		return saves.Listing{}, err
+	}
+	if e.remote {
+		return saves.Listing{States: []saves.State{}, Files: []saves.File{}, Note: "Baixe o jogo pra jogar e ver os saves."}, nil
 	}
 	l := s.opt.Saves.List(saves.Game{System: sys, Launch: e.game.Launch})
 	if sys.Emulator != catalog.RetroArch && s.cur().id != profiles.Main && l.Note == "" {
@@ -773,7 +809,7 @@ func (s *Service) startCovers(all bool) bool {
 	var todo []library.Game
 	s.mu.Lock()
 	for _, e := range s.entries {
-		if thumbs.Supported(e.game.System) && (all || !s.thumbs.Fetched(e.game)) {
+		if !e.remote && thumbs.Supported(e.game.System) && (all || !s.thumbs.Fetched(e.game)) {
 			todo = append(todo, e.game)
 		}
 	}

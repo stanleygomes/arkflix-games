@@ -67,7 +67,7 @@
       {:else}
       <input
         id="prompt-input"
-        type="text"
+        type={p.secret ? 'password' : 'text'}
         maxlength={p.max}
         data-nav
         data-nav-default={typing ? '' : undefined}

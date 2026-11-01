@@ -53,6 +53,7 @@ export interface Game {
   developer?: string
   edited?: boolean
   kidsOk?: boolean
+  remote?: boolean
 }
 
 export interface ScreensaverSettings {
@@ -100,6 +101,16 @@ export interface Covers {
   enabled: boolean
   images: string
   db: string
+}
+
+export interface RemoteInfo {
+  connected: boolean
+  base: string
+  user: string
+  owner: string
+  mine: boolean
+  games: number
+  updated: number
 }
 
 export interface TaskEvent {

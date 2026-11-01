@@ -9,6 +9,7 @@
   import Toasts from './components/Toasts.svelte'
   import { api, on } from './lib/api'
   import { startInput } from './lib/input'
+  import { watchDownloads } from './lib/downloads.svelte'
   import { focusDefault, setReducedMotion } from './lib/nav'
   import { configure, pauseMusic, play } from './lib/sound'
   import { app, applyBoot, isKids, resetTo, screen, toast } from './lib/state.svelte'
@@ -62,6 +63,7 @@
       app.games = await api.refresh()
     })
     startInput()
+    watchDownloads()
     await tick()
     focusDefault()
     api.ready().catch(() => {})

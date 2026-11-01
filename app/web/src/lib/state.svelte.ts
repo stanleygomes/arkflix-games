@@ -13,7 +13,7 @@ export type Screen =
   | { name: 'profiles' }
   | { name: 'profile'; id?: string }
 
-export type SettingsTab = 'library' | 'controls' | 'a11y' | 'about'
+export type SettingsTab = 'library' | 'server' | 'controls' | 'a11y' | 'about'
 
 export interface Toast {
   id: number
@@ -42,6 +42,7 @@ export interface Prompt {
   error: string
   max: number
   multiline: boolean
+  secret: boolean
   submit: (v: string) => Promise<string | null>
   resolve: (v: string | null) => void
 }
@@ -138,10 +139,10 @@ export function prompt(
   value: string,
   ok: string,
   submit: (v: string) => Promise<string | null>,
-  opts: { max?: number; multiline?: boolean } = {},
+  opts: { max?: number; multiline?: boolean; secret?: boolean } = {},
 ): Promise<string | null> {
   return new Promise((resolve) => {
-    app.prompt = { title, value, ok, error: '', submit, resolve, max: opts.max ?? 60, multiline: !!opts.multiline }
+    app.prompt = { title, value, ok, error: '', submit, resolve, max: opts.max ?? 60, multiline: !!opts.multiline, secret: !!opts.secret }
   })
 }
 
