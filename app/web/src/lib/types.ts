@@ -54,6 +54,12 @@ export interface Game {
   edited?: boolean
 }
 
+export interface ScreensaverSettings {
+  enabled: boolean
+  minutes: number
+  mode: 'snake' | 'showcase'
+}
+
 export interface MediaItem {
   src: string
   caption: string
@@ -113,6 +119,7 @@ export interface Settings {
   covers: Covers
   ui: { sort: Record<string, string> | null; filters: Record<string, string[]> | null }
   a11y: Accessibility
+  screensaver: ScreensaverSettings
   saves: SaveDirs
 }
 

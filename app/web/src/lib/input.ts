@@ -2,6 +2,7 @@
 // de handlers decide primeiro; o padrão é navegar (setas), clicar (confirmar)
 // e voltar. Na tela de controles, "captura" pega o próximo botão/tecla cru.
 import { api, on } from './api'
+import { wake } from './idle.svelte'
 import { keyAction, padAction, type Action } from './keys'
 import { current, move, type Dir } from './nav'
 import { play, unlock } from './sound'
@@ -42,6 +43,7 @@ export function onPad(fn: (e: PadEvent) => void): () => void {
 
 export function dispatch(action: Action, src: Source = 'key') {
   unlock()
+  if (wake()) return
   if (app.playing?.state === 'running') return
   for (let i = handlers.length - 1; i >= 0; i--) {
     if (handlers[i](action, src) === true) return
@@ -97,6 +99,7 @@ function startRepeat(key: string, action: Action) {
 function handlePad(e: PadEvent) {
   listeners.forEach((fn) => fn(e))
   if (e.pressed) app.family = e.family
+  if (wake()) return // protetor de tela: o botão só acorda
   if (capture && e.pressed && !e.source) {
     const fn = capture
     capture = null
@@ -117,6 +120,10 @@ function handlePad(e: PadEvent) {
 
 function handleKey(ev: KeyboardEvent) {
   app.family = 'keyboard'
+  if (wake()) {
+    ev.preventDefault()
+    return
+  }
   if (capture) {
     ev.preventDefault()
     const fn = capture

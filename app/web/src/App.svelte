@@ -3,6 +3,7 @@
   import ConfirmDialog from './components/ConfirmDialog.svelte'
   import Playing from './components/Playing.svelte'
   import PromptDialog from './components/PromptDialog.svelte'
+  import Screensaver from './components/Screensaver.svelte'
   import Tasks from './components/Tasks.svelte'
   import Toasts from './components/Toasts.svelte'
   import { api, on } from './lib/api'
@@ -128,6 +129,7 @@
 <Toasts />
 <ConfirmDialog />
 <PromptDialog />
+<Screensaver />
 
 <style>
   .fatal,

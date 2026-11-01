@@ -65,3 +65,20 @@ func TestStateConcurrent(t *testing.T) {
 		t.Fatalf("tempo somado: %d, esperado 190", got)
 	}
 }
+
+func TestScreensaverValidate(t *testing.T) {
+	s := settings.Settings{Screensaver: settings.Screensaver{Minutes: 0, Mode: "xpto"}}
+	s.Validate()
+	if s.Screensaver.Minutes != 5 || s.Screensaver.Mode != "snake" {
+		t.Fatalf("corrige valores ruins: %+v", s.Screensaver)
+	}
+	s.Screensaver = settings.Screensaver{Minutes: 999, Mode: "showcase"}
+	s.Validate()
+	if s.Screensaver.Minutes != 60 || s.Screensaver.Mode != "showcase" {
+		t.Fatalf("limite de 60 min: %+v", s.Screensaver)
+	}
+	d := settings.Defaults("/h", "", "")
+	if !d.Screensaver.Enabled || d.Screensaver.Minutes != 5 {
+		t.Fatalf("padrão: %+v", d.Screensaver)
+	}
+}

@@ -136,6 +136,11 @@ mudo no fundo do Início depois de 2 s parado no jogo), assim como os `gamelist.
 mídia de uma instalação antiga do ES-DE em `~/ES-DE`, se existir. Sem capa, o app
 desenha o cartucho, disco ou UMD do console com o título.
 
+**Protetor de tela.** Depois de alguns minutos parado (5 por padrão, ajustável
+ou desligável), a cobrinha joga sozinha em fósforo verde, ou as capas passam
+como no attract mode de um fliperama. Nunca liga com jogo aberto; qualquer botão,
+tecla ou clique só acorda a tela, sem executar a ação.
+
 **Scripts de evento.** Executáveis em
 `~/.config/arkflix-games/scripts/game-start/` e `.../game-end/` rodam em segundo
 plano ao abrir e ao fechar um jogo, em ordem alfabética, recebendo o caminho da

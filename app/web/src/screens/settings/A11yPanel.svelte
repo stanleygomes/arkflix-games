@@ -1,7 +1,8 @@
 <script lang="ts">
   import { play } from '../../lib/sound'
+  import { sleep } from '../../lib/idle.svelte'
   import { app } from '../../lib/state.svelte'
-  import type { Accessibility } from '../../lib/types'
+  import type { Accessibility, ScreensaverSettings } from '../../lib/types'
   import { saveSoon } from './save.svelte'
 
   const a = $derived(app.settings!.a11y)
@@ -11,6 +12,17 @@
     saveSoon({ ...app.settings!, a11y: { ...a, [key]: value } })
     play('toggle')
   }
+
+  const saver = $derived(app.settings!.screensaver)
+  function setSaver<K extends keyof ScreensaverSettings>(key: K, value: ScreensaverSettings[K]) {
+    saveSoon({ ...app.settings!, screensaver: { ...saver, [key]: value } })
+    play('toggle')
+  }
+  const minutes = [1, 5, 10, 15, 30]
+  const modes: { id: ScreensaverSettings['mode']; label: string }[] = [
+    { id: 'snake', label: 'Cobrinha' },
+    { id: 'showcase', label: 'Vitrine' },
+  ]
 
   const switches: { key: keyof Accessibility; label: string; help: string }[] = [
     { key: 'highContrast', label: 'Alto contraste', help: 'Preto, branco e amarelo em toda a interface; ignora a cor dos consoles.' },
@@ -68,9 +80,37 @@
       </div>
     </fieldset>
   {/each}
+
+  <fieldset>
+    <legend>Protetor de tela</legend>
+    <div class="saver">
+      <button class="switch" data-nav role="switch" aria-checked={saver.enabled} aria-describedby="help-saver" onclick={() => setSaver('enabled', !saver.enabled)}>
+        <span class="knob" aria-hidden="true"></span>
+        <span class="label">Ligar quando parado</span>
+      </button>
+      <p class="muted help" id="help-saver">A cobrinha joga sozinha, ou as capas passam como num fliperama. Nunca com jogo aberto; qualquer botão volta.</p>
+      {#if saver.enabled}
+        <div class="segmented" role="group" aria-label="Minutos parado">
+          {#each minutes as m (m)}
+            <button class="btn" data-nav aria-pressed={saver.minutes === m} onclick={() => setSaver('minutes', m)}>{m} min</button>
+          {/each}
+        </div>
+        <div class="segmented" role="group" aria-label="Estilo do protetor">
+          {#each modes as m (m.id)}
+            <button class="btn" data-nav aria-pressed={saver.mode === m.id} onclick={() => setSaver('mode', m.id)}>{m.label}</button>
+          {/each}
+          <button class="btn" data-nav onclick={() => sleep()}>Ver agora</button>
+        </div>
+      {/if}
+    </div>
+  </fieldset>
 </div>
 
 <style>
+  .saver {
+    display: grid;
+    gap: 0.8rem;
+  }
   .panel-body {
     display: flex;
     flex-direction: column;

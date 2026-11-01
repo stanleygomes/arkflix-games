@@ -34,6 +34,13 @@ type Accessibility struct {
 	VideoSound   bool    `json:"videoSound"` // com som (padrão: mudo)
 }
 
+// Screensaver é o protetor de tela: liga depois de Minutes sem entrada.
+type Screensaver struct {
+	Enabled bool   `json:"enabled"`
+	Minutes int    `json:"minutes"`
+	Mode    string `json:"mode"` // "snake" (cobrinha) ou "showcase" (vitrine)
+}
+
 // Covers liga o download de capas do acervo aberto do libretro.
 type Covers struct {
 	Enabled bool   `json:"enabled"`
@@ -70,6 +77,7 @@ type Settings struct {
 	Covers      Covers        `json:"covers"`
 	UI          UI            `json:"ui"`
 	A11y        Accessibility `json:"a11y"`
+	Screensaver Screensaver   `json:"screensaver"`
 	Saves       SaveDirs      `json:"saves"`
 }
 
@@ -97,6 +105,7 @@ func Defaults(home, bin, cores string) Settings {
 			Sounds: true, SoundVolume: 60, Music: true, MusicVolume: 25,
 			Videos: true,
 		},
+		Screensaver: Screensaver{Enabled: true, Minutes: 5, Mode: "snake"},
 		Saves: SaveDirs{
 			RetroArchSaves:  filepath.Join(ra, "saves"),
 			RetroArchStates: filepath.Join(ra, "states"),
@@ -121,6 +130,13 @@ func (s *Settings) Validate() {
 	}
 	s.A11y.SoundVolume = clamp(s.A11y.SoundVolume, 0, 100)
 	s.A11y.MusicVolume = clamp(s.A11y.MusicVolume, 0, 100)
+	if s.Screensaver.Minutes <= 0 {
+		s.Screensaver.Minutes = 5
+	}
+	s.Screensaver.Minutes = min(s.Screensaver.Minutes, 60)
+	if s.Screensaver.Mode != "snake" && s.Screensaver.Mode != "showcase" {
+		s.Screensaver.Mode = "snake"
+	}
 }
 
 func clamp(v, lo, hi int) int {
