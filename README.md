@@ -6,7 +6,19 @@ código e jogar a biblioteca do arkflix com a versão modificada.
 O ES-DE e os emuladores instalados (AppImage e Flatpaks, pelo genesis)
 continuam iguais; isto aqui roda ao lado deles.
 
-## Começo
+## Instalar
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/stanleygomes/arkflix-games/master/install.sh | bash
+```
+
+Ubuntu/Debian x86_64. Pede sudo (pacotes do apt), clona em
+`~/.local/share/arkflix-games`, baixa os binários do último release (sem
+release com binários, compila: ~40 min) e cria o comando `arkflix-games`.
+Rodar de novo atualiza. Opções vão antes do `bash`: `... | ARKFLIX_GAMES_DIR=~/x bash`
+(outra pasta) ou `... | ARKFLIX_GAMES_BUILD=1 bash` (compila mesmo com release).
+
+## Começo (desenvolvimento)
 
 ```bash
 make deps     # pacotes de compilação (apt, pede sudo). Uma vez só
@@ -104,13 +116,12 @@ Correções, Performance, Outros).
 ```bash
 make release-notes      # prévia: próxima versão e changelog, sem criar nada
 make release-binaries   # anexa os binários na release da tag do HEAD (depois do CI)
-make release-install    # PC novo: baixa os binários do último release pro build/
+make release-install    # baixa os binários do último release que tiver (sem gh)
 make release-install VERSION=v0.2.0
 ```
 
 Os binários saem do seu PC, não do CI: o `release-binaries` exige o HEAD com
 tag, roda o `make check` (que usa os seus jogos) e só então anexa. O pacote
-tem só o que o `make run` usa, compilado pra este Ubuntu e com caminho
-absoluto: clone o repo no mesmo lugar (`~/projects/arkflix-games`) antes do
-`release-install`. O código de cada binário é o da tag (submodules +
-`patches/`), o que cumpre as licenças GPL.
+tem só o que o `make run` usa, compilado pra Ubuntu, e roda em qualquer pasta
+(os lançadores são gerados na instalação). O código de cada binário é o da tag
+(submodules + `patches/`), o que cumpre as licenças GPL.
