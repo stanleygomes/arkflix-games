@@ -127,3 +127,10 @@ export function filterGames(games: Game[], active: string[]): Game[] {
   }
   return games.filter((g) => [...groups.values()].every((fs) => fs.some((f) => matches(g, f))))
 }
+
+/** Sorteia um jogo sem repetir o último (se houver outra opção). */
+export function pickRandom(games: Game[], lastId = '', rnd: () => number = Math.random): Game | undefined {
+  const pool = games.length > 1 ? games.filter((g) => g.id !== lastId) : games
+  if (!pool.length) return undefined
+  return pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))]
+}

@@ -15,6 +15,7 @@ export type Action =
   | 'prevTab'
   | 'nextTab'
   | 'search'
+  | 'random'
 
 /** Botão físico (nomes do Go) -> ação. Confirma com o botão de baixo. */
 export function padAction(button: string): Action | null {
@@ -31,6 +32,7 @@ export function padAction(button: string): Action | null {
     l1: 'prevTab',
     r1: 'nextTab',
     select: 'search',
+    r3: 'random',
   }
   return map[button] ?? null
 }
@@ -63,6 +65,8 @@ export function keyAction(key: string, typing: boolean): Action | null {
     q: 'prevTab',
     e: 'nextTab',
     '/': 'search',
+    r: 'random',
+    R: 'random',
   }
   return map[key] ?? null
 }

@@ -7,16 +7,18 @@
   import TopBar from '../components/TopBar.svelte'
   import { focusedGameId, toggleFavorite } from '../lib/actions'
   import { pushHandler } from '../lib/input'
-  import { SORTS, filterGames, filterGroups, sortGames } from '../lib/library'
+  import { SORTS, filterGames, filterGroups, pickRandom, sortGames } from '../lib/library'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { filtersOf, sortOf, sourceGames, sourceTitle } from '../lib/sources'
-  import { app, system } from '../lib/state.svelte'
+  import { focusEl } from '../lib/nav'
+  import { app, system, toast } from '../lib/state.svelte'
   import type { Settings } from '../lib/types'
   import { saveSoon } from './settings/save.svelte'
 
   let { source }: { source: string } = $props()
   let options = $state(false)
+  let lastRandom = ''
   const sort = $derived(sortOf(source))
   const filters = $derived(filtersOf(source))
   const all = $derived(sourceGames(source))
@@ -45,6 +47,16 @@
     pushHandler((a) => {
       if (a === 'fav') {
         toggleFavorite(focusedGameId())
+        return true
+      }
+      if (a === 'random') {
+        const pick = pickRandom(games, lastRandom)
+        if (pick) {
+          lastRandom = pick.id
+          play('start')
+          toast(`Surpresa: ${pick.name}`, 'info', 3000)
+          focusEl(document.querySelector<HTMLElement>(`.grid [data-game="${pick.id}"]`))
+        }
         return true
       }
       if (a === 'menu' && !options) {

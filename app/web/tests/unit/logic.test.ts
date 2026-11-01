@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ago, bytes, playTime } from '../../src/lib/format'
 import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
-import { filterGames, filterGroups, maxPlayers, normalize, search, sortGames } from '../../src/lib/library'
+import { filterGames, filterGroups, maxPlayers, normalize, pickRandom, search, sortGames } from '../../src/lib/library'
 import type { Game } from '../../src/lib/types'
 import { pickTarget, type Box } from '../../src/lib/nav'
 import { contrast, highContrastPalette, homePalette, onColor } from '../../src/lib/palette'
@@ -198,5 +198,20 @@ describe('filtros', () => {
     expect(groups[2].options.map((o) => o.label)).toEqual(['Ação', 'Esporte', 'Plataforma'])
     expect(groups[3].options.map((o) => o.id)).toEqual(['decade:1990'])
     expect(filterGroups([fakeGame('X', { lastPlayed: 1 })])).toEqual([])
+  })
+})
+
+describe('sorteio', () => {
+  const games = ['A', 'B', 'C'].map((n) => fakeGame(n))
+  it('nunca repete o último quando há outra opção', () => {
+    for (let i = 0; i < 50; i++) expect(pickRandom(games, 'B')?.id).not.toBe('B')
+    expect(pickRandom([fakeGame('Só')], 'Só')?.id).toBe('Só')
+  })
+  it('respeita a lista dada e cobre todos', () => {
+    const seen = new Set<string>()
+    for (let i = 0; i < 200; i++) seen.add(pickRandom(games)!.id)
+    expect([...seen].sort()).toEqual(['A', 'B', 'C'])
+    expect(pickRandom([], 'x')).toBeUndefined()
+    expect(pickRandom(games, '', () => 0.999)?.id).toBe('C')
   })
 })

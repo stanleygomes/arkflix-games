@@ -10,7 +10,7 @@
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { toggleFavorite } from '../lib/actions'
-  import { sortGames } from '../lib/library'
+  import { pickRandom, sortGames } from '../lib/library'
   import { activeCollections, sortOf, sourceGames, sourceTitle } from '../lib/sources'
   import { app, go, system, toast } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
@@ -82,6 +82,36 @@
     return id ? app.games.find((g) => g.id === id) : selected
   }
 
+  let lastRandom = ''
+  let spinning = $state(false)
+
+  // Surpresa: roleta rápida pelas capas e para num jogo da aba atual
+  async function surprise() {
+    if (spinning) return
+    const pool = app.homeTab === 'home' ? app.games : rows.flatMap((r) => r.games)
+    const pick = pickRandom(pool, lastRandom)
+    if (!pick) return
+    lastRandom = pick.id
+    spinning = true
+    if (!app.settings?.a11y.reduceMotion) {
+      for (let i = 0; i < 8; i++) {
+        app.selected = pickRandom(pool, app.selected)?.id ?? pick.id
+        play('move')
+        await new Promise((r) => setTimeout(r, 70 + i * 12))
+      }
+    }
+    spinning = false
+    play('start')
+    toast(`Surpresa: ${pick.name}`, 'info', 3000)
+    const card = document.querySelector<HTMLElement>(`.shelf [data-game="${pick.id}"]`)
+    if (card) {
+      app.selected = pick.id
+      focusEl(card)
+    } else {
+      go({ name: 'game', id: pick.id })
+    }
+  }
+
   function cycleTab(delta: number) {
     const i = tabs.findIndex((t) => t.slug === app.homeTab)
     const next = tabs[(i + delta + tabs.length) % tabs.length]
@@ -125,6 +155,9 @@
         }
         case 'menu':
           go({ name: 'settings' })
+          return true
+        case 'random':
+          surprise()
           return true
         case 'prevTab':
           cycleTab(-1)
@@ -200,6 +233,9 @@
           <button class="btn" data-nav data-nav-group="actions" onclick={() => go({ name: 'game', id: selected.id })}>
             <Icon name="disc" /> Saves e detalhes
           </button>
+          <button class="btn" data-nav data-nav-group="actions" onclick={surprise} disabled={spinning}>
+            <Icon name="dice" /> Surpresa
+          </button>
         </div>
       </section>
       <div class="hero-art" aria-hidden="true">
@@ -252,6 +288,7 @@
       { button: 'l1', label: 'Console anterior' },
       { button: 'r1', label: 'Próximo console' },
       { button: 'select', label: 'Buscar' },
+      { button: 'r3', label: 'Surpresa' },
       { button: 'start', label: 'Configurações' },
     ]}
   />

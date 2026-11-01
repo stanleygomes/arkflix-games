@@ -47,3 +47,23 @@ test('filtros combinam, contam e explicam lista vazia', async ({ page, app }) =>
   await page.getByRole('button', { name: 'Limpar filtros' }).click()
   await expect(page.locator('.grid .name')).toHaveCount(2)
 })
+
+test('surpresa sorteia dentro do console e não repete o último', async ({ page, app }) => {
+  await open(page, app)
+  await goTab(page, 'snes')
+  await page.keyboard.press('ArrowDown')
+  const snes = ['Mega Man X', 'Super Mario World']
+  let last = ''
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press('r')
+    await expect(page.locator('.toasts')).toContainText('Surpresa:')
+    await expect(page.locator('.shelf [data-game]:focus')).toHaveCount(1, { timeout: 4000 })
+    const title = (await page.locator('#hero-title').textContent())!.trim()
+    expect(snes).toContain(title)
+    expect(title).not.toBe(last) // com 2 jogos, alterna
+    last = title
+  }
+  await page.getByRole('button', { name: 'Ver tudo' }).click()
+  await app.pad('r3')
+  await expect(page.locator('.grid [data-game]:focus')).toHaveCount(1)
+})
