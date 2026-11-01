@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Instala o arkflix-games: curl -fsSL <raw>/install.sh | bash
 #
-# Clona (ou atualiza) o repo, instala as dependências (apt, pede sudo), baixa os
-# binários do último release (sem release com binários: compila, ~40 min) e cria
-# o comando `arkflix-games`. Rodar de novo = atualizar.
+# Clona (ou atualiza) o repo, instala as dependências (apt, pede sudo), os
+# emuladores (Flatpaks do Flathub e os cores do RetroArch), baixa o app do
+# último release (sem release com binários: compila, ~1 min) e cria o comando
+# `arkflix-games`. Rodar de novo = atualizar.
 #
 # Variáveis: ARKFLIX_GAMES_DIR (padrão ~/.local/share/arkflix-games),
 #            ARKFLIX_GAMES_BUILD=1 (compila mesmo tendo release),
@@ -40,11 +41,14 @@ if [[ -z ${ARKFLIX_GAMES_NO_DEPS:-} ]]; then
   make deps
 fi
 
+step "emuladores (Flatpak)"
+make emulators
+
 if [[ -z ${ARKFLIX_GAMES_BUILD:-} ]] && make release-install; then
   :
 else
-  step "sem binários prontos: compilando (demora)"
-  make fetch build
+  step "sem binários prontos: compilando o app"
+  make app
 fi
 
 step "comando arkflix-games"

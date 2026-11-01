@@ -1,5 +1,7 @@
-// Package launcher monta e roda o comando de cada emulador usando os
-// lançadores de build/bin (que já apontam config e saves pros lugares certos).
+// Package launcher monta e roda o comando de cada emulador. Por padrão usa os
+// Flatpaks (org.libretro.RetroArch, org.ppsspp.PPSSPP, net.pcsx2.PCSX2), com
+// a config, os cores, os saves e as BIOS deles. Spec.Bin aponta uma pasta com
+// executáveis próprios no lugar (os testes usam emuladores falsos assim).
 package launcher
 
 import (
@@ -16,12 +18,33 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
 )
 
-// Spec diz onde estão os lançadores e cores.
+// Flatpaks: o id de cada emulador no Flathub.
+var Flatpaks = map[string]string{
+	catalog.RetroArch: "org.libretro.RetroArch",
+	catalog.PPSSPP:    "org.ppsspp.PPSSPP",
+	catalog.PCSX2:     "net.pcsx2.PCSX2",
+}
+
+var executables = map[string]string{
+	catalog.RetroArch: "retroarch",
+	catalog.PPSSPP:    "ppsspp",
+	catalog.PCSX2:     "pcsx2",
+}
+
+// FlatpakCores é a pasta de cores do RetroArch do Flatpak (o "Online Updater"
+// dele baixa pra cá; o make emulators também).
+func FlatpakCores() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".var", "app", Flatpaks[catalog.RetroArch], "config", "retroarch", "cores")
+}
+
+// Spec diz como abrir os emuladores.
 type Spec struct {
-	Bin        string   // pasta com retroarch, ppsspp, pcsx2
-	Cores      string   // pasta com <core>_libretro.so
+	Bin        string   // vazio = Flatpak; senão, pasta com retroarch, ppsspp e pcsx2
+	Cores      string   // vazio = cores do Flatpak
 	Fullscreen bool     // abre o jogo em tela cheia
-	RAAppend   []string // configs extras do RetroArch (entrada, atalhos)
+	RAAppend   []string // configs extras do RetroArch (entrada, saves do perfil)
+	Work       string   // pasta pra configs geradas na hora (o Flatpak enxerga a home, não o /tmp)
 }
 
 // Resume escolhe de onde o jogo começa. Vazio = do início.
@@ -30,19 +53,52 @@ type Resume struct {
 	File string // PPSSPP/PCSX2: arquivo de save state
 }
 
-// Command devolve o comando e as variáveis extras pra abrir o jogo.
-func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]string, []string, error) {
-	if rom == "" {
-		return nil, nil, errors.New("jogo sem arquivo pra abrir")
+// installed: o Flatpak existe? (variável pra os testes trocarem)
+var installed = func(id string) bool {
+	return exec.Command("flatpak", "info", "--show-ref", id).Run() == nil
+}
+
+// program devolve o começo do comando do emulador e confere se ele existe.
+func program(emu string, spec Spec) ([]string, error) {
+	if spec.Bin != "" {
+		path := filepath.Join(spec.Bin, executables[emu])
+		if _, err := os.Stat(path); err != nil {
+			return nil, fmt.Errorf("%s não encontrado em %s", executables[emu], spec.Bin)
+		}
+		return []string{path}, nil
 	}
-	var args, env []string
+	id := Flatpaks[emu]
+	if _, err := exec.LookPath("flatpak"); err != nil {
+		return nil, errors.New("falta o Flatpak: rode make emulators")
+	}
+	if !installed(id) {
+		return nil, fmt.Errorf("%s não instalado: rode make emulators", id)
+	}
+	return []string{"flatpak", "run", id}, nil
+}
+
+// Command devolve o comando pra abrir o jogo.
+func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]string, error) {
+	if rom == "" {
+		return nil, errors.New("jogo sem arquivo pra abrir")
+	}
+	if _, ok := Flatpaks[sys.Emulator]; !ok {
+		return nil, fmt.Errorf("emulador desconhecido: %s", sys.Emulator)
+	}
+	args, err := program(sys.Emulator, spec)
+	if err != nil {
+		return nil, err
+	}
 	switch sys.Emulator {
 	case catalog.RetroArch:
-		core := filepath.Join(spec.Cores, sys.Core+"_libretro.so")
-		if _, err := os.Stat(core); err != nil {
-			return nil, nil, fmt.Errorf("core %s não compilado (make core-%s)", sys.Core, sys.Core)
+		cores := spec.Cores
+		if cores == "" {
+			cores = FlatpakCores()
 		}
-		args = []string{filepath.Join(spec.Bin, "retroarch")}
+		core := filepath.Join(cores, sys.Core+"_libretro.so")
+		if _, err := os.Stat(core); err != nil {
+			return nil, fmt.Errorf("core %s não instalado: rode make emulators", sys.Core)
+		}
 		if spec.Fullscreen {
 			args = append(args, "--fullscreen")
 		}
@@ -51,19 +107,25 @@ func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]strin
 			if resume.Slot >= 0 {
 				args = append(args, fmt.Sprintf("--entryslot=%d", resume.Slot))
 			} else {
-				auto := filepath.Join(os.TempDir(), "arkflix-resume.cfg")
+				work := spec.Work
+				if work == "" {
+					work = os.TempDir()
+				}
+				auto := filepath.Join(work, "arkflix-resume.cfg")
+				if err := os.MkdirAll(work, 0o700); err != nil {
+					return nil, err
+				}
 				if err := os.WriteFile(auto, []byte("savestate_auto_load = \"true\"\n"), 0o644); err != nil {
-					return nil, nil, err
+					return nil, err
 				}
 				appendCfg = append(appendCfg, auto)
 			}
 		}
 		if len(appendCfg) > 0 {
-			env = append(env, "ARKFLIX_RA_APPEND="+strings.Join(appendCfg, "|"))
+			args = append(args, "--appendconfig="+strings.Join(appendCfg, "|"))
 		}
 		args = append(args, "-L", core, rom)
 	case catalog.PPSSPP:
-		args = []string{filepath.Join(spec.Bin, "ppsspp")}
 		if spec.Fullscreen {
 			args = append(args, "--fullscreen")
 		}
@@ -72,7 +134,7 @@ func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]strin
 		}
 		args = append(args, rom)
 	case catalog.PCSX2:
-		args = []string{filepath.Join(spec.Bin, "pcsx2"), "-batch"}
+		args = append(args, "-batch")
 		if spec.Fullscreen {
 			args = append(args, "-fullscreen")
 		}
@@ -80,13 +142,8 @@ func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]strin
 			args = append(args, "-statefile", resume.File)
 		}
 		args = append(args, "--", rom)
-	default:
-		return nil, nil, fmt.Errorf("emulador desconhecido: %s", sys.Emulator)
 	}
-	if _, err := os.Stat(args[0]); err != nil {
-		return nil, nil, fmt.Errorf("%s não encontrado: rode make build", filepath.Base(args[0]))
-	}
-	return args, env, nil
+	return args, nil
 }
 
 // Result é como o jogo terminou.

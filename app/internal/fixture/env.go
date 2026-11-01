@@ -85,7 +85,7 @@ func P2S() []byte {
 // fakeEmulator registra a chamada em calls.log e demora ARKFLIX_FAKE_SLEEP s.
 const fakeEmulator = `#!/bin/sh
 dir=$(dirname "$0")
-printf '%s|%s|%s\n' "$(basename "$0")" "$*" "$ARKFLIX_RA_APPEND" >> "$dir/calls.log"
+printf '%s|%s\n' "$(basename "$0")" "$*" >> "$dir/calls.log"
 sleep "${ARKFLIX_FAKE_SLEEP:-0.3}"
 exit "${ARKFLIX_FAKE_EXIT:-0}"
 `
@@ -123,7 +123,7 @@ func NewEnv(root string) Env {
 	e.Extra = filepath.Join(e.Home, "Jogos antigos")
 	e.ESDE = filepath.Join(e.Home, "ES-DE")
 	e.Data = filepath.Join(e.Home, ".config", "arkflix-games")
-	e.Settings = settings.Defaults(e.Home, e.Bin, e.Cores)
+	e.Settings = settings.Defaults(e.Home)
 	e.Settings.LibraryDirs = append(e.Settings.LibraryDirs, settings.LibraryDir{Path: e.Extra, Label: "Jogos antigos"})
 
 	put(filepath.Join(e.Local, "snes", "Super Mario World (U) [!].zip"), ZipBytes(map[string]string{"smw.sfc": "SNES-SMW"}))

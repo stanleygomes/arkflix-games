@@ -107,18 +107,6 @@
     <input id="esde-dir" type="text" data-nav bind:value={draft.esdeDir} spellcheck="false" />
   </div>
 
-  <details>
-    <summary data-nav>Emuladores (avançado)</summary>
-    <div class="field">
-      <label for="bin-dir">Pasta dos lançadores (retroarch, ppsspp, pcsx2)</label>
-      <input id="bin-dir" type="text" data-nav bind:value={draft.emulatorBin} spellcheck="false" />
-    </div>
-    <div class="field">
-      <label for="cores-dir">Pasta dos cores do RetroArch</label>
-      <input id="cores-dir" type="text" data-nav bind:value={draft.coresDir} spellcheck="false" />
-    </div>
-  </details>
-
   <fieldset>
     <legend>Capas</legend>
     <button type="button" class="switch-row btn" data-nav role="switch" aria-checked={draft.covers.enabled} aria-describedby="covers-help" onclick={toggleCovers}>
@@ -194,20 +182,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-  }
-  details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
-  }
-  summary {
-    cursor: pointer;
-    font-weight: 700;
-    padding: 0.3rem;
-    width: fit-content;
-  }
-  details[open] summary {
-    margin-bottom: 0.8rem;
   }
   .actions {
     display: flex;

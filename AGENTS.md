@@ -2,16 +2,13 @@
 
 Leia o [README](README.md) antes. Resumo do que importa:
 
-- Fonte em `src/` (submodules do upstream, rasos, versão travada). Build em
-  `build/`, estado local em `home/`: os dois fora do git.
-- **Mudou código em `src/`?** Recompile o alvo (`make app`, `make core-x`...),
-  rode `make check` (ou o `check-*` do que mexeu) e só então diga que funciona.
-  Caso "mudou" (⚠️): abra o `build/check/<caso>.png` e confira antes de
-  `make check-update`.
-- Mudanças em `src/` viram `patches/<projeto>.patch` com `make patch-save`; é o
-  patch que vai pro commit. Nunca commite dentro do submodule.
+- Só o app é código deste repo. Os emuladores são os Flatpaks do Flathub
+  (RetroArch, PPSSPP, PCSX2) e os cores vêm do buildbot do libretro
+  (`make emulators`). Não volte a compilar emulador aqui.
+- Build em `build/`, fora do git.
 - Não mexa nas pastas dos Flatpaks (`~/.var/app/...`) nem no `~/ES-DE`: são os
-  saves e a config reais do dono (o app só lê o `~/ES-DE`).
+  saves e a config reais do dono (o app só lê o `~/ES-DE`). Exceção: o
+  `make emulators` instala cores que faltam na pasta de cores do RetroArch.
 - `make deps` usa sudo: peça pro dono rodar (`! make deps`).
 
 ## App (app/)
@@ -35,8 +32,6 @@ Toda iteração que mudar arquivo termina com commit e push. Sem perguntar.
 
 - Antes de responder: `git status`, `git add` só do que você mudou, commit,
   `git push` no `master`. Nada de `git add -A` às cegas.
-- Mudou fonte em `src/`? `make patch-save` e commite o `patches/*.patch`, não o
-  submodule. Bump de versão de submodule = commit próprio.
 - Conventional Commits em português, imperativo, 72 colunas por linha, sem emoji,
   sem Co-Authored-By. Um commit por mudança lógica.
 - Push falhou? Diga ao dono. Nunca `--force`.

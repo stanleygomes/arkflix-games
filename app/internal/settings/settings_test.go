@@ -12,7 +12,7 @@ import (
 
 func TestDefaultsAndPersistence(t *testing.T) {
 	dir := t.TempDir()
-	def := settings.Defaults("/home/x", "/bin", "/cores")
+	def := settings.Defaults("/home/x")
 	if len(def.LibraryDirs) != 1 || !def.LibraryDirs[0].Writable || def.ImportDir != "/home/x/Games/roms" {
 		t.Fatalf("padrão: %+v", def.LibraryDirs)
 	}
@@ -44,13 +44,13 @@ func TestDefaultsAndPersistence(t *testing.T) {
 func TestCorruptFile(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "settings.json"), []byte("{quebrado"), 0o600)
-	if _, err := settings.Open(dir, settings.Defaults("/h", "", "")); err == nil {
+	if _, err := settings.Open(dir, settings.Defaults("/h")); err == nil {
 		t.Fatal("arquivo corrompido devia dar erro (não sobrescrever calado)")
 	}
 }
 
 func TestStateConcurrent(t *testing.T) {
-	s, _ := settings.Open(t.TempDir(), settings.Defaults("/h", "", ""))
+	s, _ := settings.Open(t.TempDir(), settings.Defaults("/h"))
 	var wg sync.WaitGroup
 	for i := range 20 {
 		wg.Add(1)
@@ -77,7 +77,7 @@ func TestScreensaverValidate(t *testing.T) {
 	if s.Screensaver.Minutes != 60 || s.Screensaver.Mode != "showcase" {
 		t.Fatalf("limite de 60 min: %+v", s.Screensaver)
 	}
-	d := settings.Defaults("/h", "", "")
+	d := settings.Defaults("/h")
 	if !d.Screensaver.Enabled || d.Screensaver.Minutes != 5 {
 		t.Fatalf("padrão: %+v", d.Screensaver)
 	}

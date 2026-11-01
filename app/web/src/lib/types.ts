@@ -113,8 +113,6 @@ export interface TaskEvent {
 export interface Settings {
   libraryDirs: LibraryDir[]
   importDir: string
-  emulatorBin: string
-  coresDir: string
   fullscreen: boolean
   esdeDir: string
   covers: Covers

@@ -14,6 +14,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/fixture"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
 	"github.com/stanleygomes/arkflix-games/app/internal/hooks"
+	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
@@ -69,7 +70,8 @@ func setup(t *testing.T) harness {
 	// scripts de evento rodam em segundo plano: espera antes do TempDir ser apagado
 	runner := &hooks.Runner{Dir: filepath.Join(env.Data, "scripts"), Log: filepath.Join(env.Data, "logs", "scripts.log")}
 	t.Cleanup(runner.Wait)
-	svc, err := core.New(core.Options{Version: "test", Mode: "web", Store: store, Emitter: rec, Pads: pads, Hooks: runner, MinPlay: -1})
+	svc, err := core.New(core.Options{Version: "test", Mode: "web", Store: store, Emitter: rec, Pads: pads, Hooks: runner, MinPlay: -1,
+		Emulators: launcher.Spec{Bin: env.Bin, Cores: env.Cores}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +155,7 @@ func TestPlayAndResume(t *testing.T) {
 		t.Fatalf("sessão não gravada: %s", sessions)
 	}
 	calls := h.env.Calls()
-	if !strings.Contains(calls, "retroarch|--fullscreen -L") || !strings.Contains(calls, "snes9x_libretro.so") || !strings.Contains(calls, "retroarch-input.cfg") {
+	if !strings.Contains(calls, "retroarch|--fullscreen --appendconfig=") || !strings.Contains(calls, "snes9x_libretro.so") || !strings.Contains(calls, "retroarch-input.cfg") {
 		t.Fatalf("chamada do RetroArch: %s", calls)
 	}
 

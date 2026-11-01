@@ -18,6 +18,7 @@ import (
 
 	"github.com/stanleygomes/arkflix-games/app/internal/core"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
+	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
 
@@ -87,9 +88,9 @@ func (w *window) PickFiles() ([]string, error) {
 	})
 }
 
-func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke bool) int {
+func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke bool, emu launcher.Spec) int {
 	win := &window{}
-	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop, Cache: cacheDirDesktop()})
+	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop, Cache: cacheDirDesktop(), Emulators: emu})
 	if err != nil {
 		log.Print(err)
 		return 1

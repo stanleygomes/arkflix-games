@@ -6,8 +6,8 @@
 //	arkflix-games --web 127.0.0.1:8484 # mesma interface no navegador
 //	arkflix-games --smoke              # abre escondido, espera a tela e sai (teste)
 //
-// --bin e --cores apontam os lançadores e cores compilados; --data, onde ficam
-// configurações e estado. --fixture monta um ambiente falso (testes de ponta a ponta).
+// Os jogos abrem nos Flatpaks do RetroArch, PPSSPP e PCSX2; --bin e --cores
+// trocam por executáveis e cores próprios. --data: configurações e estado. --fixture monta um ambiente falso (testes de ponta a ponta).
 package main
 
 import (
@@ -28,6 +28,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/fixture"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
 	"github.com/stanleygomes/arkflix-games/app/internal/httpapi"
+	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
 
@@ -50,13 +51,11 @@ type flags struct {
 
 func parseFlags() flags {
 	var f flags
-	exe, _ := os.Executable()
-	prefix := filepath.Dir(filepath.Dir(exe)) // build/prefix/bin/arkflix-games -> build/prefix
 	flag.StringVar(&f.web, "web", "", "serve a interface no navegador neste endereço (ex.: 127.0.0.1:8484)")
 	flag.BoolVar(&f.smoke, "smoke", false, "abre a janela escondida, espera a interface ficar pronta e sai (0 = ok)")
 	flag.StringVar(&f.data, "data", "", "pasta de configurações e estado (padrão: ~/.config/arkflix-games)")
-	flag.StringVar(&f.bin, "bin", filepath.Join(filepath.Dir(prefix), "bin"), "pasta dos lançadores (retroarch, ppsspp, pcsx2)")
-	flag.StringVar(&f.cores, "cores", filepath.Join(prefix, "lib", "libretro"), "pasta dos cores do RetroArch")
+	flag.StringVar(&f.bin, "bin", "", "pasta com retroarch, ppsspp e pcsx2 próprios (padrão: Flatpaks)")
+	flag.StringVar(&f.cores, "cores", "", "pasta dos cores do RetroArch (padrão: a do Flatpak)")
 	flag.StringVar(&f.fixture, "fixture", "", "monta um ambiente falso nesta pasta (testes)")
 	flag.BoolVar(&f.test, "test", false, "libera rotas de teste (/api/test/*) no modo web")
 	flag.StringVar(&f.assets, "assets", "", "serve a interface desta pasta em vez da embutida (desenvolvimento)")
@@ -92,9 +91,11 @@ func assets(f flags) (fs.FS, error) {
 	return sub, nil
 }
 
-func openStore(f flags) (*settings.Store, error) {
+// openStore abre as configurações e diz onde estão os emuladores.
+func openStore(f flags) (*settings.Store, launcher.Spec, error) {
 	home, _ := os.UserHomeDir()
-	defaults := settings.Defaults(home, f.bin, f.cores)
+	defaults := settings.Defaults(home)
+	emu := launcher.Spec{Bin: f.bin, Cores: f.cores}
 	data := f.data
 	if f.fixture != "" {
 		env := fixture.NewEnv(f.fixture)
@@ -103,11 +104,13 @@ func openStore(f flags) (*settings.Store, error) {
 		env.Settings.Covers.Images = thumbsSrv.URL + "/thumbs"
 		env.Settings.Covers.DB = thumbsSrv.URL + "/metadat"
 		defaults, data = env.Settings, env.Data
+		emu = launcher.Spec{Bin: env.Bin, Cores: env.Cores}
 	}
 	if data == "" {
 		data = defaultData()
 	}
-	return settings.Open(data, defaults)
+	store, err := settings.Open(data, defaults)
+	return store, emu, err
 }
 
 // No ambiente falso toda sessão conta como partida (emulador falso fecha em 1 s).
@@ -125,7 +128,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	store, err := openStore(f)
+	store, emu, err := openStore(f)
 	if err != nil {
 		log.Fatalf("configurações: %v", err)
 	}
@@ -137,7 +140,7 @@ func main() {
 
 	if f.web != "" {
 		broker := httpapi.NewBroker()
-		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f)})
+		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f), Emulators: emu})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -148,7 +151,7 @@ func main() {
 		fmt.Printf("arkflix-games %s em http://%s\n", version, ln.Addr())
 		log.Fatal(http.Serve(ln, httpapi.Handler(svc, broker, httpapi.Options{Assets: ui, Test: f.test, Pads: pads})))
 	}
-	os.Exit(runDesktop(store, pads, ui, f.smoke))
+	os.Exit(runDesktop(store, pads, ui, f.smoke, emu))
 }
 
 // cacheDir: capas baixadas e bancos do libretro (~/.cache/arkflix-games).

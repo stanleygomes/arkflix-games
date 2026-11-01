@@ -137,6 +137,8 @@ type Options struct {
 	MinPlay time.Duration
 	// Cache: pasta de cache (capas baixadas, bancos do libretro).
 	Cache string
+	// Emulators: onde estão os emuladores. Vazio = Flatpaks (o normal).
+	Emulators launcher.Spec
 }
 
 type entry struct {
@@ -439,8 +441,9 @@ func (s *Service) Play(id, stateID string) error {
 	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()
-	spec := launcher.Spec{Bin: cfg.EmulatorBin, Cores: cfg.CoresDir, Fullscreen: cfg.Fullscreen, RAAppend: u.raAppend()}
-	args, env, err := launcher.Command(sys, g.Launch, spec, resume)
+	spec := s.opt.Emulators
+	spec.Fullscreen, spec.RAAppend, spec.Work = cfg.Fullscreen, u.raAppend(), u.dir
+	args, err := launcher.Command(sys, g.Launch, spec, resume)
 	if err != nil {
 		return err
 	}
@@ -460,7 +463,7 @@ func (s *Service) Play(id, stateID string) error {
 	s.opt.Hooks.Run(hooks.GameStart, g.Launch, name, sys.Slug)
 	s.opt.Window.Hide()
 	go func() {
-		res, err := launcher.Run(context.Background(), args, env)
+		res, err := launcher.Run(context.Background(), args, nil)
 		s.opt.Window.Show()
 		u.store.RecordPlay(id, res.Duration, time.Now())
 		session := history.Session{Game: id, System: sys.Slug, Name: name, Start: started.Unix(), Seconds: int64(res.Duration.Seconds()), Mode: mode, Code: res.Code}

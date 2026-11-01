@@ -70,8 +70,6 @@ type SaveDirs struct {
 type Settings struct {
 	LibraryDirs []LibraryDir  `json:"libraryDirs"`
 	ImportDir   string        `json:"importDir"`
-	EmulatorBin string        `json:"emulatorBin"`
-	CoresDir    string        `json:"coresDir"`
 	Fullscreen  bool          `json:"fullscreen"`
 	ESDEDir     string        `json:"esdeDir"` // capas e descrições locais (gamelists do ES-DE)
 	Covers      Covers        `json:"covers"`
@@ -81,8 +79,8 @@ type Settings struct {
 	Saves       SaveDirs      `json:"saves"`
 }
 
-// Defaults usa a pasta do usuário. bin e cores vêm de quem inicia o app.
-func Defaults(home, bin, cores string) Settings {
+// Defaults usa a pasta do usuário.
+func Defaults(home string) Settings {
 	varApp := filepath.Join(home, ".var", "app")
 	ra := filepath.Join(varApp, "org.libretro.RetroArch", "config", "retroarch")
 	psp := filepath.Join(varApp, "org.ppsspp.PPSSPP", "config", "ppsspp", "PSP")
@@ -91,11 +89,9 @@ func Defaults(home, bin, cores string) Settings {
 		LibraryDirs: []LibraryDir{
 			{Path: filepath.Join(home, "Games", "roms"), Label: "Jogos", Writable: true},
 		},
-		ImportDir:   filepath.Join(home, "Games", "roms"),
-		EmulatorBin: bin,
-		CoresDir:    cores,
-		Fullscreen:  true,
-		ESDEDir:     filepath.Join(home, "ES-DE"),
+		ImportDir:  filepath.Join(home, "Games", "roms"),
+		Fullscreen: true,
+		ESDEDir:    filepath.Join(home, "ES-DE"),
 		Covers: Covers{
 			Images: "https://thumbnails.libretro.com",
 			DB:     "https://raw.githubusercontent.com/libretro/libretro-database/master/metadat",

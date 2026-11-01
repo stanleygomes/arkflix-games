@@ -1,8 +1,0 @@
-#!/bin/sh
-# RetroArch compilado. Config própria (a do Flatpak aponta pra /app/...), mas
-# saves, states e BIOS nas pastas do Flatpak: o backup do solomon continua valendo.
-# ARKFLIX_RA_APPEND: configs extras do app (controle, continuar de onde parou).
-# pastas padrão do RetroArch (playlists, histórico) em home/, não no ~/.config
-export XDG_CONFIG_HOME="@STATE@/retroarch-xdg"
-exec "@PREFIX@/bin/retroarch" --config "@STATE@/retroarch.cfg" \
-  --appendconfig "@STATE@/retroarch-paths.cfg${ARKFLIX_RA_APPEND:+|$ARKFLIX_RA_APPEND}" "$@"

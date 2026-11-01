@@ -67,7 +67,7 @@ test('jogar pelo destaque abre o emulador e volta com aviso', async ({ page, app
   await expect(page.getByRole('dialog', { name: /Jogando/ })).toBeVisible()
   await expect(page.getByRole('dialog', { name: /Jogando/ })).toBeHidden({ timeout: 8000 })
   await expect(page.locator('.toasts')).toContainText('Super Mario Bros. 3')
-  expect(app.calls()).toMatch(/retroarch\|--fullscreen -L .*mesen_libretro\.so .*Super Mario Bros\. 3\.zip/)
+  expect(app.calls()).toMatch(/retroarch\|--fullscreen --appendconfig=\S*retroarch-input\.cfg -L .*mesen_libretro\.so .*Super Mario Bros\. 3\.zip/)
   // script de fim de jogo (é assim que o backup do solomon dispara)
   await expect.poll(() => (app.exists('hook.log') ? app.read('hook.log') : '')).toMatch(/Super Mario Bros\. 3\.zip\|Super Mario Bros\. 3\|nes\|\d+\|/)
   // jogou: aparece a coleção Recentes e a fileira "Continuar jogando" no Início
