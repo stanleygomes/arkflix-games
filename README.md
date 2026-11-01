@@ -109,7 +109,15 @@ trilha chiptune, tudo desligável.
 **Controles.** Xbox, PlayStation, 8BitDo e teclado. O app lê o controle direto do
 kernel (evdev), reconhece o fabricante e mostra os símbolos certos (A/B, ✕/○).
 Confirma com o botão de baixo, volta com o da direita; L1/R1 trocam de console.
-Dentro do jogo: Select + Start sai, Select + R salva, Select + L carrega.
+Dentro do jogo, igual em todos os emuladores: Esc ou Select + botão de cima
+abre o menu do emulador (pausa, salvar, carregar); F10 ou Select + Start sai e
+volta pro app. Fora do PSP e do PS2, Select + R salva e Select + L carrega. No
+PPSSPP e no PCSX2 do Flatpak, o app ajusta só esses atalhos e a saída (sem
+pergunta de confirmação; "sair" no menu de pausa fecha o emulador) e guarda o
+arquivo original como `<arquivo>.arkflix-backup`. Esses dois só ficam ajustados
+depois de abertos uma vez (o PCSX2 pede a BIOS no primeiro uso). Num jogo
+aberto pelo app, o RetroArch não grava a config ao sair: um ajuste feito no
+menu dele nessa hora vale só pra sessão.
 
 **Acessibilidade.** Texto de 100% a 175%, alto contraste (preto, branco e amarelo),
 reduzir animações, títulos sem fonte pixel e a fonte Atkinson Hyperlegible,

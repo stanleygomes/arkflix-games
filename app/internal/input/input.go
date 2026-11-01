@@ -136,7 +136,11 @@ func bind(lines *[]string, prefix, phys string) {
 
 // RetroArchConfig gera as linhas de entrada e atalhos do RetroArch.
 // Atalhos no controle: Select segurado + Start sai, + R salva, + L carrega,
-// + X abre o menu. No teclado: Esc, F2, F4, F1.
+// + X (botão de cima) abre o menu. No teclado: F10, F2, F4, Esc. Iguais no
+// PPSSPP e no PCSX2 (package emucfg).
+//
+// config_save_on_exit desligado: o RetroArch gravaria esta config (e as
+// pastas de save de um perfil) por cima da config do Flatpak ao sair.
 func RetroArchConfig(m Mapping) string {
 	m = m.Complete()
 	lines := []string{
@@ -148,8 +152,6 @@ func RetroArchConfig(m Mapping) string {
 		`savestate_auto_index = "false"`,
 		`quit_press_twice = "false"`,
 		`pause_nonactive = "false"`,
-		// sem isso o RetroArch grava esta config (e as pastas de save de um
-		// perfil) por cima da config do Flatpak ao sair
 		`config_save_on_exit = "false"`,
 	}
 	for _, b := range RetroPad {
@@ -165,10 +167,10 @@ func RetroArchConfig(m Mapping) string {
 	}
 	hotkeys := []struct{ name, rp, key string }{
 		{"input_enable_hotkey", "select", "nul"},
-		{"input_exit_emulator", "start", "escape"},
+		{"input_exit_emulator", "start", "f10"},
 		{"input_save_state", "r", "f2"},
 		{"input_load_state", "l", "f4"},
-		{"input_menu_toggle", "x", "f1"},
+		{"input_menu_toggle", "x", "escape"},
 	}
 	for _, h := range hotkeys {
 		bind(&lines, h.name, m.Pad[h.rp])

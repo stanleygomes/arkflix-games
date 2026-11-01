@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,6 +22,7 @@ import (
 	"time"
 
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
+	"github.com/stanleygomes/arkflix-games/app/internal/emucfg"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
 	"github.com/stanleygomes/arkflix-games/app/internal/history"
 	"github.com/stanleygomes/arkflix-games/app/internal/hooks"
@@ -451,6 +453,9 @@ func (s *Service) Play(id, stateID string) error {
 		if sys.Emulator != catalog.RetroArch {
 			resume.Slot = 0
 		}
+	}
+	if s.opt.Emulators.Bin == "" {
+		prepareEmulator(sys.Emulator)
 	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()
@@ -967,4 +972,20 @@ func (s *Service) OpenManual(id string) error {
 		return errors.New("este jogo não tem manual")
 	}
 	return s.opt.Window.OpenFile(e.info.Manual)
+}
+
+// prepareEmulator deixa menu e saída iguais aos do RetroArch no PPSSPP e no
+// PCSX2 do Flatpak. Falhar aqui não impede o jogo: abre com o padrão dele.
+func prepareEmulator(emulator string) {
+	home, _ := os.UserHomeDir()
+	var err error
+	switch emulator {
+	case catalog.PPSSPP:
+		err = emucfg.PPSSPP(emucfg.PPSSPPDir(home))
+	case catalog.PCSX2:
+		err = emucfg.PCSX2(emucfg.PCSX2Ini(home))
+	}
+	if err != nil && !errors.Is(err, emucfg.ErrNotSetUp) {
+		log.Printf("atalhos do %s: %v", emulator, err)
+	}
 }

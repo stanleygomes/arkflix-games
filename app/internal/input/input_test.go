@@ -32,8 +32,9 @@ func TestRetroArchConfig(t *testing.T) {
 		`input_player1_start = "enter"`,
 		`input_enable_hotkey_btn = "4"`, // select
 		`input_exit_emulator_btn = "6"`, // start
-		`input_exit_emulator = "escape"`,
-		`config_save_on_exit = "false"`,
+		`input_exit_emulator = "f10"`,
+		`input_menu_toggle = "escape"`,
+		`config_save_on_exit = "false"`, // não grava por cima da config do Flatpak
 		`input_player1_l_x_plus_axis = "+0"`,
 		`savestate_thumbnail_enable = "true"`,
 	} {

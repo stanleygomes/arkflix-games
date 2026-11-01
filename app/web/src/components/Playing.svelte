@@ -14,10 +14,9 @@
       <h2 id="playing-title" class="pixel">Jogando {p.name}</h2>
       <p class="muted">Feche o jogo pra voltar. Atalhos dentro do jogo:</p>
       <ul class="tips">
-        <li><Glyph button="select" {family} /> + <Glyph button="start" {family} /> sair do jogo</li>
-        <li><Glyph button="select" {family} /> + <Glyph button="r1" {family} /> salvar</li>
-        <li><Glyph button="select" {family} /> + <Glyph button="l1" {family} /> carregar</li>
-        <li><Glyph button="select" {family} /> + <Glyph button="north" {family} /> menu</li>
+        <li><Glyph button="select" {family} /> + <Glyph button="north" {family} /> menu do emulador · Esc</li>
+        <li><Glyph button="select" {family} /> + <Glyph button="start" {family} /> sair do jogo · F10</li>
+        <li><Glyph button="select" {family} /> + <Glyph button="r1" {family} /> salvar · <Glyph button="select" {family} /> + <Glyph button="l1" {family} /> carregar (menos PSP e PS2)</li>
       </ul>
     </div>
   </div>

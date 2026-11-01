@@ -34,12 +34,15 @@
     <li>Teclado: setas, Enter, Esc, F (favorito), I (detalhes), Q/E (seções), F11 (tela cheia)</li>
   </ul>
 
-  <h3>Dentro do jogo (RetroArch)</h3>
+  <h3>Dentro do jogo (todos os consoles)</h3>
   <ul class="keys">
-    <li><Glyph button="select" {family} /> + <Glyph button="start" {family} /> sair · Esc no teclado</li>
+    <li><Glyph button="select" {family} /> + <Glyph button="north" {family} /> menu do emulador (pausa, salvar, carregar) · Esc</li>
+    <li><Glyph button="select" {family} /> + <Glyph button="start" {family} /> sair e voltar pro app · F10</li>
+  </ul>
+  <h3>Atalhos rápidos (menos PSP e PS2)</h3>
+  <ul class="keys">
     <li><Glyph button="select" {family} /> + <Glyph button="r1" {family} /> salvar · F2</li>
     <li><Glyph button="select" {family} /> + <Glyph button="l1" {family} /> carregar · F4</li>
-    <li><Glyph button="select" {family} /> + <Glyph button="north" {family} /> menu · F1</li>
   </ul>
 
   <h3>Scripts de evento</h3>
