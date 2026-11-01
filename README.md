@@ -93,7 +93,7 @@ roda `bin/release.sh --publish`, que lê os commits desde a última tag e:
 
 | Commits desde a última tag | Versão |
 | --- | --- |
-| algum `tipo!:` ou `BREAKING CHANGE` no corpo | major (`v1.4.2` → `v2.0.0`) |
+| algum `tipo!:` ou linha `BREAKING CHANGE: ...` no corpo | major (`v1.4.2` → `v2.0.0`) |
 | algum `feat` | minor (`v1.4.2` → `v1.5.0`) |
 | algum `fix` ou `perf` | patch (`v1.4.2` → `v1.4.3`) |
 | só `docs`, `chore`, `test`, `ci`, `refactor`... | nada |

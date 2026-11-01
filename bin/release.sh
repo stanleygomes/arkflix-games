@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Próxima versão (semver) a partir dos Conventional Commits desde a última tag.
-#   feat -> minor | fix, perf -> patch | tipo! ou BREAKING CHANGE -> major
+#   feat -> minor | fix, perf -> patch | tipo! ou footer "BREAKING CHANGE:" -> major
 #   docs, chore, test, ci, refactor, style, build sozinhos: sem release
 #
 # Uso: bin/release.sh            # mostra a versão e o changelog, não cria nada
@@ -23,7 +23,8 @@ while IFS=$'\x1f' read -r -d $'\x1e' hash subject body; do
   line="- ${subject} (${hash:0:7})"
   if [[ $subject =~ $re ]]; then
     type=${BASH_REMATCH[1]}
-    if [[ -n ${BASH_REMATCH[3]} || $body == *"BREAKING CHANGE"* ]]; then
+    # footer da spec: linha começando com "BREAKING CHANGE:", não a frase no meio
+    if [[ -n ${BASH_REMATCH[3]} ]] || grep -qE '^BREAKING[ -]CHANGE: ' <<<"$body"; then
       section[breaking]+="$line"$'\n'
       bump=3
     fi
