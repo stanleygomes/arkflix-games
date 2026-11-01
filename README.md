@@ -171,8 +171,9 @@ ao fechar, sobe o que mudou. Um arquivo daqui nunca é trocado por um mais velho
 Saves de PSP e PS2 não sincronizam. Sem internet, os jogos baixados abrem
 normalmente. HTTP sem TLS só é aceito pra servidor nesta máquina.
 
-**Perfis.** Com mais de um perfil, o app abre em "Quem vai jogar?" (avatar em
-pixel art, cor e PIN opcional de 4 números). Cada perfil tem os próprios
+**Perfis.** Na primeira vez, o app pede nome e avatar (34 personagens clássicos,
+de Pac-Man e Mario a Sonic e Mega Man, ou um desenho em pixel art). Com mais de
+um perfil, abre em "Quem vai jogar?" (avatar, cor e PIN opcional de 4 números). Cada perfil tem os próprios
 favoritos, listas, histórico, estatísticas, acessibilidade, mapeamento de
 controle e saves do RetroArch. Saves de PSP e PS2 são compartilhados: o PPSSPP e
 o PCSX2 não deixam trocar a pasta de saves por linha de comando. Troque de
@@ -352,6 +353,11 @@ a `scph5501.bin`, em
 Os emuladores e cores não fazem parte deste repositório: cada um é distribuído
 pelo Flathub ou pelo libretro sob a própria licença. Snes9x, Genesis Plus GX e
 FinalBurn Neo proíbem uso comercial.
+
+Os avatares de personagens (`app/web/public/avatars/`) são os ícones do Super
+Smash Bros. Ultimate, via [SmashWiki](https://www.ssbwiki.com); os personagens
+pertencem à Nintendo, Sega, Bandai Namco, Konami, Capcom, Square Enix, SNK e
+Microsoft, e são usados aqui sem fins comerciais.
 
 As fontes do app (Pixelify Sans e Atkinson Hyperlegible) estão sob a SIL Open
 Font License, com o texto da licença em `app/web/public/fonts/`.

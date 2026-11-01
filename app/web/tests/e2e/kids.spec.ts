@@ -18,6 +18,7 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
   await call(page, app, 'SetProfilePIN', ['main', '', '9090'])
   await page.goto(app.url)
   await page.getByRole('button', { name: /^Jogador 1/ }).click()
+  await page.locator('.dots').waitFor()
   await page.keyboard.type('9090')
   await page.getByRole('button', { name: 'Trocar perfil (Jogador 1)' }).click()
   await page.getByRole('button', { name: 'Gerenciar perfis' }).click()

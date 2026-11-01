@@ -10,21 +10,13 @@
   import { focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
-  import { app, askPIN, back, confirm, prompt, toast } from '../lib/state.svelte'
+  import { avatarName } from '../lib/avatars'
+  import { app, askPIN, back, confirm, prompt, resetTo, toast } from '../lib/state.svelte'
 
-  let { id }: { id?: string } = $props()
+  // setup: primeira vez do app (configurar o perfil principal antes de tudo)
+  let { id, setup = false }: { id?: string; setup?: boolean } = $props()
 
   const COLOR_NAMES = ['Vermelho', 'Laranja', 'Amarelo', 'Verde', 'Azul', 'Roxo', 'Rosa', 'Turquesa']
-  const AVATAR_NAMES: Record<string, string> = {
-    knight: 'Cavaleiro',
-    mage: 'Mago',
-    ghost: 'Fantasma',
-    cat: 'Gato',
-    robot: 'Robô',
-    mushroom: 'Cogumelo',
-    alien: 'Alienígena',
-    dragon: 'Dragão',
-  }
 
   const avatars = $derived(app.profile?.avatars ?? [])
   const colors = $derived(app.profile?.colors ?? [])
@@ -38,7 +30,7 @@
   $effect(() => {
     const p = existing
     const used = new Set(app.profile?.profiles.map((x) => x.color))
-    name = p?.name ?? ''
+    name = setup ? '' : (p?.name ?? '')
     avatar = p?.avatar ?? avatars[(app.profile?.profiles.length ?? 0) % avatars.length] ?? 'knight'
     color = p?.color ?? colors.find((c) => !used.has(c)) ?? colors[0] ?? '#3a86d8'
     hasPIN = !!p?.hasPIN
@@ -65,6 +57,7 @@
   $effect(() =>
     pushHandler((a) => {
       if (app.pin || app.prompt || app.confirm) return false
+      if (setup && (a === 'back' || a === 'menu' || a === 'search')) return true // primeiro configura
       return a === 'fav' || a === 'details' || a === 'prevTab' || a === 'nextTab' || a === 'random'
     }),
   )
@@ -88,6 +81,11 @@
       else await api.createProfile(name, avatar, color)
       await refresh()
       play('accept')
+      if (setup) {
+        toast(`Olá, ${name}!`, 'ok', 2500)
+        resetTo({ name: 'home' })
+        return
+      }
       toast(existing ? 'Perfil salvo' : `Perfil "${name}" criado`, 'ok', 2500)
       back()
     } catch (err) {
@@ -165,7 +163,8 @@
       <p class="pixel big-name">{name || 'Sem nome'}</p>
     </div>
     <div class="form">
-      <h1 id="editor-title" class="pixel">{existing ? 'Editar perfil' : 'Novo perfil'}</h1>
+      <h1 id="editor-title" class="pixel">{setup ? 'Boas-vindas! Monte seu perfil' : existing ? 'Editar perfil' : 'Novo perfil'}</h1>
+      {#if setup}<p class="muted">Escolha seu nome e um personagem. Dá pra mudar depois e criar perfis pra mais gente.</p>{/if}
       <button class="btn field" data-nav data-nav-default onclick={editName}>
         <span class="muted">Nome</span> <strong>{name || 'Escolher nome'}</strong>
       </button>
@@ -174,7 +173,7 @@
         <legend>Avatar</legend>
         <div class="choices" role="radiogroup" aria-label="Avatar">
           {#each avatars as a (a)}
-            <button class="choice" data-nav role="radio" aria-checked={avatar === a} aria-label={AVATAR_NAMES[a] ?? a} onclick={() => (avatar = a)}>
+            <button class="choice" data-nav role="radio" aria-checked={avatar === a} aria-label={avatarName(a)} onclick={() => (avatar = a)}>
               <Avatar avatar={a} color={color} size="3.6rem" />
             </button>
           {/each}
@@ -192,7 +191,7 @@
         </div>
       </fieldset>
 
-      {#if existing}
+      {#if existing && !setup}
         <fieldset>
           <legend>PIN</legend>
           <p class="muted">Com PIN, só quem sabe os 4 números entra neste perfil.</p>
@@ -217,15 +216,15 @@
       {/if}
 
       <div class="row">
-        <button class="btn primary" data-nav disabled={!name} onclick={save}><Icon name="check" /> {existing ? 'Salvar' : 'Criar perfil'}</button>
-        <button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>
+        <button class="btn primary" data-nav disabled={!name} onclick={save}><Icon name="check" /> {setup ? 'Começar' : existing ? 'Salvar' : 'Criar perfil'}</button>
+        {#if !setup}<button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>{/if}
         {#if existing && !existing.main && existing.id !== app.profile?.current}
           <button class="btn danger" data-nav onclick={remove}><Icon name="trash" /> Apagar perfil</button>
         {/if}
       </div>
     </div>
   </main>
-  <HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />
+  <HelpBar hints={setup ? [{ button: 'south', label: 'Escolher' }] : [{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />
 </div>
 
 <style>

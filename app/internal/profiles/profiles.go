@@ -29,8 +29,13 @@ const Main = "main"
 // Max é quantos perfis cabem na tela de escolha.
 const Max = 8
 
-// Avatars são os desenhos em pixel art que a interface sabe desenhar.
-var Avatars = []string{"knight", "mage", "ghost", "cat", "robot", "mushroom", "alien", "dragon"}
+// Characters são os personagens clássicos (imagens em app/web/public/avatars),
+// em ordem de estreia; PixelAvatars, os desenhos em pixel art da interface.
+var (
+	Characters   = []string{"pac-man", "mario", "luigi", "donkey-kong", "mr-game-watch", "ice-climbers", "duck-hunt", "rob", "link", "zelda", "samus", "simon", "little-mac", "mega-man", "peach", "bowser", "ness", "kirby", "sonic", "yoshi", "fox", "wario", "ryu", "pikachu", "jigglypuff", "mewtwo", "captain-falcon", "diddy-kong", "king-k-rool", "ganondorf", "cloud", "snake", "terry", "banjo-kazooie"}
+	PixelAvatars = []string{"knight", "mage", "ghost", "cat", "robot", "mushroom", "alien", "dragon"}
+	Avatars      = append(append([]string{}, Characters...), PixelAvatars...)
+)
 
 // Colors são as cores de fundo do avatar.
 var Colors = []string{"#d94848", "#e8902a", "#e8c838", "#44a95a", "#3a86d8", "#8a5ad0", "#d8579a", "#2fb3b3"}
@@ -49,6 +54,9 @@ type Profile struct {
 	Kids    bool   `json:"kids"`
 	PIN     string `json:"pin,omitempty"`
 	Created int64  `json:"created"`
+	// New: o principal criado sozinho na primeira vez, ainda sem nome e
+	// avatar escolhidos (a interface abre a configuração do perfil).
+	New bool `json:"new,omitempty"`
 }
 
 // View é o perfil como a interface vê (sem o hash do PIN).
@@ -81,7 +89,7 @@ func (s *Store) load() error {
 	}
 	raw, err := os.ReadFile(s.path())
 	if errors.Is(err, os.ErrNotExist) {
-		s.data = []Profile{{ID: Main, Name: "Jogador 1", Avatar: Avatars[0], Color: Colors[4], Created: time.Now().Unix()}}
+		s.data = []Profile{{ID: Main, Name: "Jogador 1", Avatar: "mario", Color: Colors[4], Created: time.Now().Unix(), New: true}}
 		return nil
 	}
 	if err != nil {
@@ -196,7 +204,7 @@ func (s *Store) Update(id, name, avatar, color string) (Profile, error) {
 		if err != nil {
 			return err
 		}
-		p.Name, p.Avatar, p.Color = clean, avatar, color
+		p.Name, p.Avatar, p.Color, p.New = clean, avatar, color, false
 		return nil
 	})
 }

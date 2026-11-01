@@ -238,6 +238,7 @@ export interface ProfileState {
   profiles: Profile[]
   current: string
   choose: boolean
+  setup: boolean
   avatars: string[]
   colors: string[]
 }

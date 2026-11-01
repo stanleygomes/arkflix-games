@@ -16,12 +16,27 @@ func TestMigrationKeepsRootAsMain(t *testing.T) {
 	if err != nil || len(all) != 1 || all[0].ID != profiles.Main {
 		t.Fatalf("sem arquivo vira um perfil principal: %+v %v", all, err)
 	}
-	if s.DataDir(profiles.Main) != dir {
-		t.Fatal("o principal usa a pasta raiz (dados de antes continuam)")
-	}
 	if _, err := os.Stat(filepath.Join(dir, "profiles.json")); err == nil {
 		t.Fatal("só ler não grava nada")
 	}
+	if !all[0].New || all[0].Avatar != "mario" {
+		t.Fatalf("primeira vez: perfil a configurar, com o Mario: %+v", all[0])
+	}
+	if p, err := s.Update(profiles.Main, "Stanley", "sonic", profiles.Colors[1]); err != nil || p.New {
+		t.Fatalf("configurar tira o New: %+v %v", p, err)
+	}
+	if again, _ := (&profiles.Store{Dir: dir}).All(); again[0].New || again[0].Avatar != "sonic" {
+		t.Fatalf("persistiu: %+v", again)
+	}
+	if _, err := s.Update(profiles.Main, "Stanley", "knight", profiles.Colors[1]); err != nil {
+		t.Fatal("avatares em pixel art continuam valendo")
+	}
+	os.Remove(filepath.Join(dir, "profiles.json"))
+	s = &profiles.Store{Dir: dir}
+	if s.DataDir(profiles.Main) != dir {
+		t.Fatal("o principal usa a pasta raiz (dados de antes continuam)")
+	}
+
 }
 
 func TestLifecycleAndPIN(t *testing.T) {
@@ -34,7 +49,7 @@ func TestLifecycleAndPIN(t *testing.T) {
 	if st, err := os.Stat(s.DataDir(ana.ID)); err != nil || !st.IsDir() {
 		t.Fatal("perfil novo ganha pasta própria")
 	}
-	for _, bad := range [][3]string{{"ana clara", "cat", profiles.Colors[0]}, {"", "cat", profiles.Colors[0]}, {"X", "pikachu", profiles.Colors[0]}, {"X", "cat", "#000"}, {strings.Repeat("a", 21), "cat", profiles.Colors[0]}} {
+	for _, bad := range [][3]string{{"ana clara", "cat", profiles.Colors[0]}, {"", "cat", profiles.Colors[0]}, {"X", "agumon", profiles.Colors[0]}, {"X", "cat", "#000"}, {strings.Repeat("a", 21), "cat", profiles.Colors[0]}} {
 		if _, err := s.Create(bad[0], bad[1], bad[2]); err == nil {
 			t.Fatalf("devia recusar %v", bad)
 		}

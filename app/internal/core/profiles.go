@@ -123,6 +123,7 @@ type ProfileState struct {
 	Profiles []profiles.View `json:"profiles"`
 	Current  string          `json:"current"`
 	Choose   bool            `json:"choose"`
+	Setup    bool            `json:"setup"` // primeira vez: configurar o perfil principal
 	Avatars  []string        `json:"avatars"`
 	Colors   []string        `json:"colors"`
 }
@@ -136,6 +137,9 @@ func (s *Service) Profiles() (ProfileState, error) {
 	out := ProfileState{Current: s.cur().id, Avatars: profiles.Avatars, Colors: profiles.Colors}
 	for _, p := range all {
 		out.Profiles = append(out.Profiles, p.View())
+		if p.ID == profiles.Main && p.New {
+			out.Setup = true
+		}
 	}
 	s.umu.RLock()
 	out.Choose = len(all) > 1 && !s.chosen

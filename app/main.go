@@ -101,6 +101,9 @@ func openStore(f flags) (*settings.Store, launcher.Spec, error) {
 	data := f.data
 	if f.fixture != "" {
 		env := fixture.NewEnv(f.fixture)
+		if os.Getenv("ARKFLIX_FIXTURE_FIRST_RUN") == "1" {
+			os.Remove(filepath.Join(env.Data, "profiles.json")) // app recém-instalado
+		}
 		// libretro falso (banco e imagens), pra testar capas sem internet
 		thumbsSrv := httptest.NewServer(&fixture.FakeThumbs{})
 		env.Settings.Covers.Images = thumbsSrv.URL + "/thumbs"

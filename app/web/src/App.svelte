@@ -32,7 +32,8 @@
     try {
       const boot = await api.bootstrap()
       applyBoot(boot)
-      if (boot.profile?.choose) resetTo({ name: 'profiles' })
+      if (boot.profile?.setup) resetTo({ name: 'profile', id: 'main', setup: true })
+      else if (boot.profile?.choose) resetTo({ name: 'profiles' })
       app.ready = true
       if (boot.pads?.length) app.family = boot.pads[0].family
       if (boot.running) app.playing = { state: 'running', id: boot.running, name: '' }
@@ -123,7 +124,7 @@
     {:else if current.name === 'profiles'}
       <Profiles />
     {:else if current.name === 'profile'}
-      <ProfileEditor id={current.id} />
+      <ProfileEditor id={current.id} setup={current.setup} />
     {/if}
   {/key}
 {/if}

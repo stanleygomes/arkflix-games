@@ -126,6 +126,8 @@ func NewEnv(root string) Env {
 	e.Settings = settings.Defaults(e.Home)
 	e.Settings.LibraryDirs = append(e.Settings.LibraryDirs, settings.LibraryDir{Path: e.Extra, Label: "Jogos antigos"})
 
+	// perfil principal já configurado (a primeira vez tem teste próprio)
+	put(filepath.Join(e.Data, "profiles.json"), []byte(`[{"id":"main","name":"Jogador 1","avatar":"mario","color":"#3a86d8","created":1}]`))
 	put(filepath.Join(e.Local, "snes", "Super Mario World (U) [!].zip"), ZipBytes(map[string]string{"smw.sfc": "SNES-SMW"}))
 	put(filepath.Join(e.Local, "snes", "Mega Man X (U) (V1.1).zip"), ZipBytes(map[string]string{"mmx.sfc": "MMX"}))
 	put(filepath.Join(e.Local, "genesis", "Sonic The Hedgehog 2 (World) (Rev A).zip"), ZipBytes(map[string]string{"sonic2.md": "MD"}))

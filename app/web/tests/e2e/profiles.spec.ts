@@ -5,6 +5,7 @@ const call = (page: Page, app: App, m: string, args: unknown[] = []) =>
   page.request.post(`${app.url}/api/call/${m}`, { data: args, headers: { 'X-Arkflix': '1' } })
 
 async function typePIN(page: Page, pin: string) {
+  await page.locator('.dots').waitFor() // teclado de PIN aberto (ouve as teclas)
   for (const d of pin) await page.keyboard.press(d)
 }
 
@@ -24,7 +25,7 @@ test('perfis: cria com avatar e PIN, troca, e um não vê favoritos nem saves do
   await page.getByRole('button', { name: /^Nome/ }).click()
   await page.getByRole('dialog', { name: 'Nome do perfil' }).getByLabel('Nome do perfil').fill('Bia')
   await page.keyboard.press('Enter')
-  await page.getByRole('radio', { name: 'Gato' }).click()
+  await page.getByRole('radio', { name: 'Kirby' }).click()
   await page.getByRole('radio', { name: 'Rosa' }).click()
   await axe(page, 'editor de perfil')
   await page.getByRole('button', { name: 'Criar perfil' }).click()
