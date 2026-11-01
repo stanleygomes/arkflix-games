@@ -483,9 +483,9 @@ func (s *Service) Play(id, stateID string) error {
 		// saves mais novos de outro aparelho; sem servidor, joga com o daqui
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		if n, err := s.pullSaves(ctx, e, sys, s.saveDirs()); err != nil {
-			s.opt.Emitter.Emit("task", TaskEvent{ID: "sync:" + id, Label: "Saves do servidor", State: "error", Message: err.Error()})
+			s.opt.Emitter.Emit("task", TaskEvent{ID: "pull:" + id, Label: "Saves do servidor", State: "error", Message: err.Error()})
 		} else if n > 0 {
-			s.opt.Emitter.Emit("task", TaskEvent{ID: "sync:" + id, Label: "Saves do servidor", State: "done", Progress: 1, Message: fmt.Sprintf("%d save(s) mais novo(s) baixado(s)", n)})
+			s.opt.Emitter.Emit("task", TaskEvent{ID: "pull:" + id, Label: "Saves do servidor", State: "done", Progress: 1, Message: fmt.Sprintf("%d save(s) mais novo(s) baixado(s)", n)})
 		}
 		cancel()
 	}
