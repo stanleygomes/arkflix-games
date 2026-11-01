@@ -44,7 +44,8 @@ APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext \
 .PHONY: help deps fetch build es-de retroarch ppsspp pcsx2 rapidyaml cores \
         $(addprefix core-,$(CORE_LIST)) wrappers home run status \
         patch-save patch-apply clean check check-cores check-update check-es-de \
-        check-ppsspp check-pcsx2 release release-install
+        check-ppsspp check-pcsx2 release-notes release-binaries \
+        release-install
 
 ##@ Começo
 
@@ -180,23 +181,21 @@ $(BUILD)/coretest: tests/coretest.c
 DIST := $(BUILD)/dist
 RELEASE_FILES := prefix ppsspp/PPSSPPSDL ppsspp/assets pcsx2/bin coretest
 
-release: ## Valida, empacota o build e publica release no GitHub (tag vAAAA.MM.DD)
-	@test -z "$$(git status --porcelain)" || { echo "❌ commit/push antes do release"; exit 1; }
+release-notes: ## Mostra a próxima versão e o changelog (o CI publica no push)
+	@bin/release.sh
+
+release-binaries: ## Valida, empacota o build e anexa na release da tag do HEAD
+	@test -z "$$(git status --porcelain)" || { echo "❌ commit/push antes"; exit 1; }
 	@git fetch -q --tags origin
-	@test "$$(git rev-parse HEAD)" = "$$(git rev-parse @{u})" || { echo "❌ master ≠ origin: git push"; exit 1; }
+	@tag=$$(git describe --tags --exact-match HEAD 2>/dev/null) || { \
+	  echo "❌ HEAD sem tag: dê push e espere o CI (ou é só docs/chore)"; exit 1; }
 	$(MAKE) --no-print-directory check
-	@set -e; v=v$$(date +%Y.%m.%d); n=1; base=$$v; \
-	while git rev-parse -q --verify "refs/tags/$$v" >/dev/null; do n=$$((n+1)); v=$$base.$$n; done; \
-	file=arkflix-games-$$v-linux-x86_64.tar.gz; mkdir -p $(DIST); \
+	@set -e; tag=$$(git describe --tags --exact-match HEAD); \
+	file=arkflix-games-$$tag-linux-x86_64.tar.gz; mkdir -p $(DIST); \
 	tar -C $(BUILD) -czf $(DIST)/$$file $(RELEASE_FILES); \
 	( cd $(DIST) && sha256sum $$file > $$file.sha256 ); \
-	{ echo "Build de $$(date +%F) no $$(. /etc/os-release; echo $$PRETTY_NAME), make check ok."; \
-	  echo; echo '```'; $(MAKE) --no-print-directory status; echo '```'; \
-	  echo; echo "Instalar: \`make release-install VERSION=$$v\`"; } > $(DIST)/notes.md; \
-	git tag -a $$v -m "release $$v"; git push -q origin $$v; \
-	gh release create $$v $(DIST)/$$file $(DIST)/$$file.sha256 --title "$$v" \
-	  --notes-file $(DIST)/notes.md; \
-	echo "✅ release $$v publicado"
+	gh release upload $$tag $(DIST)/$$file $(DIST)/$$file.sha256 --clobber; \
+	echo "✅ binários anexados na $$tag"
 
 release-install: ## Baixa um release pronto pro build/ (VERSION=vX, padrão: o último)
 	@rm -rf $(DIST)/download; mkdir -p $(DIST)/download

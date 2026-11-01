@@ -88,15 +88,29 @@ baseline. Só alguns casos: `make check-cores CASOS="nes snes"`.
 
 ## Release
 
+Automático: a cada push no `master`, o GitHub Action (`.github/workflows/release.yml`)
+roda `bin/release.sh --publish`, que lê os commits desde a última tag e:
+
+| Commits desde a última tag | Versão |
+| --- | --- |
+| algum `tipo!:` ou `BREAKING CHANGE` no corpo | major (`v1.4.2` → `v2.0.0`) |
+| algum `feat` | minor (`v1.4.2` → `v1.5.0`) |
+| algum `fix` ou `perf` | patch (`v1.4.2` → `v1.4.3`) |
+| só `docs`, `chore`, `test`, `ci`, `refactor`... | nada |
+
+Cria a tag `vX.Y.Z` e a release com o changelog agrupado (Breaking, Novidades,
+Correções, Performance, Outros).
+
 ```bash
-make release                         # check, empacota o build e publica no GitHub
-make release-install                 # PC novo: baixa o último release pro build/
-make release-install VERSION=v2026.11.01
+make release-notes      # prévia: próxima versão e changelog, sem criar nada
+make release-binaries   # anexa os binários na release da tag do HEAD (depois do CI)
+make release-install    # PC novo: baixa os binários do último release pro build/
+make release-install VERSION=v0.2.0
 ```
 
-O `release` só roda com tudo commitado e enviado, e com o `make check` passando.
-A tag é a data (`vAAAA.MM.DD`, com `.2`, `.3` se repetir no dia). As notas levam
-a versão de cada fonte. O pacote tem só os binários do `make run`, compilados pra
-este Ubuntu e com caminho absoluto: clone o repo no mesmo lugar
-(`~/projects/arkflix-games`) antes do `release-install`. O código de cada binário
-é o desta tag (submodules + `patches/`), o que cumpre as licenças GPL.
+Os binários saem do seu PC, não do CI: o `release-binaries` exige o HEAD com
+tag, roda o `make check` (que usa os seus jogos) e só então anexa. O pacote
+tem só o que o `make run` usa, compilado pra este Ubuntu e com caminho
+absoluto: clone o repo no mesmo lugar (`~/projects/arkflix-games`) antes do
+`release-install`. O código de cada binário é o da tag (submodules +
+`patches/`), o que cumpre as licenças GPL.
