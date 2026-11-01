@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ago, bytes, playTime } from '../../src/lib/format'
 import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
-import { normalize, search, sortGames } from '../../src/lib/library'
+import { filterGames, filterGroups, maxPlayers, normalize, search, sortGames } from '../../src/lib/library'
 import type { Game } from '../../src/lib/types'
 import { pickTarget, type Box } from '../../src/lib/nav'
 import { contrast, highContrastPalette, homePalette, onColor } from '../../src/lib/palette'
@@ -122,7 +122,7 @@ describe('formatação', () => {
 })
 
 const fakeGame = (name: string, extra: Partial<Game> = {}): Game => ({
-  id: name, system: 'snes', title: name, fileName: `${name}.zip`, folder: 'snes', root: '/', local: true, size: 1, added: 0,
+  id: name, system: 'snes', title: name, fileName: `${name}.zip`, folder: 'snes', root: '/', local: true, size: 1, added: 0, hasSaves: false,
   name, summary: '', year: 0, genres: [], players: '', cover: '', snap: '', titleShot: '', favorite: false,
   lastPlayed: 0, playTime: 0, plays: 0, ...extra,
 })
@@ -167,5 +167,36 @@ describe('ordenação', () => {
   it('não altera a lista original', () => {
     sortGames(games, 'playTime')
     expect(games[0].name).toBe('Beta')
+  })
+})
+
+describe('filtros', () => {
+  const games = [
+    fakeGame('A', { genres: ['Plataforma'], players: '1-2', favorite: true, year: 1990, hasSaves: true, lastPlayed: 5 }),
+    fakeGame('B', { genres: ['Esporte'], players: '1', year: 1998 }),
+    fakeGame('C', { genres: ['Plataforma', 'Ação'], players: '1-4', year: 1993, completed: true, lastPlayed: 9 }),
+  ]
+  const names = (f: string[]) => filterGames(games, f).map((g) => g.name)
+  it('jogadores', () => {
+    expect(maxPlayers('1-4')).toBe(4)
+    expect(maxPlayers('')).toBe(0)
+    expect(names(['players:2'])).toEqual(['A', 'C'])
+    expect(names(['players:1'])).toEqual(['B'])
+  })
+  it('mesmo grupo soma, grupos diferentes combinam', () => {
+    expect(names(['genre:Esporte', 'genre:Ação'])).toEqual(['B', 'C'])
+    expect(names(['genre:Plataforma', 'decade:1990'])).toEqual(['A', 'C'])
+    expect(names(['genre:Plataforma', 'players:2', 'fav'])).toEqual(['A'])
+    expect(names(['never'])).toEqual(['B'])
+    expect(names(['saves'])).toEqual(['A'])
+    expect(names(['completed'])).toEqual(['C'])
+    expect(names([])).toEqual(['A', 'B', 'C'])
+  })
+  it('grupos só com o que existe', () => {
+    const groups = filterGroups(games)
+    expect(groups.map((g) => g.id)).toEqual(['quick', 'players', 'genre', 'decade'])
+    expect(groups[2].options.map((o) => o.label)).toEqual(['Ação', 'Esporte', 'Plataforma'])
+    expect(groups[3].options.map((o) => o.id)).toEqual(['decade:1990'])
+    expect(filterGroups([fakeGame('X', { lastPlayed: 1 })])).toEqual([])
   })
 })

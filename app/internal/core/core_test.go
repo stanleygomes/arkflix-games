@@ -361,3 +361,12 @@ func TestUpdateCovers(t *testing.T) {
 		t.Fatalf("segunda vez: %+v", ev)
 	}
 }
+
+func TestHasSaves(t *testing.T) {
+	h := setup(t)
+	for name, want := range map[string]bool{"Super Mario World": true, "Mega Man X": false, "Lara Croft Tomb Raider - Legend": true, "FIFA Soccer 07": true, "Sonic The Hedgehog 2": false} {
+		if got := h.game(t, name).HasSaves; got != want {
+			t.Errorf("%s: hasSaves=%v, esperado %v", name, got, want)
+		}
+	}
+}

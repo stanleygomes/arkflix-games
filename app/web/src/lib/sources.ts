@@ -15,6 +15,10 @@ export function sourceGames(source: string): Game[] {
   return []
 }
 
+export function filtersOf(source: string): string[] {
+  return app.settings?.ui?.filters?.[source] ?? []
+}
+
 export function sortOf(source: string): string {
   return app.settings?.ui?.sort?.[source] ?? 'name'
 }

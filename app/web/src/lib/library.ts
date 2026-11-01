@@ -47,7 +47,7 @@ const byName = (a: Game, b: Game) => a.name.localeCompare(b.name, 'pt-BR', { sen
 
 /** Ordena sem mexer na lista original; empate desempata pelo nome. Sem ano vai pro fim. */
 export function sortGames(games: Game[], key: SortKey | string | undefined): Game[] {
-  const rating = (g: Game) => (g as Game & { rating?: number }).rating ?? 0
+  const rating = (g: Game) => g.rating ?? 0
   const cmp: Record<SortKey, (a: Game, b: Game) => number> = {
     name: () => 0,
     yearAsc: (a, b) => (a.year || 9999) - (b.year || 9999),
@@ -60,4 +60,70 @@ export function sortGames(games: Game[], key: SortKey | string | undefined): Gam
   }
   const fn = cmp[(key as SortKey) in cmp ? (key as SortKey) : 'name']
   return [...games].sort((a, b) => fn(a, b) || byName(a, b))
+}
+
+/** Maior número de jogadores ("1-2" -> 2, "1" -> 1, "" -> 0). */
+export function maxPlayers(players: string): number {
+  const nums = (players.match(/\d+/g) ?? []).map(Number)
+  return nums.length ? Math.max(...nums) : 0
+}
+
+export interface FilterGroup {
+  id: string
+  label: string
+  options: { id: string; label: string }[]
+}
+
+/** Grupos de filtro possíveis pra esta lista (só o que tem jogo). */
+export function filterGroups(games: Game[]): FilterGroup[] {
+  const quick = [
+    { id: 'fav', label: 'Favoritos', ok: games.some((g) => g.favorite) },
+    { id: 'never', label: 'Nunca jogados', ok: games.some((g) => !g.lastPlayed) },
+    { id: 'saves', label: 'Com save', ok: games.some((g) => g.hasSaves) },
+    { id: 'completed', label: 'Completos', ok: games.some((g) => g.completed) },
+  ].filter((q) => q.ok)
+  const players = [
+    { id: 'players:1', label: '1 jogador', ok: games.some((g) => maxPlayers(g.players) === 1) },
+    { id: 'players:2', label: '2 ou mais', ok: games.some((g) => maxPlayers(g.players) >= 2) },
+  ].filter((q) => q.ok)
+  const genres = [...new Set(games.flatMap((g) => g.genres))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  const decades = [...new Set(games.filter((g) => g.year).map((g) => Math.floor(g.year / 10) * 10))].sort()
+  return [
+    { id: 'quick', label: 'Mostrar só', options: quick },
+    { id: 'players', label: 'Jogadores', options: players },
+    { id: 'genre', label: 'Gênero', options: genres.map((g) => ({ id: `genre:${g}`, label: g })) },
+    { id: 'decade', label: 'Década', options: decades.map((d) => ({ id: `decade:${d}`, label: `Anos ${String(d).slice(2)} (${d})` })) },
+  ].filter((g) => g.options.length)
+}
+
+function matches(g: Game, f: string): boolean {
+  const [kind, value] = f.split(/:(.*)/s)
+  switch (kind) {
+    case 'fav':
+      return g.favorite
+    case 'never':
+      return !g.lastPlayed
+    case 'saves':
+      return g.hasSaves
+    case 'completed':
+      return !!g.completed
+    case 'players':
+      return value === '1' ? maxPlayers(g.players) === 1 : maxPlayers(g.players) >= 2
+    case 'genre':
+      return g.genres.includes(value)
+    case 'decade':
+      return !!g.year && Math.floor(g.year / 10) * 10 === Number(value)
+  }
+  return true
+}
+
+/** Filtros do mesmo grupo somam (OU); grupos diferentes se combinam (E). */
+export function filterGames(games: Game[], active: string[]): Game[] {
+  if (!active.length) return games
+  const groups = new Map<string, string[]>()
+  for (const f of active) {
+    const kind = f.includes(':') ? f.split(':')[0] : 'quick-' + f
+    groups.set(kind, [...(groups.get(kind) ?? []), f])
+  }
+  return games.filter((g) => [...groups.values()].every((fs) => fs.some((f) => matches(g, f))))
 }

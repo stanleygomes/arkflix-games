@@ -44,6 +44,9 @@ export interface Game {
   lastPlayed: number
   playTime: number
   plays: number
+  hasSaves: boolean
+  completed?: boolean
+  rating?: number
 }
 
 export interface LibraryDir {

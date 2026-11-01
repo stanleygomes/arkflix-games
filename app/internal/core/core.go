@@ -102,6 +102,7 @@ type GameView struct {
 	LastPlayed int64    `json:"lastPlayed"`
 	PlayTime   int64    `json:"playTime"`
 	Plays      int      `json:"plays"`
+	HasSaves   bool     `json:"hasSaves"`
 }
 
 // Options vem de quem inicia o app (main). Fonte, metadados e saves vazios
@@ -124,9 +125,9 @@ type Options struct {
 }
 
 type entry struct {
-	game  library.Game
-	info  meta.Info
-	cover string
+	game     library.Game
+	info     meta.Info
+	hasSaves bool
 }
 
 // Service é a API do app.
@@ -204,11 +205,29 @@ func (s *Service) scan() {
 	games := s.opt.Source.Scan()
 	entries := make([]entry, len(games))
 	for i, g := range games {
-		entries[i] = entry{game: g, info: s.opt.Meta.Lookup(g)}
+		entries[i] = entry{game: g, info: s.opt.Meta.Lookup(g), hasSaves: s.hasSaves(g)}
 	}
 	s.mu.Lock()
 	s.entries = entries
 	s.mu.Unlock()
+}
+
+// hasSaves: save state ou save do próprio jogo (memory card compartilhado não conta).
+func (s *Service) hasSaves(g library.Game) bool {
+	sys, ok := catalog.Find(g.System)
+	if !ok {
+		return false
+	}
+	l := s.opt.Saves.List(saves.Game{System: sys, Launch: g.Launch})
+	if len(l.States) > 0 {
+		return true
+	}
+	for _, f := range l.Files {
+		if !f.Shared {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Service) view(e entry, st settings.State) GameView {
@@ -216,7 +235,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	v := GameView{
 		Game: g, Name: g.Title, Summary: e.info.Summary, Year: e.info.Year, Genres: e.info.Genres,
 		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
-		Plays: s.plays[g.ID],
+		Plays: s.plays[g.ID], HasSaves: e.hasSaves,
 	}
 	if e.info.Name != "" {
 		v.Name = e.info.Name
