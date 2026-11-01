@@ -17,6 +17,10 @@ VAR_APP := $(HOME)/.var/app
 GAMES   := $(HOME)/Games/arkflix
 JOBS    ?= $(shell nproc)
 CMAKE   := cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
+APP     := $(ROOT)/app
+WEB     := $(APP)/web
+APP_BIN := $(PREFIX)/bin/arkflix-games
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 # ccache, se instalado: recompilar do zero leva minutos (cache em ~/.cache/ccache)
 CCACHE := $(shell command -v ccache 2>/dev/null)
@@ -48,13 +52,14 @@ APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext ccache \
   libpng-dev libjpeg-dev libwebp-dev libpcap-dev libbacktrace-dev \
   qt6-base-dev qt6-base-private-dev qt6-tools-dev qt6-tools-dev-tools \
   qt6-l10n-tools qt6-svg-dev libkddockwidgets-qt6-dev libplutosvg-dev \
-  libplutovg-dev directx-headers-dev libshaderc-dev extra-cmake-modules
+  libplutovg-dev directx-headers-dev libshaderc-dev extra-cmake-modules \
+  libgtk-3-dev libwebkit2gtk-4.1-dev
 
 .PHONY: help deps fetch build es-de retroarch ppsspp pcsx2 rapidyaml cores \
         $(addprefix core-,$(CORE_LIST)) wrappers home run status \
         patch-save patch-apply clean check check-cores check-update check-es-de \
         check-ppsspp check-pcsx2 release-notes release-binaries \
-        release-install
+        release-install app-deps app-web app run-web run-esde check-app check-app-desktop
 
 ##@ Começo
 
@@ -75,7 +80,7 @@ fetch: ## Baixa os fontes (submodules rasos, nas versões travadas)
 
 ##@ Build
 
-build: es-de retroarch cores ppsspp pcsx2 wrappers $(BUILD)/coretest ## Compila tudo
+build: es-de retroarch cores ppsspp pcsx2 app wrappers $(BUILD)/coretest ## Compila tudo
 
 es-de: ## Frontend ES-DE
 	$(CMAKE) -S src/es-de -B $(BUILD)/es-de -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
@@ -160,16 +165,47 @@ wrappers: ## Lançadores em build/bin (saves no mesmo lugar dos Flatpaks)
 home: ## Pasta do ES-DE local (links pro ~/ES-DE, regras próprias)
 	@bin/esde-home.sh "$(HOME)/ES-DE" "$(ESDE_DIR)" "$(BIN)" "$(CORES)"
 
-run: wrappers home ## Abre o ES-DE compilado com os emuladores compilados
-	@mountpoint -q $(GAMES) || echo "⚠️  $(GAMES) não está montado: make arkflix-mount no solomon"
+run: wrappers ## Abre o app: biblioteca, saves, controles e configurações
+	@test -x $(APP_BIN) || { echo "❌ app não compilado: make app"; exit 1; }
+	$(APP_BIN) --bin $(BIN) --cores $(CORES)
+
+run-web: wrappers app-web ## O mesmo app no navegador (desenvolvimento): http://127.0.0.1:8484
+	cd $(APP) && go run . --web 127.0.0.1:8484 --bin $(BIN) --cores $(CORES)
+
+run-esde: wrappers home ## Abre o ES-DE compilado (frontend antigo)
 	ESDE_APPDATA_DIR=$(ESDE_DIR) $(PREFIX)/bin/es-de
+
+##@ App (frontend)
+
+app-deps: ## Dependências da interface (npm) e o Chromium dos testes
+	cd $(WEB) && npm ci --no-fund --no-audit
+	cd $(WEB) && npx playwright install chromium
+
+app-web: ## Compila a interface (Svelte + TypeScript) em app/web/dist
+	@test -d $(WEB)/node_modules || $(MAKE) --no-print-directory app-deps
+	cd $(WEB) && npm run build
+
+app: app-web ## Compila o app desktop (Go + Wails) em build/prefix/bin/arkflix-games
+	@pkg-config --exists webkit2gtk-4.1 || { echo "❌ falta o WebKitGTK de desenvolvimento: make deps"; exit 1; }
+	cd $(APP) && CGO_ENABLED=1 go build -tags desktop,production,webkit2_41 -trimpath \
+	  -ldflags "-s -w -X main.version=$(VERSION)" -o $(APP_BIN) .
 
 ##@ Validar
 
 # CASOS=nes snes ... restringe os cores testados (padrão: todos + retroarch)
-check: ## Valida tudo: cores com jogo de verdade, ES-DE, PPSSPP, PCSX2
-	@$(MAKE) --no-print-directory -k check-cores check-es-de check-ppsspp check-pcsx2 \
+check: ## Valida tudo: app, cores com jogo de verdade, ES-DE, PPSSPP, PCSX2
+	@$(MAKE) --no-print-directory -k check-app check-cores check-es-de check-ppsspp check-pcsx2 \
 	  && echo "✅ check passou" || { echo "❌ check falhou (detalhe acima)"; exit 1; }
+
+check-app: app-web ## App: Go (vet, testes, race), tipos, unitários, ponta a ponta e janela
+	cd $(APP) && go vet ./... && go test -race -count=1 ./...
+	cd $(WEB) && npm run check && npm test && npx playwright test
+	@if [ -x $(APP_BIN) ]; then $(MAKE) --no-print-directory check-app-desktop; \
+	  else echo "⏭️  app desktop não compilado (make app): teste da janela pulado"; fi
+
+check-app-desktop: ## Abre a janela de verdade, escondida, e espera a interface responder
+	cd $(APP) && go vet -tags desktop,production,webkit2_41 .
+	rm -rf $(BUILD)/smoke && $(APP_BIN) --smoke --data $(BUILD)/smoke --bin $(BIN) --cores $(CORES)
 
 check-cores: $(BUILD)/coretest ## Cada core roda um jogo seu sem janela (CASOS=...)
 	python3 -I tests/check.py $(CASOS)
