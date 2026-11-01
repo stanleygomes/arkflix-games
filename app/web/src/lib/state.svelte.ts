@@ -11,7 +11,8 @@ export type Screen =
   | { name: 'stats' }
   | { name: 'settings'; tab?: SettingsTab }
   | { name: 'profiles' }
-  | { name: 'profile'; id?: string; setup?: boolean }
+  | { name: 'profile'; id?: string; setup?: boolean; suggest?: string }
+  | { name: 'welcome' }
 
 export type SettingsTab = 'library' | 'server' | 'controls' | 'a11y' | 'about'
 

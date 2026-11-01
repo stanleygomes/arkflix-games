@@ -3,8 +3,42 @@ import { axe, expect, test } from './fixtures'
 test.describe('primeira vez', () => {
   test.use({ firstRun: '1' })
 
+  test('tela de boas-vindas: entra no RomM e o nome do perfil vem de lá', async ({ page, app }) => {
+    await page.goto(app.url)
+    await expect(page.getByRole('heading', { name: 'Bem-vindo!' })).toBeVisible()
+    await page.keyboard.press('Escape') // sem "voltar" aqui
+    await expect(page.getByRole('heading', { name: 'Bem-vindo!' })).toBeVisible()
+    await axe(page, 'boas-vindas')
+
+    const form = page.getByRole('form', { name: 'Entrar no servidor RomM' })
+    await form.getByRole('button', { name: 'Entrar com o servidor' }).click()
+    await expect(page.getByRole('alert')).toContainText('Preencha')
+
+    const fill = async (field: RegExp, value: string) => {
+      await form.getByRole('button', { name: field }).click()
+      await page.locator('#prompt-input').fill(value)
+      await page.keyboard.press('Enter')
+    }
+    await fill(/^Servidor/, `${app.url}/fake-romm`)
+    await fill(/^Usuário/, 'stanley')
+    await fill(/^Senha/, 'errada')
+    await expect(form.getByRole('button', { name: /^Senha/ })).toContainText('••••••')
+    await form.getByRole('button', { name: 'Entrar com o servidor' }).click()
+    await expect(page.getByRole('alert')).toContainText('senha')
+    await fill(/^Senha/, 'senha123')
+    await form.getByRole('button', { name: 'Entrar com o servidor' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Boas-vindas! Monte seu perfil' })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Nome/ })).toContainText('Stanley')
+    await page.getByRole('button', { name: 'Começar' }).click()
+    await expect(page.getByRole('button', { name: 'Trocar perfil (Stanley)' })).toBeVisible()
+    await expect(page.locator('.shelf [data-game][aria-label*="no servidor"]').first()).toBeVisible({ timeout: 10_000 })
+    expect(app.read(`${app.data}/romm.json`)).not.toContain('senha123')
+  })
+
   test('app novo abre na configuração do perfil: nome e personagem', async ({ page, app }) => {
     await page.goto(app.url)
+    await page.getByRole('button', { name: 'Jogar offline' }).click()
     await expect(page.getByRole('heading', { name: 'Boas-vindas! Monte seu perfil' })).toBeVisible()
     const start = page.getByRole('button', { name: 'Começar' })
     await expect(start).toBeDisabled()

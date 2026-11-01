@@ -171,6 +171,10 @@ ao fechar, sobe o que mudou. Um arquivo daqui nunca é trocado por um mais velho
 Saves de PSP e PS2 não sincronizam. Sem internet, os jogos baixados abrem
 normalmente. HTTP sem TLS só é aceito pra servidor nesta máquina.
 
+**Primeira vez.** O app abre numa tela de entrada, em tela cheia: entrar com o
+servidor RomM (endereço, usuário e senha) ou jogar offline. Em seguida, monta o
+perfil.
+
 **Perfis.** Na primeira vez, o app pede nome e avatar (34 personagens clássicos,
 de Pac-Man e Mario a Sonic e Mega Man, ou um desenho em pixel art). Com mais de
 um perfil, abre em "Quem vai jogar?" (avatar, cor e PIN opcional de 4 números). Cada perfil tem os próprios

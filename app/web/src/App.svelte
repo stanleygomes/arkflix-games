@@ -25,6 +25,7 @@
   import Settings from './screens/Settings.svelte'
   import Profiles from './screens/Profiles.svelte'
   import ProfileEditor from './screens/ProfileEditor.svelte'
+  import Welcome from './screens/Welcome.svelte'
 
   const current = $derived(screen())
 
@@ -32,7 +33,7 @@
     try {
       const boot = await api.bootstrap()
       applyBoot(boot)
-      if (boot.profile?.setup) resetTo({ name: 'profile', id: 'main', setup: true })
+      if (boot.profile?.setup) resetTo({ name: 'welcome' })
       else if (boot.profile?.choose) resetTo({ name: 'profiles' })
       app.ready = true
       if (boot.pads?.length) app.family = boot.pads[0].family
@@ -124,7 +125,9 @@
     {:else if current.name === 'profiles'}
       <Profiles />
     {:else if current.name === 'profile'}
-      <ProfileEditor id={current.id} setup={current.setup} />
+      <ProfileEditor id={current.id} setup={current.setup} suggest={current.suggest} />
+    {:else if current.name === 'welcome'}
+      <Welcome />
     {/if}
   {/key}
 {/if}

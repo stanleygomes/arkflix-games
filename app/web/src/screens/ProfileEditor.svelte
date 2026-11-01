@@ -14,7 +14,7 @@
   import { app, askPIN, back, confirm, prompt, resetTo, toast } from '../lib/state.svelte'
 
   // setup: primeira vez do app (configurar o perfil principal antes de tudo)
-  let { id, setup = false }: { id?: string; setup?: boolean } = $props()
+  let { id, setup = false, suggest = '' }: { id?: string; setup?: boolean; suggest?: string } = $props()
 
   const COLOR_NAMES = ['Vermelho', 'Laranja', 'Amarelo', 'Verde', 'Azul', 'Roxo', 'Rosa', 'Turquesa']
 
@@ -30,7 +30,7 @@
   $effect(() => {
     const p = existing
     const used = new Set(app.profile?.profiles.map((x) => x.color))
-    name = setup ? '' : (p?.name ?? '')
+    name = setup ? suggest : (p?.name ?? '')
     avatar = p?.avatar ?? avatars[(app.profile?.profiles.length ?? 0) % avatars.length] ?? 'knight'
     color = p?.color ?? colors.find((c) => !used.has(c)) ?? colors[0] ?? '#3a86d8'
     hasPIN = !!p?.hasPIN
