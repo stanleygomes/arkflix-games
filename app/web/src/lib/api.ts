@@ -100,6 +100,7 @@ export const api = {
   setProfilePIN: (id: string, current: string, next: string) => call<Profile>('SetProfilePIN', id, current, next),
   checkProfilePIN: (id: string, pin: string) => call<void>('CheckProfilePIN', id, pin),
   deleteProfile: (id: string, pin: string) => call<void>('DeleteProfile', id, pin),
+  setProfileKids: (id: string, kids: boolean) => call<Profile>('SetProfileKids', id, kids),
   ready: () => call<void>('Ready'),
   refresh: () => call<Game[]>('Refresh'),
   setFavorite: (id: string, fav: boolean) => call<Game>('SetFavorite', id, fav),

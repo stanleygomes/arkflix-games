@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stanleygomes/arkflix-games/app/internal/core"
+	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/profiles"
 )
 
@@ -100,5 +102,70 @@ func TestProfilesIsolation(t *testing.T) {
 	}
 	if st, _ := h.svc.Profiles(); len(st.Profiles) != 1 {
 		t.Fatalf("depois de apagar: %+v", st)
+	}
+}
+
+func TestKidsProfile(t *testing.T) {
+	h := setup(t)
+	smw := h.game(t, "Super Mario World")
+	mmx := h.game(t, "Mega Man X")
+	if _, err := h.svc.SaveMeta(smw.ID, meta.Override{KidsOK: true}); err != nil {
+		t.Fatal(err)
+	}
+	kid, _ := h.svc.CreateProfile("Nina", "mushroom", profiles.Colors[6])
+	if _, err := h.svc.SetProfileKids(profiles.Main, true); err == nil {
+		t.Fatal("principal não vira infantil")
+	}
+	if v, err := h.svc.SetProfileKids(kid.ID, true); err != nil || !v.Kids {
+		t.Fatalf("marcar infantil: %+v %v", v, err)
+	}
+	if _, err := h.svc.SetProfilePIN(profiles.Main, "", "9090"); err != nil {
+		t.Fatal(err)
+	}
+	boot, err := h.svc.SelectProfile(kid.ID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(boot.Games) != 1 || boot.Games[0].ID != smw.ID {
+		t.Fatalf("só o jogo liberado aparece: %d jogos", len(boot.Games))
+	}
+	if err := h.svc.Play(mmx.ID, ""); err == nil {
+		t.Fatal("jogo não liberado não abre nem pela API")
+	}
+	if _, err := h.svc.Saves(mmx.ID); err == nil {
+		t.Fatal("saves de jogo não liberado")
+	}
+	blocked := map[string]error{}
+	_, blocked["SaveSettings"] = h.svc.SaveSettings(h.svc.GetSettings())
+	_, blocked["ResetSettings"] = h.svc.ResetSettings()
+	_, blocked["SaveInput"] = h.svc.ResetInput()
+	_, blocked["Import"] = h.svc.Import(nil)
+	_, blocked["PickFiles"] = h.svc.PickFiles()
+	_, blocked["SaveMeta"] = h.svc.SaveMeta(smw.ID, meta.Override{})
+	_, blocked["DeleteState"] = h.svc.DeleteState(smw.ID, "x")
+	_, blocked["CreateProfile"] = h.svc.CreateProfile("Hack", "ghost", profiles.Colors[0])
+	_, blocked["SetProfilePIN"] = h.svc.SetProfilePIN(profiles.Main, "9090", "")
+	_, blocked["SetProfileKids"] = h.svc.SetProfileKids(kid.ID, false)
+	blocked["DeleteProfile"] = h.svc.DeleteProfile(kid.ID, "")
+	blocked["UpdateCovers"] = h.svc.UpdateCovers(false)
+	for name, err := range blocked {
+		if err != core.ErrKids {
+			t.Errorf("%s devia ser bloqueado no perfil infantil: %v", name, err)
+		}
+	}
+	if len(h.svc.AnalyzeImport([]string{h.env.Inbox})) != 0 {
+		t.Error("análise de importação no perfil infantil")
+	}
+	if _, err := h.svc.SetFavorite(smw.ID, true); err != nil {
+		t.Fatalf("favoritar pode: %v", err)
+	}
+	if _, err := h.svc.SelectProfile(profiles.Main, ""); err != profiles.ErrPIN {
+		t.Fatalf("sair do infantil pede o PIN do adulto: %v", err)
+	}
+	if _, err := h.svc.SelectProfile(profiles.Main, "9090"); err != nil {
+		t.Fatal(err)
+	}
+	if v, _ := h.svc.ResetMeta(smw.ID); !v.KidsOK {
+		t.Fatal("restaurar metadados não tira a liberação")
 	}
 }

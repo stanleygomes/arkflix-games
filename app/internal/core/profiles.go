@@ -23,7 +23,21 @@ type user struct {
 	hist   *history.Log
 	lists  *lists.Store
 	inputs input.Store
+	kids   bool           // perfil infantil: só jogos liberados, nada de configurar
 	plays  map[string]int // mexido só com Service.mu
+}
+
+// ErrKids: o perfil infantil não mexe em configurações, importação, saves e
+// metadados (a interface esconde; aqui é a trava de verdade).
+var ErrKids = errors.New("bloqueado no perfil infantil")
+
+func (u *user) allows(e entry) bool { return !u.kids || e.edit.KidsOK }
+
+func (s *Service) adult() error {
+	if s.cur().kids {
+		return ErrKids
+	}
+	return nil
 }
 
 func (u *user) raSaves() string  { return filepath.Join(u.dir, "saves", "retroarch", "saves") }
@@ -50,17 +64,20 @@ func (s *Service) cur() *user {
 
 // loadUser abre os dados do perfil, criando o que faltar.
 func (s *Service) loadUser(id string) (*user, error) {
+	p, err := s.profiles.Get(id)
+	if err != nil {
+		return nil, err
+	}
 	dir := s.profiles.DataDir(id)
 	store := s.opt.Store
 	if id != profiles.Main {
-		var err error
 		// perfil novo começa com a acessibilidade do principal
 		if store, err = settings.Open(dir, s.opt.Store.Settings()); err != nil {
 			return nil, err
 		}
 	}
 	u := &user{
-		id: id, dir: dir, store: store,
+		id: id, dir: dir, store: store, kids: p.Kids,
 		hist:   &history.Log{Path: filepath.Join(dir, "sessions.jsonl"), MinPlay: s.opt.MinPlay},
 		lists:  &lists.Store{Path: filepath.Join(dir, "lists.json")},
 		inputs: input.Store{Dir: dir},
@@ -153,18 +170,27 @@ func (s *Service) SelectProfile(id, pin string) (Boot, error) {
 
 // CreateProfile cria um perfil.
 func (s *Service) CreateProfile(name, avatar, color string) (profiles.View, error) {
+	if err := s.adult(); err != nil {
+		return profiles.View{}, err
+	}
 	p, err := s.profiles.Create(name, avatar, color)
 	return p.View(), err
 }
 
 // UpdateProfile troca nome, avatar e cor.
 func (s *Service) UpdateProfile(id, name, avatar, color string) (profiles.View, error) {
+	if err := s.adult(); err != nil {
+		return profiles.View{}, err
+	}
 	p, err := s.profiles.Update(id, name, avatar, color)
 	return p.View(), err
 }
 
 // SetProfilePIN define, troca ou (next vazio) remove o PIN; pede o atual.
 func (s *Service) SetProfilePIN(id, current, next string) (profiles.View, error) {
+	if err := s.adult(); err != nil {
+		return profiles.View{}, err
+	}
 	p, err := s.profiles.SetPIN(id, current, next)
 	return p.View(), err
 }
@@ -172,6 +198,9 @@ func (s *Service) SetProfilePIN(id, current, next string) (profiles.View, error)
 // DeleteProfile apaga um perfil (não o principal nem o que está em uso).
 // A pasta dele vai pra profiles/apagados/.
 func (s *Service) DeleteProfile(id, pin string) error {
+	if err := s.adult(); err != nil {
+		return err
+	}
 	if id == s.cur().id {
 		return errors.New("troque de perfil antes de apagar este")
 	}
@@ -185,4 +214,16 @@ func (s *Service) CheckProfilePIN(id, pin string) error {
 		time.Sleep(400 * time.Millisecond)
 	}
 	return err
+}
+
+// SetProfileKids marca ou desmarca um perfil como infantil (não o em uso).
+func (s *Service) SetProfileKids(id string, kids bool) (profiles.View, error) {
+	if err := s.adult(); err != nil {
+		return profiles.View{}, err
+	}
+	if id == s.cur().id {
+		return profiles.View{}, errors.New("troque de perfil antes de mudar este")
+	}
+	p, err := s.profiles.SetKids(id, kids)
+	return p.View(), err
 }

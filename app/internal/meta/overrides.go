@@ -12,8 +12,8 @@ import (
 )
 
 // Override é o que a pessoa editou num jogo. Campo nil = automático (vem do
-// ES-DE, do libretro ou do nome do arquivo). Nota, completo e quebrado só
-// existem aqui.
+// ES-DE, do libretro ou do nome do arquivo). Nota, completo, quebrado e
+// liberado pra criança só existem aqui.
 type Override struct {
 	Name      *string   `json:"name,omitempty"`
 	Summary   *string   `json:"summary,omitempty"`
@@ -25,6 +25,7 @@ type Override struct {
 	Rating    int       `json:"rating"`          // 0 a 5 estrelas
 	Completed bool      `json:"completed"`
 	Broken    bool      `json:"broken"`
+	KidsOK    bool      `json:"kidsOk"` // liberado nos perfis infantis
 }
 
 var imageExt = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".webp": true, ".gif": true}

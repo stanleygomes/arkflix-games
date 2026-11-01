@@ -161,6 +161,12 @@ controle e saves do RetroArch. Saves de PSP e PS2 são compartilhados: o PPSSPP 
 o PCSX2 não deixam trocar a pasta de saves por linha de comando. Troque de
 perfil pelo avatar no topo.
 
+**Modo infantil.** Um perfil pode ser marcado como infantil na edição do perfil.
+Nele só aparecem os jogos liberados ("Liberado no perfil infantil", no editor de
+cada jogo), os botões ficam maiores e não há configurações, importação, apagar
+saves nem edição de metadados, nem por atalho nem pela API. Para sair dele, vale
+o PIN do perfil adulto: defina um.
+
 **Dados.** Configurações, favoritos e tempo de jogo ficam em
 `~/.config/arkflix-games`. O primeiro perfil usa essa pasta (quem já usava o
 app não perde nada); os outros ficam em `profiles/<id>/`, com os saves do

@@ -117,6 +117,7 @@ type GameView struct {
 	Completed  bool     `json:"completed"`
 	Broken     bool     `json:"broken"`
 	Edited     bool     `json:"edited"`
+	KidsOK     bool     `json:"kidsOk"`
 }
 
 // Options vem de quem inicia o app (main). Fonte, metadados e saves vazios
@@ -255,6 +256,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
 		Plays: s.cur().plays[g.ID], HasSaves: e.hasSaves, Developer: e.info.Developer,
 		Rating: e.edit.Rating, Completed: e.edit.Completed, Broken: e.edit.Broken, Edited: !e.edit.Empty(),
+		KidsOK: e.edit.KidsOK,
 	}
 	if e.info.Name != "" {
 		v.Name = e.info.Name
@@ -281,21 +283,28 @@ func (s *Service) view(e entry, st settings.State) GameView {
 }
 
 func (s *Service) views() []GameView {
-	st := s.cur().store.State()
+	u := s.cur()
+	st := u.store.State()
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := make([]GameView, len(s.entries))
-	for i, e := range s.entries {
-		out[i] = s.view(e, st)
+	out := make([]GameView, 0, len(s.entries))
+	for _, e := range s.entries {
+		if u.allows(e) {
+			out = append(out, s.view(e, st))
+		}
 	}
 	return out
 }
 
 func (s *Service) find(id string) (entry, catalog.System, error) {
+	u := s.cur()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, e := range s.entries {
 		if e.game.ID == id {
+			if !u.allows(e) {
+				return entry{}, catalog.System{}, errors.New("jogo não liberado no perfil infantil")
+			}
 			sys, _ := catalog.Find(e.game.System)
 			return e, sys, nil
 		}
@@ -528,6 +537,9 @@ func (s *Service) Saves(id string) (saves.Listing, error) {
 
 // DeleteState apaga um save state do jogo.
 func (s *Service) DeleteState(id, stateID string) (saves.Listing, error) {
+	if err := s.adult(); err != nil {
+		return saves.Listing{}, err
+	}
 	path, err := s.decodeToken(stateID)
 	if err != nil {
 		return saves.Listing{}, err
@@ -540,6 +552,9 @@ func (s *Service) DeleteState(id, stateID string) (saves.Listing, error) {
 
 // AnalyzeImport inspeciona arquivos/pastas antes de importar.
 func (s *Service) AnalyzeImport(paths []string) []importer.Item {
+	if s.adult() != nil {
+		return []importer.Item{}
+	}
 	var clean []string
 	for _, p := range paths {
 		if p = strings.TrimSpace(p); p != "" {
@@ -559,6 +574,9 @@ func (s *Service) AnalyzeImport(paths []string) []importer.Item {
 
 // Import copia os itens pra pasta de importação e atualiza a biblioteca.
 func (s *Service) Import(items []importer.Item) ([]importer.Result, error) {
+	if err := s.adult(); err != nil {
+		return nil, err
+	}
 	dest := s.opt.Store.Settings().ImportDir
 	if dest == "" {
 		return nil, errors.New("pasta de importação não configurada")
@@ -573,7 +591,12 @@ func (s *Service) Import(items []importer.Item) ([]importer.Result, error) {
 }
 
 // PickFiles abre o seletor de arquivos do sistema (só no desktop).
-func (s *Service) PickFiles() ([]string, error) { return s.opt.Window.PickFiles() }
+func (s *Service) PickFiles() ([]string, error) {
+	if err := s.adult(); err != nil {
+		return nil, err
+	}
+	return s.opt.Window.PickFiles()
+}
 
 // ToggleFullscreen alterna tela cheia (desktop).
 func (s *Service) ToggleFullscreen() { s.opt.Window.ToggleFullscreen() }
@@ -593,6 +616,9 @@ func (s *Service) GetSettings() settings.Settings {
 
 // SaveSettings grava as configurações e varre a biblioteca de novo.
 func (s *Service) SaveSettings(next settings.Settings) (settings.Settings, error) {
+	if err := s.adult(); err != nil {
+		return s.GetSettings(), err
+	}
 	if u := s.cur(); u.id != profiles.Main {
 		mine := u.store.Settings()
 		mine.A11y = next.A11y
@@ -611,6 +637,9 @@ func (s *Service) SaveSettings(next settings.Settings) (settings.Settings, error
 
 // ResetSettings volta ao padrão.
 func (s *Service) ResetSettings() (settings.Settings, error) {
+	if err := s.adult(); err != nil {
+		return s.GetSettings(), err
+	}
 	_, err := s.opt.Store.Reset()
 	if u := s.cur(); u.id != profiles.Main && err == nil {
 		_, err = u.store.Reset()
@@ -632,6 +661,9 @@ func (s *Service) GetInput() (input.Mapping, error) { return s.cur().inputs.Load
 
 // SaveInput grava o mapeamento e regenera a config do RetroArch.
 func (s *Service) SaveInput(m input.Mapping) (InputResult, error) {
+	if err := s.adult(); err != nil {
+		return InputResult{}, err
+	}
 	saved, err := s.cur().inputs.Save(m)
 	if err != nil {
 		return InputResult{}, err
@@ -777,6 +809,9 @@ func (s *Service) startCovers(all bool) bool {
 // UpdateCovers baixa capas, prints e telas de título do libretro
 // (thumbnails.libretro.com). all = tenta de novo até as que não acharam.
 func (s *Service) UpdateCovers(all bool) error {
+	if err := s.adult(); err != nil {
+		return err
+	}
 	if !s.opt.Store.Settings().Covers.Enabled {
 		return errors.New("ligue \"Baixar capas\" nas configurações da biblioteca")
 	}
@@ -833,6 +868,9 @@ func (s *Service) MetaDetails(id string) (MetaInfo, error) {
 
 // SaveMeta grava a edição do jogo e devolve o jogo atualizado.
 func (s *Service) SaveMeta(id string, edit meta.Override) (GameView, error) {
+	if err := s.adult(); err != nil {
+		return GameView{}, err
+	}
 	if _, _, err := s.find(id); err != nil {
 		return GameView{}, err
 	}
@@ -854,7 +892,14 @@ func (s *Service) SaveMeta(id string, edit meta.Override) (GameView, error) {
 }
 
 // ResetMeta volta tudo do jogo pro automático.
-func (s *Service) ResetMeta(id string) (GameView, error) { return s.SaveMeta(id, meta.Override{}) }
+// A liberação pro perfil infantil não é metadado: continua.
+func (s *Service) ResetMeta(id string) (GameView, error) {
+	e, _, err := s.find(id)
+	if err != nil {
+		return GameView{}, err
+	}
+	return s.SaveMeta(id, meta.Override{KidsOK: e.edit.KidsOK})
+}
 
 // Stats resume o histórico de jogo no período ("7d", "30d" ou "all").
 func (s *Service) Stats(period string) (stats.Stats, error) {

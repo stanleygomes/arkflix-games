@@ -33,6 +33,7 @@
   let avatar = $state('')
   let color = $state('')
   let hasPIN = $state(false)
+  let kids = $state(false)
 
   $effect(() => {
     const p = existing
@@ -41,7 +42,20 @@
     avatar = p?.avatar ?? avatars[(app.profile?.profiles.length ?? 0) % avatars.length] ?? 'knight'
     color = p?.color ?? colors.find((c) => !used.has(c)) ?? colors[0] ?? '#3a86d8'
     hasPIN = !!p?.hasPIN
+    kids = !!p?.kids
   })
+
+  async function toggleKids() {
+    if (!existing) return
+    try {
+      const p = await api.setProfileKids(existing.id, !kids)
+      kids = p.kids
+      await refresh()
+      play('toggle')
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
 
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
@@ -186,6 +200,19 @@
             <button class="btn" data-nav onclick={() => changePIN(false)}><Icon name="lock" /> {hasPIN ? 'Trocar PIN' : 'Definir PIN'}</button>
             {#if hasPIN}<button class="btn" data-nav onclick={() => changePIN(true)}>Remover PIN</button>{/if}
           </div>
+        </fieldset>
+      {/if}
+
+      {#if existing && !existing.main && existing.id !== app.profile?.current}
+        <fieldset>
+          <legend>Infantil</legend>
+          <button class="btn" data-nav role="switch" aria-checked={kids} aria-describedby="kids-help" onclick={toggleKids}>
+            <Icon name="star" /> Perfil infantil: {kids ? 'sim' : 'não'}
+          </button>
+          <p class="muted" id="kids-help">
+            Só jogos liberados (no editor de cada jogo), botões maiores e nada de configurações, importar, apagar saves
+            ou editar. Pra sair, o PIN do perfil adulto (defina um).
+          </p>
         </fieldset>
       {/if}
 

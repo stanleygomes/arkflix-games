@@ -14,7 +14,7 @@
   import { focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
-  import { app, applyBoot, askPIN, back, go, resetTo, toast } from '../lib/state.svelte'
+  import { app, applyBoot, askPIN, back, go, isKids, resetTo, toast } from '../lib/state.svelte'
   import type { Profile } from '../lib/types'
 
   const MAX = 8
@@ -102,7 +102,7 @@
           </button>
         </li>
       {/each}
-      {#if list.length < MAX}
+      {#if list.length < MAX && !isKids()}
         <li>
           <button class="card add" data-nav onclick={() => go({ name: 'profile' })}>
             <span class="art plus" aria-hidden="true"><Icon name="plus" size="3rem" /></span>
@@ -112,9 +112,11 @@
       {/if}
     </ul>
     <div class="actions">
-      <button class="btn" data-nav aria-pressed={managing} onclick={() => (managing = !managing)}>
-        <Icon name="sliders" /> {managing ? 'Pronto' : 'Gerenciar perfis'}
-      </button>
+      {#if !isKids()}
+        <button class="btn" data-nav aria-pressed={managing} onclick={() => (managing = !managing)}>
+          <Icon name="sliders" /> {managing ? 'Pronto' : 'Gerenciar perfis'}
+        </button>
+      {/if}
       {#if canGoBack}
         <button class="btn" data-nav onclick={() => { managing = false; keepManaging = false; back() }}><Icon name="back" /> Voltar</button>
       {/if}

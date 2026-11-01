@@ -92,7 +92,7 @@
     if (err) toast(err, 'error')
   }
 
-  async function set<K extends 'rating' | 'completed' | 'broken'>(key: K, v: MetaEdit[K]) {
+  async function set<K extends 'rating' | 'completed' | 'broken' | 'kidsOk'>(key: K, v: MetaEdit[K]) {
     if (!info) return
     const err = await save({ ...info.edit, [key]: v })
     if (err) toast(err, 'error')
@@ -170,6 +170,9 @@
         </button>
         <button class="btn" data-nav role="switch" aria-checked={info.edit.broken} onclick={() => set('broken', !info!.edit.broken)}>
           <Icon name="warn" /> Quebrado (não abre direito): {info.edit.broken ? 'sim' : 'não'}
+        </button>
+        <button class="btn" data-nav role="switch" aria-checked={!!info.edit.kidsOk} onclick={() => set('kidsOk', !info!.edit.kidsOk)}>
+          <Icon name="star" /> Liberado no perfil infantil: {info.edit.kidsOk ? 'sim' : 'não'}
         </button>
       </div>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { app, currentProfile, go } from '../lib/state.svelte'
+  import { app, currentProfile, go, isKids } from '../lib/state.svelte'
   import Avatar from './Avatar.svelte'
   import Icon from './Icon.svelte'
 
@@ -33,12 +33,14 @@
       <button class="icon-btn" data-nav aria-label="Estatísticas" onclick={() => go({ name: 'stats' })}>
         <Icon name="chart" />
       </button>
-      <button class="icon-btn" data-nav aria-label="Importar jogos" onclick={() => go({ name: 'import' })}>
-        <Icon name="plus" />
-      </button>
-      <button class="icon-btn" data-nav aria-label="Configurações" onclick={() => go({ name: 'settings' })}>
-        <Icon name="gear" />
-      </button>
+      {#if !isKids()}
+        <button class="icon-btn" data-nav aria-label="Importar jogos" onclick={() => go({ name: 'import' })}>
+          <Icon name="plus" />
+        </button>
+        <button class="icon-btn" data-nav aria-label="Configurações" onclick={() => go({ name: 'settings' })}>
+          <Icon name="gear" />
+        </button>
+      {/if}
     {/if}
     <span class="status" role="img" aria-label={padLabel} title={padLabel}>
       <Icon name="pad" />

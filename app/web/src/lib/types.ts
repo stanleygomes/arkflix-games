@@ -52,6 +52,7 @@ export interface Game {
   broken?: boolean
   developer?: string
   edited?: boolean
+  kidsOk?: boolean
 }
 
 export interface ScreensaverSettings {
@@ -170,6 +171,7 @@ export interface MetaEdit {
   rating: number
   completed: boolean
   broken: boolean
+  kidsOk?: boolean
 }
 
 export interface MetaInfo {

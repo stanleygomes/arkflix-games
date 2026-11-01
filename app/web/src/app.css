@@ -243,3 +243,9 @@ body.reduce-motion *::after {
 ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--text) 25%, transparent);
 }
+
+/* perfil infantil: alvos maiores pra mão pequena */
+body.kids .btn {
+  min-height: 3.4rem;
+  padding-inline: 1.4rem;
+}

@@ -74,8 +74,20 @@ export function screen(): Screen {
   return app.stack[app.stack.length - 1]
 }
 
+// telas que o perfil infantil não abre (a trava de verdade fica no Go)
+const ADULT_ONLY = new Set<Screen['name']>(['settings', 'import', 'edit', 'profile'])
+
 export function go(s: Screen) {
+  if (isKids() && ADULT_ONLY.has(s.name)) {
+    toast('Bloqueado no perfil infantil', 'info', 2500)
+    return
+  }
   app.stack.push(s)
+}
+
+/** Perfil em uso é infantil? */
+export function isKids(): boolean {
+  return !!currentProfile()?.kids
 }
 
 export function back(): boolean {

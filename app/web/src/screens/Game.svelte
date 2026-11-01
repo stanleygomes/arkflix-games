@@ -12,7 +12,7 @@
   import { current, focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
-  import { app, back, confirm, game, go, putGame, system, toast } from '../lib/state.svelte'
+  import { app, back, confirm, game, go, isKids, putGame, system, toast } from '../lib/state.svelte'
   import type { GameEvent, Listing, MediaItem, SaveState } from '../lib/types'
 
   let { id }: { id: string } = $props()
@@ -102,7 +102,7 @@
       if (picking || viewing !== null) return false
       if (a === 'fav') {
         const stateId = current()?.dataset.state
-        const st = listing?.states.find((s) => s.id === stateId)
+        const st = isKids() ? undefined : listing?.states.find((s) => s.id === stateId)
         if (st) remove(st)
         else toggleFav()
         return true
@@ -145,7 +145,9 @@
           <button class="btn" data-nav aria-pressed={g.favorite} onclick={toggleFav}>
             <Icon name="star" /> {g.favorite ? 'Favorito' : 'Favoritar'}
           </button>
-          <button class="btn" data-nav onclick={() => go({ name: 'edit', id })}><Icon name="sliders" /> Editar</button>
+          {#if !isKids()}
+            <button class="btn" data-nav onclick={() => go({ name: 'edit', id })}><Icon name="sliders" /> Editar</button>
+          {/if}
           <button class="btn" data-nav aria-haspopup="dialog" onclick={() => (picking = true)}>
             <Icon name="plus" /> Listas{inLists ? ` (${inLists})` : ''}
           </button>
@@ -222,7 +224,7 @@
     <HelpBar
       hints={[
         { button: 'south', label: 'Escolher' },
-        { button: 'north', label: 'Favorito / apagar save' },
+        { button: 'north', label: isKids() ? 'Favorito' : 'Favorito / apagar save' },
         { button: 'east', label: 'Voltar' },
       ]}
     />
