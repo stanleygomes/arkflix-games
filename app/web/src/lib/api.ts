@@ -97,6 +97,7 @@ export const api = {
   play: (id: string, state = '') => call<void>('Play', id, state),
   saves: (id: string) => call<Listing>('Saves', id),
   deleteState: (id: string, state: string) => call<Listing>('DeleteState', id, state),
+  openManual: (id: string) => call<void>('OpenManual', id),
   analyzeImport: (paths: string[]) => call<ImportItem[]>('AnalyzeImport', paths),
   importItems: (items: ImportItem[]) => call<ImportResult[]>('Import', items),
   pickFiles: () => call<string[] | null>('PickFiles'),

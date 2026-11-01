@@ -109,7 +109,7 @@ trilha chiptune, tudo desligável.
 | Tela | O que faz |
 | --- | --- |
 | Início | Consoles no topo; jogo em destaque com capa, ano, jogadores e descrição; fileira de jogos embaixo. No Início: "Continuar jogando" e "Favoritos" |
-| Jogo | Jogar do início, continuar de onde parou, favoritar e os pontos salvos com miniatura: carregar ou apagar (com confirmação) |
+| Jogo | Jogar do início, continuar de onde parou, favoritar, mídia em tela cheia (capa, prints, miniaturas dos saves e manual em PDF) e os pontos salvos com miniatura: carregar ou apagar (com confirmação) |
 | Importar | Arquivos ou pastas de qualquer lugar: detecta o console (extensão, conteúdo do zip, ISO de PSP/PS2), avisa o que não dá e copia pra `~/Games/roms` |
 | Configurações | Pastas de jogos, controle (prévia ao vivo e remapeamento botão a botão, controle ou teclado), acessibilidade e atalhos |
 
@@ -130,7 +130,8 @@ o app baixa capa, print e tela de título do acervo aberto do RetroArch
 reconhecido pelo CRC da ROM (cartuchos), pelo serial do disco (PS1, PS2, PSP) ou
 pelo nome do zip (arcade), usando o banco do libretro, e tudo fica em cache em
 `~/.cache/arkflix-games`. Uma imagem com o nome do jogo em
-`<pasta>/<console>/covers/` tem prioridade, assim como os `gamelist.xml` e a
+`<pasta>/<console>/covers/` tem prioridade (prints em `screenshots/` e manual em
+`manuals/<nome>.pdf` também entram), assim como os `gamelist.xml` e a
 mídia de uma instalação antiga do ES-DE em `~/ES-DE`, se existir. Sem capa, o app
 desenha o cartucho, disco ou UMD do console com o título.
 

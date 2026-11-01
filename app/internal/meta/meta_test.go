@@ -30,6 +30,9 @@ func TestGamelistAndESDECover(t *testing.T) {
 	if !strings.Contains(info.Cover, "downloaded_media") {
 		t.Fatalf("capa do ES-DE: %q", info.Cover)
 	}
+	if !strings.HasSuffix(info.Manual, ".pdf") || !strings.Contains(info.Snap, "screenshots") {
+		t.Fatalf("manual e print locais: %+v", info)
+	}
 	mmx := l.Lookup(games(t, env)["Mega Man X"])
 	if len(mmx.Genres) != 2 || mmx.Cover != "" {
 		t.Fatalf("mmx: %+v", mmx)

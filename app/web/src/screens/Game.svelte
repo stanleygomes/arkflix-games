@@ -2,6 +2,7 @@
   import { tick } from 'svelte'
   import GameArt from '../components/GameArt.svelte'
   import ListPicker from '../components/ListPicker.svelte'
+  import MediaViewer from '../components/MediaViewer.svelte'
   import HelpBar from '../components/HelpBar.svelte'
   import Icon from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
@@ -12,7 +13,7 @@
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { app, back, confirm, game, go, putGame, system, toast } from '../lib/state.svelte'
-  import type { GameEvent, Listing, SaveState } from '../lib/types'
+  import type { GameEvent, Listing, MediaItem, SaveState } from '../lib/types'
 
   let { id }: { id: string } = $props()
   const g = $derived(game(id))
@@ -21,6 +22,19 @@
   let loadError = $state('')
   let stamp = $state(Date.now())
   let picking = $state(false)
+  let viewing = $state<number | null>(null)
+  const media = $derived.by(() => {
+    if (!g) return [] as MediaItem[]
+    const out: MediaItem[] = []
+    if (g.cover) out.push({ src: g.cover, caption: 'Capa', kind: 'image' })
+    if (g.snap) out.push({ src: g.snap, caption: 'Tela do jogo', kind: 'image' })
+    if (g.titleShot) out.push({ src: g.titleShot, caption: 'Tela-título', kind: 'image' })
+    for (const st of listing?.states ?? []) {
+      if (st.thumb) out.push({ src: `/media/thumb/${st.id}?v=${stamp}`, caption: `Ponto salvo: ${st.label}`, kind: 'image' })
+    }
+    if (g.manual) out.push({ src: g.manual, caption: 'Manual', kind: 'pdf' })
+    return out
+  })
   const inLists = $derived(app.lists.filter((l) => l.games.includes(id)).length)
 
   async function load() {
@@ -85,7 +99,7 @@
 
   $effect(() =>
     pushHandler((a) => {
-      if (picking) return false
+      if (picking || viewing !== null) return false
       if (a === 'fav') {
         const stateId = current()?.dataset.state
         const st = listing?.states.find((s) => s.id === stateId)
@@ -137,6 +151,26 @@
           </button>
           <button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>
         </div>
+
+        {#if media.length}
+          <section class="media" aria-labelledby="media-title">
+            <h2 id="media-title">Mídia</h2>
+            <ul class="strip">
+              {#each media as m, i (m.src)}
+                <li>
+                  <button class="thumb" data-nav aria-haspopup="dialog" onclick={() => (viewing = i)}>
+                    {#if m.kind === 'pdf'}
+                      <span class="nothumb pixel" aria-hidden="true">PDF</span>
+                    {:else}
+                      <img src={m.src} alt="" loading="lazy" />
+                    {/if}
+                    <span class="thumb-label"><span class="sr-only">Ver </span>{m.caption}</span>
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          </section>
+        {/if}
 
         <section class="saves" aria-labelledby="saves-title">
           <h2 id="saves-title">Pontos salvos</h2>
@@ -195,6 +229,17 @@
   </div>
   {#if picking}
     <ListPicker gameId={id} onclose={() => (picking = false)} />
+  {/if}
+  {#if viewing !== null && media.length}
+    <MediaViewer
+      items={media}
+      start={Math.min(viewing, media.length - 1)}
+      gameId={id}
+      onclose={() => {
+        viewing = null
+        tick().then(focusDefault)
+      }}
+    />
   {/if}
 {:else}
   <main class="layout">
@@ -267,6 +312,42 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.9rem;
+  }
+  .media h2 {
+    font-size: 1.4rem;
+  }
+  .strip {
+    list-style: none;
+    padding: 0.4rem;
+    margin: 0.6rem 0 0;
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+  }
+  .thumb {
+    width: 10rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.4rem;
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    border: 3px solid color-mix(in srgb, var(--text) 20%, var(--surface));
+    box-shadow: 4px 4px 0 var(--shadow);
+    cursor: pointer;
+  }
+  .thumb img,
+  .thumb .nothumb {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    image-rendering: pixelated;
+    background: #000;
+  }
+  .thumb-label {
+    font-weight: 700;
+    text-align: left;
   }
   .saves {
     margin-top: 1rem;

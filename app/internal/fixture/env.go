@@ -134,6 +134,8 @@ func NewEnv(root string) Env {
 
 	put(filepath.Join(e.ESDE, "gamelists", "snes", "gamelist.xml"), []byte(gamelist))
 	put(filepath.Join(e.ESDE, "downloaded_media", "snes", "covers", "Super Mario World (U) [!].png"), CoverPNG(color.RGBA{R: 220, G: 40, B: 40, A: 255}))
+	put(filepath.Join(e.ESDE, "downloaded_media", "snes", "manuals", "Super Mario World (U) [!].pdf"), []byte("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"))
+	put(filepath.Join(e.Local, "snes", "screenshots", "Super Mario World (U) [!].png"), CoverPNG(color.RGBA{R: 60, G: 160, B: 60, A: 255}))
 
 	put(filepath.Join(e.Inbox, "Tetris DX.gbc"), []byte("GBC"))
 	put(filepath.Join(e.Inbox, "Metal Slug X (USA).zip"), ZipBytes(map[string]string{

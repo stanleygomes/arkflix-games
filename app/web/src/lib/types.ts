@@ -40,6 +40,7 @@ export interface Game {
   cover: string
   snap: string
   titleShot: string
+  manual?: string
   favorite: boolean
   lastPlayed: number
   playTime: number
@@ -50,6 +51,12 @@ export interface Game {
   broken?: boolean
   developer?: string
   edited?: boolean
+}
+
+export interface MediaItem {
+  src: string
+  caption: string
+  kind: 'image' | 'pdf'
 }
 
 export interface LibraryDir {

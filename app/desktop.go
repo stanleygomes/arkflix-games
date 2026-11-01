@@ -6,6 +6,7 @@ import (
 	"context"
 	"io/fs"
 	"log"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -65,6 +66,11 @@ func (w *window) Quit() {
 	if ctx := w.get(); ctx != nil {
 		runtime.Quit(ctx)
 	}
+}
+
+// OpenFile abre no programa padrão do sistema (xdg-open), sem esperar.
+func (w *window) OpenFile(path string) error {
+	return exec.Command("xdg-open", path).Start()
 }
 
 func (w *window) PickFiles() ([]string, error) {

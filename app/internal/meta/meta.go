@@ -28,6 +28,8 @@ type Info struct {
 	// Snap (print do jogo) e TitleShot (tela de título): caminhos locais.
 	Snap      string `json:"-"`
 	TitleShot string `json:"-"`
+	// Manual em PDF (pasta manuals/ ou mídia do ES-DE).
+	Manual string `json:"-"`
 }
 
 type gameList struct {
@@ -137,6 +139,18 @@ func (l *Local) Lookup(g library.Game) Info {
 	for _, dir := range dirs {
 		if cover := findImage(dir, stem); cover != "" {
 			info.Cover = cover
+			break
+		}
+	}
+	info.Snap = findImage(filepath.Join(g.Root, g.Folder, "screenshots"), stem)
+	manuals := []string{filepath.Join(g.Root, g.Folder, "manuals")}
+	if esde := l.esde(); esde != "" {
+		manuals = append(manuals, filepath.Join(esde, "downloaded_media", g.Folder, "manuals"), filepath.Join(esde, "downloaded_media", g.System, "manuals"))
+	}
+	for _, dir := range manuals {
+		path := filepath.Join(dir, stem+".pdf")
+		if st, err := os.Stat(path); err == nil && !st.IsDir() {
+			info.Manual = path
 			break
 		}
 	}

@@ -73,6 +73,7 @@ type Window interface {
 	PickFiles() ([]string, error)
 	ToggleFullscreen()
 	Quit()
+	OpenFile(path string) error
 }
 
 type noWindow struct{}
@@ -81,6 +82,9 @@ func (noWindow) Hide()             {}
 func (noWindow) Show()             {}
 func (noWindow) ToggleFullscreen() {}
 func (noWindow) Quit()             {}
+func (noWindow) OpenFile(string) error {
+	return errors.New("abrir no sistema só no app desktop")
+}
 func (noWindow) PickFiles() ([]string, error) {
 	return nil, errors.New("seletor de arquivos só no app desktop")
 }
@@ -100,6 +104,7 @@ type GameView struct {
 	Cover      string   `json:"cover"`
 	Snap       string   `json:"snap"`
 	TitleShot  string   `json:"titleShot"`
+	Manual     string   `json:"manual"`
 	Favorite   bool     `json:"favorite"`
 	LastPlayed int64    `json:"lastPlayed"`
 	PlayTime   int64    `json:"playTime"`
@@ -267,6 +272,9 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	}
 	if e.info.TitleShot != "" {
 		v.TitleShot = "/media/title/" + g.ID
+	}
+	if e.info.Manual != "" {
+		v.Manual = "/media/manual/" + g.ID
 	}
 	return v
 }
@@ -644,9 +652,9 @@ func (s *Service) serveMedia(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", ctype)
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Write(data)
-	case "cover", "snap", "title":
+	case "cover", "snap", "title", "manual":
 		e, _, err := s.find(parts[1])
-		path := map[string]string{"cover": e.info.Cover, "snap": e.info.Snap, "title": e.info.TitleShot}[parts[0]]
+		path := map[string]string{"cover": e.info.Cover, "snap": e.info.Snap, "title": e.info.TitleShot, "manual": e.info.Manual}[parts[0]]
 		if err != nil || path == "" {
 			http.NotFound(w, r)
 			return
@@ -831,4 +839,16 @@ func (s *Service) Stats(period string) (stats.Stats, error) {
 		games = append(games, stats.Game{ID: v.ID, Name: v.Name, System: v.System})
 	}
 	return stats.Compute(s.hist, sessions, games, period, time.Now(), time.Local), nil
+}
+
+// OpenManual abre o manual do jogo no leitor de PDF do sistema (desktop).
+func (s *Service) OpenManual(id string) error {
+	e, _, err := s.find(id)
+	if err != nil {
+		return err
+	}
+	if e.info.Manual == "" {
+		return errors.New("este jogo não tem manual")
+	}
+	return s.opt.Window.OpenFile(e.info.Manual)
 }
