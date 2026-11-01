@@ -129,6 +129,19 @@ tem contraste AA verificado em teste.
 ES-DE (`~/ES-DE`), ou uma imagem com o nome do jogo em `<pasta>/<console>/covers/`.
 Sem nada disso, o app desenha o cartucho, disco ou UMD do console com o título.
 
+**Scripts de evento.** Executáveis em
+`~/.config/arkflix-games/scripts/game-start/` e `.../game-end/` rodam em segundo
+plano ao abrir e ao fechar um jogo, em ordem alfabética, recebendo o caminho da
+ROM, o nome e o console (ao fechar, também os segundos jogados). Saída em
+`~/.config/arkflix-games/logs/scripts.log`. Exemplo: backup dos saves ao fechar o
+jogo.
+
+```sh
+#!/bin/sh
+# ~/.config/arkflix-games/scripts/game-end/backup.sh
+rsync -a --update ~/.var/app/org.libretro.RetroArch/config/retroarch/saves/ /mnt/backup/saves/
+```
+
 **Dados.** Configurações, favoritos e tempo de jogo ficam em
 `~/.config/arkflix-games`. Os saves continuam nas pastas dos emuladores.
 
