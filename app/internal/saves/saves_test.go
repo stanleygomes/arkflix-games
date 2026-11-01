@@ -79,3 +79,23 @@ func TestDelete(t *testing.T) {
 		t.Fatal("caminho com .. devia ser recusado")
 	}
 }
+
+// Flatpak do RetroArch separa por core: states/Snes9x/, saves/Snes9x/.
+func TestRetroArchSortedByCore(t *testing.T) {
+	env := fixture.NewEnv(t.TempDir())
+	dirs := env.Settings.Saves
+	for _, p := range []string{
+		filepath.Join(dirs.RetroArchStates, "Snes9x", "Mega Man X (U) [!].state3"),
+		filepath.Join(dirs.RetroArchSaves, "Snes9x", "Mega Man X (U) [!].srm"),
+	} {
+		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.WriteFile(p, []byte("x"), 0o644)
+	}
+	l := saves.List(game(t, "snes", filepath.Join(env.Local, "snes", "Mega Man X (U) [!].sfc")), dirs)
+	if len(l.States) != 1 || l.States[0].Slot != 3 || len(l.Files) != 1 {
+		t.Fatalf("subpasta do core: %+v", l)
+	}
+	if !saves.Inside(l.States[0].Path, dirs) {
+		t.Fatal("state na subpasta é do app (dá pra carregar e apagar)")
+	}
+}

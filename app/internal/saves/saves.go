@@ -75,42 +75,59 @@ func List(g Game, dirs settings.SaveDirs) Listing {
 
 var raState = regexp.MustCompile(`\.state(\d*|\.auto)$`)
 
+// sortedDirs: a pasta e as subpastas dela. Com "separar por core" ligado (o
+// padrão do Flatpak), o RetroArch grava em <pasta>/<nome do core>/.
+func sortedDirs(dir string) []string {
+	out := []string{dir}
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if e.IsDir() {
+			out = append(out, filepath.Join(dir, e.Name()))
+		}
+	}
+	return out
+}
+
 func retroarch(g Game, dirs settings.SaveDirs) Listing {
 	var l Listing
 	prefix := stem(g.Launch)
-	entries, _ := os.ReadDir(dirs.RetroArchStates)
-	for _, e := range entries {
-		name := e.Name()
-		rest, ok := strings.CutPrefix(name, prefix)
-		if !ok || e.IsDir() {
-			continue
+	for _, dir := range sortedDirs(dirs.RetroArchStates) {
+		entries, _ := os.ReadDir(dir)
+		for _, e := range entries {
+			name := e.Name()
+			rest, ok := strings.CutPrefix(name, prefix)
+			if !ok || e.IsDir() {
+				continue
+			}
+			m := raState.FindStringSubmatch(rest)
+			if m == nil || m[0] != rest {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			st := State{Path: filepath.Join(dir, name), Modified: modTime(info)}
+			switch m[1] {
+			case ".auto":
+				st.Slot, st.Label = -1, "Automático (ao sair)"
+			case "":
+				st.Slot, st.Label = 0, "Slot 0"
+			default:
+				st.Slot, _ = strconv.Atoi(m[1])
+				st.Label = fmt.Sprintf("Slot %d", st.Slot)
+			}
+			_, err = os.Stat(st.Path + ".png")
+			st.Thumb = err == nil
+			l.States = append(l.States, st)
 		}
-		m := raState.FindStringSubmatch(rest)
-		if m == nil || m[0] != rest {
-			continue
-		}
-		info, err := e.Info()
-		if err != nil {
-			continue
-		}
-		st := State{Path: filepath.Join(dirs.RetroArchStates, name), Modified: modTime(info)}
-		switch m[1] {
-		case ".auto":
-			st.Slot, st.Label = -1, "Automático (ao sair)"
-		case "":
-			st.Slot, st.Label = 0, "Slot 0"
-		default:
-			st.Slot, _ = strconv.Atoi(m[1])
-			st.Label = fmt.Sprintf("Slot %d", st.Slot)
-		}
-		_, err = os.Stat(st.Path + ".png")
-		st.Thumb = err == nil
-		l.States = append(l.States, st)
 	}
-	for _, ext := range []string{".srm", ".rtc", ".sav"} {
-		path := filepath.Join(dirs.RetroArchSaves, prefix+ext)
-		if info, err := os.Stat(path); err == nil {
-			l.Files = append(l.Files, File{Path: path, Name: filepath.Base(path), Size: info.Size(), Modified: modTime(info)})
+	for _, dir := range sortedDirs(dirs.RetroArchSaves) {
+		for _, ext := range []string{".srm", ".rtc", ".sav"} {
+			path := filepath.Join(dir, prefix+ext)
+			if info, err := os.Stat(path); err == nil {
+				l.Files = append(l.Files, File{Path: path, Name: filepath.Base(path), Size: info.Size(), Modified: modTime(info)})
+			}
 		}
 	}
 	return l
