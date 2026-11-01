@@ -68,7 +68,9 @@ help: ## Lista os comandos
 	  /^[a-zA-Z0-9_%-]+:.*##/{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}' $(MAKEFILE_LIST)
 
 deps: ## Instala os pacotes de compilação (apt, pede sudo)
-	sudo apt-get install -y --no-install-recommends $(APT_DEPS)
+	sudo apt-get install -y --no-install-recommends $(APT_DEPS) \
+	  $$(command -v go >/dev/null || echo golang-go) \
+	  $$(command -v npm >/dev/null || echo nodejs npm)
 
 fetch: ## Baixa os fontes (submodules rasos, nas versões travadas)
 	git submodule update --init --depth 1 --jobs 4
