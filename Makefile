@@ -22,7 +22,7 @@ CORE_LIST := mesen snes9x gambatte genesis_plus_gx mupen64plus_next mednafen_psx
              fbneo melondsds
 
 # submodules do PPSSPP que o build Linux não usa (iOS, Mac, Android, VR, testes)
-PPSSPP_SKIP := SDL/macOS ext/libadrenotools ext/OpenXR-SDK ios/MoltenVK \
+PPSSPP_SKIP := SDL/macOS ext/libadrenotools ios/MoltenVK \
                libretro/libretro-common
 
 APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext \
