@@ -38,20 +38,22 @@ var version = "dev"
 var dist embed.FS
 
 type flags struct {
-	web     string
-	smoke   bool
-	data    string
-	bin     string
-	cores   string
-	fixture string
-	test    bool
-	assets  string
-	input   string
+	windowed bool
+	web      string
+	smoke    bool
+	data     string
+	bin      string
+	cores    string
+	fixture  string
+	test     bool
+	assets   string
+	input    string
 }
 
 func parseFlags() flags {
 	var f flags
 	flag.StringVar(&f.web, "web", "", "serve a interface no navegador neste endereço (ex.: 127.0.0.1:8484)")
+	flag.BoolVar(&f.windowed, "windowed", false, "abre em janela em vez de tela cheia (F11 alterna)")
 	flag.BoolVar(&f.smoke, "smoke", false, "abre a janela escondida, espera a interface ficar pronta e sai (0 = ok)")
 	flag.StringVar(&f.data, "data", "", "pasta de configurações e estado (padrão: ~/.config/arkflix-games)")
 	flag.StringVar(&f.bin, "bin", "", "pasta com retroarch, ppsspp e pcsx2 próprios (padrão: Flatpaks)")
@@ -159,7 +161,7 @@ func main() {
 		}
 		log.Fatal(http.Serve(ln, handler))
 	}
-	os.Exit(runDesktop(store, pads, ui, f.smoke, emu))
+	os.Exit(runDesktop(store, pads, ui, f.smoke, f.windowed, emu))
 }
 
 // cacheDir: capas baixadas e bancos do libretro (~/.cache/arkflix-games).

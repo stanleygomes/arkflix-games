@@ -88,7 +88,12 @@ func (w *window) PickFiles() ([]string, error) {
 	})
 }
 
-func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke bool, emu launcher.Spec) int {
+func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke, windowed bool, emu launcher.Spec) int {
+	// tela cheia por padrão (é um app de TV); F11 alterna, --windowed abre em janela
+	start := options.Fullscreen
+	if windowed {
+		start = options.Maximised
+	}
 	win := &window{}
 	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop, Cache: cacheDirDesktop(), Emulators: emu})
 	if err != nil {
@@ -102,7 +107,7 @@ func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke bo
 		Height:           800,
 		MinWidth:         960,
 		MinHeight:        600,
-		WindowStartState: options.Maximised,
+		WindowStartState: start,
 		StartHidden:      smoke,
 		BackgroundColour: &options.RGBA{R: 16, G: 14, B: 24, A: 255},
 		AssetServer:      &assetserver.Options{Assets: ui, Handler: core.Media(svc)},

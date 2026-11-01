@@ -78,7 +78,7 @@ app: app-web ## Compila o app desktop (Go + Wails) em build/prefix/bin/arkflix-g
 
 run: ## Abre o app: biblioteca, saves, controles, perfis e configurações
 	@test -x $(APP_BIN) || { echo "❌ app não compilado: make app"; exit 1; }
-	$(APP_BIN)
+	$(APP_BIN) $(ARGS)
 
 run-web: app-web ## O mesmo app no navegador (desenvolvimento): http://127.0.0.1:8484
 	cd $(APP) && go run . --web 127.0.0.1:8484

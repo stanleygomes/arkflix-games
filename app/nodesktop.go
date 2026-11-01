@@ -12,7 +12,7 @@ import (
 )
 
 // Sem a tag desktop (testes, modo web) não há janela: use --web.
-func runDesktop(*settings.Store, *gamepad.Manager, fs.FS, bool, launcher.Spec) int {
+func runDesktop(*settings.Store, *gamepad.Manager, fs.FS, bool, bool, launcher.Spec) int {
 	log.Print("compilado sem janela (tag desktop): use --web 127.0.0.1:8484")
 	return 2
 }
