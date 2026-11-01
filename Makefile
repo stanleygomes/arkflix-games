@@ -44,7 +44,7 @@ APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext \
 .PHONY: help deps fetch build es-de retroarch ppsspp pcsx2 rapidyaml cores \
         $(addprefix core-,$(CORE_LIST)) wrappers home run status \
         patch-save patch-apply clean check check-cores check-update check-es-de \
-        check-ppsspp check-pcsx2
+        check-ppsspp check-pcsx2 release release-install
 
 ##@ Começo
 
@@ -172,6 +172,39 @@ check-pcsx2: ## Testes unitários do PCSX2
 $(BUILD)/coretest: tests/coretest.c
 	@mkdir -p $(BUILD)
 	cc -O2 -Wall -Wextra -I src/retroarch/libretro-common/include -o $@ $< -ldl
+
+##@ Release
+
+# Pacote = só o que o make run usa (sem objetos de compilação). Os caminhos são
+# absolutos: o release-install espera o repo neste mesmo lugar.
+DIST := $(BUILD)/dist
+RELEASE_FILES := prefix ppsspp/PPSSPPSDL ppsspp/assets pcsx2/bin coretest
+
+release: ## Valida, empacota o build e publica release no GitHub (tag vAAAA.MM.DD)
+	@test -z "$$(git status --porcelain)" || { echo "❌ commit/push antes do release"; exit 1; }
+	@git fetch -q --tags origin
+	@test "$$(git rev-parse HEAD)" = "$$(git rev-parse @{u})" || { echo "❌ master ≠ origin: git push"; exit 1; }
+	$(MAKE) --no-print-directory check
+	@set -e; v=v$$(date +%Y.%m.%d); n=1; base=$$v; \
+	while git rev-parse -q --verify "refs/tags/$$v" >/dev/null; do n=$$((n+1)); v=$$base.$$n; done; \
+	file=arkflix-games-$$v-linux-x86_64.tar.gz; mkdir -p $(DIST); \
+	tar -C $(BUILD) -czf $(DIST)/$$file $(RELEASE_FILES); \
+	( cd $(DIST) && sha256sum $$file > $$file.sha256 ); \
+	{ echo "Build de $$(date +%F) no $$(. /etc/os-release; echo $$PRETTY_NAME), make check ok."; \
+	  echo; echo '```'; $(MAKE) --no-print-directory status; echo '```'; \
+	  echo; echo "Instalar: \`make release-install VERSION=$$v\`"; } > $(DIST)/notes.md; \
+	git tag -a $$v -m "release $$v"; git push -q origin $$v; \
+	gh release create $$v $(DIST)/$$file $(DIST)/$$file.sha256 --title "$$v" \
+	  --notes-file $(DIST)/notes.md; \
+	echo "✅ release $$v publicado"
+
+release-install: ## Baixa um release pronto pro build/ (VERSION=vX, padrão: o último)
+	@rm -rf $(DIST)/download; mkdir -p $(DIST)/download
+	gh release download $(VERSION) -D $(DIST)/download -p '*.tar.gz' -p '*.sha256'
+	cd $(DIST)/download && sha256sum -c *.sha256
+	tar -C $(BUILD) -xzf $(DIST)/download/*.tar.gz
+	$(MAKE) --no-print-directory wrappers home
+	@echo "✅ pronto: make run"
 
 ##@ Fonte
 

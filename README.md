@@ -85,3 +85,18 @@ Cada caso salva o último frame em `build/check/<caso>.png` e compara o hash com
 `tests/baseline.json`. Diferente = ⚠️ "mudou" (não é erro: pode ser a sua
 mudança). Conferiu o PNG e está certo? `make check-update` grava o novo
 baseline. Só alguns casos: `make check-cores CASOS="nes snes"`.
+
+## Release
+
+```bash
+make release                         # check, empacota o build e publica no GitHub
+make release-install                 # PC novo: baixa o último release pro build/
+make release-install VERSION=v2026.11.01
+```
+
+O `release` só roda com tudo commitado e enviado, e com o `make check` passando.
+A tag é a data (`vAAAA.MM.DD`, com `.2`, `.3` se repetir no dia). As notas levam
+a versão de cada fonte. O pacote tem só os binários do `make run`, compilados pra
+este Ubuntu e com caminho absoluto: clone o repo no mesmo lugar
+(`~/projects/arkflix-games`) antes do `release-install`. O código de cada binário
+é o desta tag (submodules + `patches/`), o que cumpre as licenças GPL.
