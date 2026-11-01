@@ -8,7 +8,8 @@ import { play, unlock } from './sound'
 import { app, back } from './state.svelte'
 import type { PadEvent } from './types'
 
-type Handler = (a: Action) => boolean | void
+export type Source = 'pad' | 'key'
+type Handler = (a: Action, src: Source) => boolean | void
 const handlers: Handler[] = []
 
 /** Registra o handler da tela; devolve a função pra remover. */
@@ -39,11 +40,11 @@ export function onPad(fn: (e: PadEvent) => void): () => void {
   return () => listeners.delete(fn)
 }
 
-export function dispatch(action: Action) {
+export function dispatch(action: Action, src: Source = 'key') {
   unlock()
   if (app.playing?.state === 'running') return
   for (let i = handlers.length - 1; i >= 0; i--) {
-    if (handlers[i](action) === true) return
+    if (handlers[i](action, src) === true) return
   }
   switch (action) {
     case 'up':
@@ -81,7 +82,7 @@ function stopRepeat(key: string) {
 function startRepeat(key: string, action: Action) {
   stopRepeat(key)
   const first = window.setTimeout(() => {
-    const iv = window.setInterval(() => dispatch(action), 90)
+    const iv = window.setInterval(() => dispatch(action, 'pad'), 90)
     repeat.set(key, iv)
   }, 380)
   repeat.set(key, first)
@@ -104,7 +105,7 @@ function handlePad(e: PadEvent) {
   }
   const action = padAction(e.button)
   if (!action) return
-  dispatch(action)
+  dispatch(action, 'pad')
   if (DIRS.has(action)) startRepeat(key, action)
 }
 
@@ -129,7 +130,7 @@ function handleKey(ev: KeyboardEvent) {
   // Enter num campo envia o formulário normalmente
   if (typing && action === 'accept') return
   ev.preventDefault()
-  dispatch(action)
+  dispatch(action, 'key')
 }
 
 let started = false

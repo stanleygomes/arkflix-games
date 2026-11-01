@@ -58,4 +58,7 @@ test('testar L1/R1 na prévia não troca de seção', async ({ page, app }) => {
   await app.pad('l1')
   await expect(page.getByRole('heading', { name: 'Controles' })).toBeVisible()
   await expect(page.locator('[data-retropad="up"]')).toBeFocused()
+  // no teclado, E continua indo pra próxima seção
+  await page.keyboard.press('e')
+  await expect(page.getByRole('heading', { name: 'Acessibilidade' })).toBeVisible()
 })

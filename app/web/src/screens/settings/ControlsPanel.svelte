@@ -45,8 +45,11 @@
     clearTimeout(timeout)
   })
 
-  // aqui L1/R1/X/Y/Start servem pra testar a prévia: não trocam de seção nem abrem nada
-  $effect(() => pushHandler((a) => a === 'prevTab' || a === 'nextTab' || a === 'fav' || a === 'details' || a === 'menu'))
+  // no controle, L1/R1/X/Y/Start servem pra testar a prévia: não trocam de seção
+  // nem abrem nada (no teclado, Q/E continuam trocando de seção)
+  $effect(() =>
+    pushHandler((a, src) => src === 'pad' && (a === 'prevTab' || a === 'nextTab' || a === 'fav' || a === 'details' || a === 'menu')),
+  )
 
   async function save(next: Mapping) {
     try {
