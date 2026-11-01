@@ -25,4 +25,6 @@ Toda iteração que mudar arquivo termina com commit e push. Sem perguntar.
 - Conventional Commits em português, imperativo, 72 colunas por linha, sem emoji,
   sem Co-Authored-By. Um commit por mudança lógica.
 - Push falhou? Diga ao dono. Nunca `--force`.
-- `make release` publica no GitHub: só quando o dono pedir.
+- Versão e release são automáticos (CI, pelo tipo do commit): escolha o tipo
+  certo, ele decide a versão. `feat`/`fix` geram release; `docs`/`chore` não.
+- `make release-binaries` publica binários no GitHub: só quando o dono pedir.
