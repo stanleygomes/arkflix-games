@@ -3,6 +3,8 @@
   import HelpBar from '../components/HelpBar.svelte'
   import Keyboard from '../components/Keyboard.svelte'
   import TopBar from '../components/TopBar.svelte'
+  import { focusedGameId, toggleFavorite } from '../lib/actions'
+  import { pushHandler } from '../lib/input'
   import { search } from '../lib/library'
   import { focusEl } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
@@ -16,6 +18,17 @@
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
   })
+
+  // F/Y favorita o resultado em foco (nos campos de texto o F digita)
+  $effect(() =>
+    pushHandler((a) => {
+      if (a === 'fav' && focusedGameId()) {
+        toggleFavorite(focusedGameId())
+        return true
+      }
+      return false
+    }),
+  )
 
   function toResults() {
     focusEl(document.querySelector<HTMLElement>('.results [data-game]'))

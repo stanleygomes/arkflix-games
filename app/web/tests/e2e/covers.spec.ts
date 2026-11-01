@@ -1,9 +1,8 @@
-import { axe, expect, open, test } from './fixtures'
+import { axe, expect, goTab, open, test } from './fixtures'
 
 test('capas do libretro: liga, baixa com progresso e aparece na biblioteca', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('ArrowRight') // SNES
+  await goTab(page, 'snes')
   await expect(page.locator('.shelf [data-game][aria-label^="Mega Man X"] img')).toHaveCount(0)
 
   await page.keyboard.press('m')

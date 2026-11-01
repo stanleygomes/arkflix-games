@@ -1,9 +1,8 @@
-import { axe, expect, open, test } from './fixtures'
+import { axe, expect, goTab, open, test } from './fixtures'
 
 test('ver tudo abre a grade do console; ordem escolhida fica salva e vale na fileira', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('ArrowRight') // SNES
+  await goTab(page, 'snes')
   await page.getByRole('button', { name: 'Ver tudo' }).click()
   await expect(page.getByRole('heading', { name: 'Super Nintendo' })).toBeVisible()
   const names = page.locator('.grid .name')
@@ -29,8 +28,7 @@ test('ver tudo abre a grade do console; ordem escolhida fica salva e vale na fil
 
 test('filtros combinam, contam e explicam lista vazia', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('ArrowRight') // SNES
+  await goTab(page, 'snes')
   await page.getByRole('button', { name: 'Ver tudo' }).click()
   await page.keyboard.press('m')
   const dialog = page.getByRole('dialog', { name: 'Opções da lista' })

@@ -5,6 +5,7 @@
   import Icon from '../components/Icon.svelte'
   import ListOptions from '../components/ListOptions.svelte'
   import TopBar from '../components/TopBar.svelte'
+  import { focusedGameId, toggleFavorite } from '../lib/actions'
   import { pushHandler } from '../lib/input'
   import { SORTS, filterGames, filterGroups, sortGames } from '../lib/library'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
@@ -42,6 +43,10 @@
 
   $effect(() =>
     pushHandler((a) => {
+      if (a === 'fav') {
+        toggleFavorite(focusedGameId())
+        return true
+      }
       if (a === 'menu' && !options) {
         options = true
         play('accept')
@@ -76,7 +81,14 @@
       <p class="muted">Nenhum jogo aqui.</p>
     {/if}
   </main>
-  <HelpBar hints={[{ button: 'south', label: 'Abrir' }, { button: 'start', label: 'Opções' }, { button: 'east', label: 'Voltar' }]} />
+  <HelpBar
+    hints={[
+      { button: 'south', label: 'Abrir' },
+      { button: 'north', label: 'Favorito' },
+      { button: 'start', label: 'Opções' },
+      { button: 'east', label: 'Voltar' },
+    ]}
+  />
 </div>
 
 {#if options}

@@ -85,3 +85,17 @@ export async function focused(page: Page) {
     return { text: el?.textContent?.trim() ?? '', label: el?.getAttribute('aria-label') ?? '', game: el?.dataset.game ?? '' }
   })
 }
+
+/** Vai pela barra de consoles até a aba (setas, como a pessoa faria). */
+export async function goTab(page: Page, slug: string) {
+  const tabs = await page.locator('nav.tabs [data-tab]').evaluateAll((els) => els.map((e) => e.getAttribute('data-tab')))
+  const target = tabs.indexOf(slug)
+  if (target < 0) throw new Error(`aba ${slug} não existe: ${tabs.join(', ')}`)
+  for (let i = 0; i < 30; i++) {
+    const current = await page.locator('nav.tabs [aria-current="page"]').getAttribute('data-tab')
+    if (current === slug) return
+    if (!(await page.locator('nav.tabs [data-tab]:focus').count())) await page.locator(`nav.tabs [data-tab="${current}"]`).focus()
+    await page.keyboard.press(tabs.indexOf(current) < target ? 'ArrowRight' : 'ArrowLeft')
+  }
+  throw new Error(`não chegou na aba ${slug}`)
+}

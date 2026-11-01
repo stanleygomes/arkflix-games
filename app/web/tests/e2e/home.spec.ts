@@ -1,9 +1,9 @@
-import { axe, expect, focused, open, test } from './fixtures'
+import { axe, expect, focused, goTab, open, test } from './fixtures'
 
 test('tela inicial: consoles com jogos, destaque e acessibilidade', async ({ page, app }) => {
   await open(page, app)
   const tabs = page.locator('nav.tabs [data-tab]')
-  await expect(tabs).toHaveText(['Início', 'NES', 'SNES', 'MD', 'N64', 'PS1', 'PS2', 'PSP', 'ARC'].map((t) => new RegExp(`^${t}`)))
+  await expect(tabs).toHaveText(['Início', 'Todos', 'Nunca jogados', 'NES', 'SNES', 'MD', 'N64', 'PS1', 'PS2', 'PSP', 'ARC'].map((t) => new RegExp(`^${t}`)))
   await expect(page.locator('nav.tabs [aria-current="page"]')).toHaveText(/^Início/)
   await expect(page.locator('#hero-title')).toBeVisible()
   await expect(page.locator('.shelf [data-game]')).toHaveCount(9)
@@ -12,8 +12,7 @@ test('tela inicial: consoles com jogos, destaque e acessibilidade', async ({ pag
 
 test('teclado: troca console, desce pra fileira e o destaque acompanha', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('ArrowRight')
+  await goTab(page, 'snes')
   await expect(page.locator('nav.tabs [aria-current="page"]')).toHaveText(/^SNES/)
   const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())
   expect(accent).toBe('#a99bff') // paleta do SNES
@@ -33,8 +32,7 @@ test('teclado: troca console, desce pra fileira e o destaque acompanha', async (
 
 test('controle PlayStation: L1/R1 trocam console, ✕ abre o jogo, ○ volta', async ({ page, app }) => {
   await open(page, app)
-  await app.pad('r1', 'playstation')
-  await app.pad('r1', 'playstation')
+  for (let i = 0; i < 4; i++) await app.pad('r1', 'playstation') // Todos, Nunca jogados, NES, SNES
   await expect(page.locator('nav.tabs [aria-current="page"]')).toHaveText(/^SNES/)
   await expect(page.locator('.help .glyph').first()).toHaveText('✕') // ajuda com os símbolos do PS
   await app.pad('down', 'playstation')
@@ -62,7 +60,7 @@ test('favoritar com F aparece na fileira de favoritos do Início', async ({ page
 
 test('jogar pelo destaque abre o emulador e volta com aviso', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('ArrowRight') // NES
+  await goTab(page, 'nes')
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('ArrowUp') // botão Jogar
   await page.keyboard.press('Enter')
@@ -72,9 +70,23 @@ test('jogar pelo destaque abre o emulador e volta com aviso', async ({ page, app
   expect(app.calls()).toMatch(/retroarch\|--fullscreen -L .*mesen_libretro\.so .*Super Mario Bros\. 3\.zip/)
   // script de fim de jogo (é assim que o backup do solomon dispara)
   await expect.poll(() => (app.exists('hook.log') ? app.read('hook.log') : '')).toMatch(/Super Mario Bros\. 3\.zip\|Super Mario Bros\. 3\|nes\|\d+\|/)
-  await expect(page.locator('.shelf h2', { hasText: 'Continuar jogando' })).toBeVisible({ timeout: 3000 }).catch(async () => {
-    // a fileira de recentes só aparece no Início
-    await page.keyboard.press('q')
-    await expect(page.locator('.shelf h2', { hasText: 'Continuar jogando' })).toBeVisible()
-  })
+  // jogou: aparece a coleção Recentes e a fileira "Continuar jogando" no Início
+  await expect(page.locator('nav.tabs [data-tab="collection:recent"]')).toHaveCount(1)
+  await goTab(page, 'home')
+  await expect(page.locator('.shelf h2', { hasText: 'Continuar jogando' })).toBeVisible()
+})
+
+test('coleções automáticas: aparecem quando têm jogo, com o console marcado', async ({ page, app }) => {
+  await open(page, app)
+  await expect(page.locator('nav.tabs [data-tab="collection:favorites"]')).toHaveCount(0)
+  await goTab(page, 'collection:all')
+  await expect(page.locator('.shelf [data-game]')).toHaveCount(9)
+  await page.getByRole('button', { name: 'Ver tudo' }).click()
+  await expect(page.getByRole('heading', { name: 'Todos os jogos' })).toBeVisible()
+  await expect(page.locator('.grid .sys').first()).toHaveText(/NES|SNES|MD|ARC|N64|PS1|PS2|PSP/)
+  await axe(page, 'coleção todos os jogos')
+  await page.locator('.grid [data-game]').first().focus()
+  await page.keyboard.press('f') // favorita: a coleção Favoritos passa a existir
+  await page.keyboard.press('Escape')
+  await expect(page.locator('nav.tabs [data-tab="collection:favorites"]')).toHaveCount(1)
 })

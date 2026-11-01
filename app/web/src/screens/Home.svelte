@@ -9,18 +9,27 @@
   import { current, focusEl } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
+  import { toggleFavorite } from '../lib/actions'
   import { sortGames } from '../lib/library'
-  import { sortOf } from '../lib/sources'
-  import { app, go, putGame, system, toast } from '../lib/state.svelte'
+  import { activeCollections, sortOf, sourceGames, sourceTitle } from '../lib/sources'
+  import { app, go, system, toast } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
 
-  const tabs = $derived([
-    { slug: 'home', short: 'Início', name: 'Início' },
-    ...app.systems.filter((s) => app.games.some((g) => g.system === s.slug)),
+  type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'system' }
+  const tabs = $derived<Tab[]>([
+    { slug: 'home', short: 'Início', name: 'Início', kind: 'home' },
+    ...activeCollections(app.games).map((c) => ({ slug: `collection:${c.id}`, short: c.short, name: c.label, kind: 'collection' as const })),
+    ...app.systems
+      .filter((s) => app.games.some((g) => g.system === s.slug))
+      .map((s) => ({ slug: s.slug, short: s.short, name: s.name, kind: 'system' as const })),
   ])
 
   type Row = { id: string; title: string; games: Game[]; source?: string }
   const rows = $derived.by((): Row[] => {
+    if (app.homeTab.startsWith('collection:')) {
+      const games = sortGames(sourceGames(app.homeTab), sortOf(app.homeTab))
+      return [{ id: app.homeTab, title: `${sourceTitle(app.homeTab)} · ${games.length} jogo${games.length === 1 ? '' : 's'}`, games, source: app.homeTab }]
+    }
     if (app.homeTab !== 'home') {
       const sys = system(app.homeTab)
       const games = sortGames(
@@ -45,7 +54,7 @@
   // paleta: a do console da aba; no Início, a do jogo selecionado
   $effect(() => {
     if (app.settings?.a11y.highContrast) return applyPalette(highContrastPalette)
-    const sys = app.homeTab === 'home' ? selSystem : system(app.homeTab)
+    const sys = app.homeTab === 'home' || app.homeTab.startsWith('collection:') ? selSystem : system(app.homeTab)
     applyPalette(sys?.palette ?? homePalette)
   })
 
@@ -66,17 +75,7 @@
     }
   }
 
-  async function toggleFav(g: Game | undefined) {
-    if (!g) return
-    try {
-      const updated = await api.setFavorite(g.id, !g.favorite)
-      putGame(updated)
-      play('toggle')
-      toast(updated.favorite ? `${updated.name} nos favoritos` : `${updated.name} saiu dos favoritos`, 'ok', 2500)
-    } catch (err) {
-      toast((err as Error).message, 'error')
-    }
-  }
+  const toggleFav = (g: Game | undefined) => toggleFavorite(g?.id)
 
   function focusedGame(): Game | undefined {
     const id = current()?.dataset.game
@@ -148,6 +147,8 @@
       {#each tabs as t (t.slug)}
         <button
           class="tab pixel"
+          class:collection={t.kind === 'collection'}
+          class:first-system={t.kind === 'system' && tabs.find((x) => x.kind === 'system') === t}
           data-nav
           data-tab={t.slug}
           data-nav-group="tabs"
@@ -290,6 +291,15 @@
     padding: 0.4rem 0.9rem;
     cursor: pointer;
     white-space: nowrap;
+  }
+  .tab.collection {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .tab.first-system {
+    margin-left: 0.8rem;
+    box-shadow: -0.8rem 0 0 -0.7rem color-mix(in srgb, var(--text) 40%, transparent);
   }
   .tab[aria-current='page'] {
     color: var(--on-accent);
