@@ -471,8 +471,9 @@ func (s *Service) Play(id, stateID string) error {
 				ev.Error += ":\n" + res.Tail
 			}
 		}
-		s.opt.Emitter.Emit("game", ev)
+		// o script dispara antes do aviso: quem espera o "exited" já o vê rodando
 		s.opt.Hooks.Run(hooks.GameEnd, g.Launch, name, sys.Slug, strconv.FormatInt(ev.Seconds, 10))
+		s.opt.Emitter.Emit("game", ev)
 	}()
 	return nil
 }
