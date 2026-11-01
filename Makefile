@@ -18,6 +18,13 @@ GAMES   := $(HOME)/Games/arkflix
 JOBS    ?= $(shell nproc)
 CMAKE   := cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
 
+# ccache, se instalado: recompilar do zero leva minutos (cache em ~/.cache/ccache)
+CCACHE := $(shell command -v ccache 2>/dev/null)
+ifneq ($(CCACHE),)
+CMAKE += -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+CC_VARS := CC="ccache gcc" CXX="ccache g++"
+endif
+
 CORE_LIST := mesen snes9x gambatte genesis_plus_gx mupen64plus_next mednafen_psx \
              fbneo melondsds
 
@@ -25,7 +32,7 @@ CORE_LIST := mesen snes9x gambatte genesis_plus_gx mupen64plus_next mednafen_psx
 PPSSPP_SKIP := SDL/macOS ext/libadrenotools ios/MoltenVK \
                libretro/libretro-common
 
-APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext \
+APT_DEPS := build-essential cmake ninja-build pkg-config nasm gettext ccache \
   libsdl2-dev libsdl2-ttf-dev libsdl3-dev libfreetype-dev libfontconfig-dev \
   libharfbuzz-dev libicu-dev libfreeimage-dev libgit2-dev libcurl4-openssl-dev \
   libpugixml-dev libpoppler-cpp-dev libbluetooth-dev \
@@ -79,9 +86,9 @@ es-de: ## Frontend ES-DE
 	ln -sfn ../share/es-de/resources $(PREFIX)/bin/resources
 
 retroarch: ## RetroArch (build dentro de src/retroarch, é o jeito dele)
-	cd src/retroarch && ./configure --prefix=$(PREFIX) --disable-update_cores \
+	cd src/retroarch && $(CC_VARS) ./configure --prefix=$(PREFIX) --disable-update_cores \
 	  --disable-update_assets --disable-update_core_info
-	$(MAKE) -C src/retroarch -j $(JOBS)
+	$(MAKE) -C src/retroarch -j $(JOBS) $(CC_VARS)
 	$(MAKE) -C src/retroarch install
 
 ppsspp: ## PPSSPP (PSP)
@@ -112,25 +119,25 @@ pcsx2: rapidyaml ## PCSX2 (PS2)
 cores: $(addprefix core-,$(CORE_LIST)) ## Os 8 cores do RetroArch
 
 core-mesen:
-	$(MAKE) -C src/cores/mesen/Libretro -j $(JOBS)
+	$(MAKE) -C src/cores/mesen/Libretro -j $(JOBS) $(CC_VARS)
 	install -Dm644 src/cores/mesen/Libretro/mesen_libretro.so -t $(CORES)
 core-snes9x:
-	$(MAKE) -C src/cores/snes9x/libretro -j $(JOBS)
+	$(MAKE) -C src/cores/snes9x/libretro -j $(JOBS) $(CC_VARS)
 	install -Dm644 src/cores/snes9x/libretro/snes9x_libretro.so -t $(CORES)
 core-gambatte:
-	$(MAKE) -C src/cores/gambatte -j $(JOBS)
+	$(MAKE) -C src/cores/gambatte -j $(JOBS) $(CC_VARS)
 	install -Dm644 src/cores/gambatte/gambatte_libretro.so -t $(CORES)
 core-genesis_plus_gx:
-	$(MAKE) -C src/cores/genesis_plus_gx -f Makefile.libretro -j $(JOBS)
+	$(MAKE) -C src/cores/genesis_plus_gx -f Makefile.libretro -j $(JOBS) $(CC_VARS)
 	install -Dm644 src/cores/genesis_plus_gx/genesis_plus_gx_libretro.so -t $(CORES)
 core-mupen64plus_next:
-	$(MAKE) -C src/cores/mupen64plus_next -j $(JOBS)
+	$(MAKE) -C src/cores/mupen64plus_next -j $(JOBS) $(CC_VARS)
 	install -Dm644 src/cores/mupen64plus_next/mupen64plus_next_libretro.so -t $(CORES)
 core-mednafen_psx:
-	$(MAKE) -C src/cores/mednafen_psx -j $(JOBS)
+	$(MAKE) -C src/cores/mednafen_psx -j $(JOBS) $(CC_VARS)
 	install -Dm644 src/cores/mednafen_psx/mednafen_psx_libretro.so -t $(CORES)
 core-fbneo:
-	$(MAKE) -C src/cores/fbneo/src/burner/libretro -j $(JOBS)
+	$(MAKE) -C src/cores/fbneo/src/burner/libretro -j $(JOBS) $(CC_VARS)
 	install -Dm644 src/cores/fbneo/src/burner/libretro/fbneo_libretro.so -t $(CORES)
 core-melondsds:
 	$(CMAKE) -S src/cores/melondsds -B $(BUILD)/cores/melondsds
