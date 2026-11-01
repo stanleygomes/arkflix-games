@@ -1,0 +1,119 @@
+import { describe, expect, it } from 'vitest'
+import { ago, bytes, playTime } from '../../src/lib/format'
+import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
+import { pickTarget, type Box } from '../../src/lib/nav'
+import { contrast, highContrastPalette, homePalette, onColor } from '../../src/lib/palette'
+
+const box = (left: number, top: number, w = 100, h = 50): Box => ({ left, top, right: left + w, bottom: top + h })
+
+describe('contraste', () => {
+  it('calcula a razão WCAG', () => {
+    expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 1)
+    expect(contrast('#777777', '#777777')).toBeCloseTo(1, 5)
+  })
+  it.each([
+    ['inicial', homePalette],
+    ['alto contraste', highContrastPalette],
+  ])('paleta %s passa no AA', (_, p) => {
+    expect(contrast(p.text, p.bg)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(p.muted, p.bg)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(p.text, p.surface)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(p.accent, p.bg)).toBeGreaterThanOrEqual(3)
+  })
+  it('alto contraste chega no AAA', () => {
+    expect(contrast(highContrastPalette.text, highContrastPalette.bg)).toBeGreaterThanOrEqual(7)
+  })
+  it('escolhe texto legível sobre o destaque', () => {
+    expect(onColor('#ffd400')).toBe('#111111')
+    expect(onColor('#1d1d6b')).toBe('#f4f1e8')
+    for (const bg of ['#ff9b54', '#a99bff', '#5ec4f2', '#ff5cc6']) expect(contrast(onColor(bg), bg)).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
+describe('navegação espacial', () => {
+  const row = [box(0, 0), box(120, 0), box(240, 0), box(360, 0)]
+  it('anda na fileira pro vizinho', () => {
+    expect(pickTarget(row[1], [row[0], row[2], row[3]], 'right')).toBe(1)
+    expect(pickTarget(row[1], [row[0], row[2], row[3]], 'left')).toBe(0)
+  })
+  it('não sai da fileira na horizontal se não tiver nada', () => {
+    expect(pickTarget(row[3], row.slice(0, 3), 'right')).toBe(-1)
+  })
+  it('desce pro alinhado, não pro mais perto em diagonal', () => {
+    const cur = box(240, 0)
+    const below = [box(0, 100), box(230, 140), box(480, 100)]
+    expect(pickTarget(cur, below, 'down')).toBe(1)
+  })
+  it('sobe pro elemento acima mesmo desalinhado se for o único', () => {
+    expect(pickTarget(box(500, 300), [box(0, 0, 80, 40)], 'up')).toBe(0)
+  })
+  it('na grade escolhe a coluna certa', () => {
+    const grid = [box(0, 0), box(120, 0), box(0, 70), box(120, 70)]
+    expect(pickTarget(grid[1], [grid[0], grid[2], grid[3]], 'down')).toBe(2)
+  })
+})
+
+describe('entrada', () => {
+  it('controle: confirma embaixo, volta à direita', () => {
+    expect(padAction('south')).toBe('accept')
+    expect(padAction('east')).toBe('back')
+    expect(padAction('north')).toBe('fav')
+    expect(padAction('l1')).toBe('prevTab')
+    expect(padAction('select')).toBeNull()
+  })
+  it('teclado: setas e Enter; num campo de texto só Esc e cima/baixo', () => {
+    expect(keyAction('ArrowLeft', false)).toBe('left')
+    expect(keyAction('Enter', false)).toBe('accept')
+    expect(keyAction('f', false)).toBe('fav')
+    expect(keyAction('ArrowLeft', true)).toBeNull()
+    expect(keyAction('f', true)).toBeNull()
+    expect(keyAction(' ', true)).toBeNull()
+    expect(keyAction('Escape', true)).toBe('back')
+    expect(keyAction('ArrowDown', true)).toBe('down')
+  })
+  it('traduz tecla pro nome do RetroArch', () => {
+    expect(retroArchKey('KeyZ')).toBe('z')
+    expect(retroArchKey('Digit1')).toBe('num1')
+    expect(retroArchKey('ShiftRight')).toBe('rshift')
+    expect(retroArchKey('F2')).toBe('f2')
+    expect(retroArchKey('F13')).toBeNull()
+    expect(retroArchKey('MetaLeft')).toBeNull()
+    for (const code of ['KeyA', 'Digit9', 'ArrowUp', 'Enter', 'Space', 'Numpad5', 'BracketLeft']) {
+      expect(retroArchKey(code)).toMatch(/^[a-z0-9_]{1,16}$/)
+    }
+  })
+  it('mostra o nome da tecla', () => {
+    expect(keyLabel('rshift')).toBe('Shift dir.')
+    expect(keyLabel('num1')).toBe('1')
+    expect(keyLabel('z')).toBe('Z')
+  })
+  it('símbolos por controle', () => {
+    expect(glyph('south', 'xbox')).toBe('A')
+    expect(glyph('south', 'playstation')).toBe('✕')
+    expect(glyph('south', '8bitdo')).toBe('B')
+    expect(glyph('east', 'nintendo')).toBe('A')
+    expect(glyph('up', 'playstation')).toBe('↑')
+    expect(glyph('south', 'keyboard')).toBe('Enter')
+  })
+})
+
+describe('formatação', () => {
+  it('tempo de jogo', () => {
+    expect(playTime(0)).toBe('nunca jogado')
+    expect(playTime(30)).toBe('menos de 1 min')
+    expect(playTime(125)).toBe('2 min')
+    expect(playTime(3600 * 2 + 60 * 5)).toBe('2 h 5 min')
+  })
+  it('tempo relativo', () => {
+    const now = 1_000_000
+    expect(ago(0, now)).toBe('nunca')
+    expect(ago(now - 10, now)).toBe('agora')
+    expect(ago(now - 600, now)).toBe('há 10 min')
+    expect(ago(now - 86400 - 10, now)).toBe('ontem')
+  })
+  it('tamanho', () => {
+    expect(bytes(512)).toBe('512 B')
+    expect(bytes(1536)).toBe('1,5 KB')
+    expect(bytes(4.7 * 1024 ** 3)).toBe('4,7 GB')
+  })
+})
