@@ -122,7 +122,7 @@
     max-width: 100%;
     max-height: 70vh;
     image-rendering: pixelated;
-    box-shadow: 6px 6px 0 var(--shadow);
+    box-shadow: var(--glow);
   }
   .shot.zoom {
     cursor: zoom-out;

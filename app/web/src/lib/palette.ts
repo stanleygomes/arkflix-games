@@ -4,12 +4,12 @@ import type { Palette } from './types'
 
 /** Paleta da tela inicial (nenhum console em foco). */
 export const homePalette: Palette = {
-  bg: '#120f1c',
-  surface: '#221c33',
-  accent: '#ff9b54',
-  accent2: '#5ad1ff',
-  text: '#f4f1e8',
-  muted: '#b7b0c4',
+  bg: '#050008',
+  surface: '#13061c',
+  accent: '#ff3cac',
+  accent2: '#18f0ff',
+  text: '#e8fbff',
+  muted: '#c0b0cc',
 }
 
 /** Alto contraste: preto, branco e amarelo, igual em todo console. */
@@ -46,7 +46,7 @@ export function contrast(a: string, b: string): number {
 }
 
 /** Cor de texto legível sobre o fundo dado (preto ou o creme da paleta). */
-export function onColor(bg: string, light = '#f4f1e8'): string {
+export function onColor(bg: string, light = '#e8fbff'): string {
   return contrast(bg, '#111111') >= contrast(bg, light) ? '#111111' : light
 }
 

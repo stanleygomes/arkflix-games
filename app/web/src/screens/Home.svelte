@@ -14,7 +14,7 @@
   import { downloadGame, downloads } from '../lib/downloads.svelte'
   import { pickRandom, sortGames } from '../lib/library'
   import { activeCollections, sortOf, sourceGames, sourceTitle } from '../lib/sources'
-  import { app, go, isKids, system, toast } from '../lib/state.svelte'
+  import { app, currentProfile, go, isKids, system, toast } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
 
   type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'list' | 'system' }
@@ -174,6 +174,14 @@
   )
 
   const hero = $derived(selected?.cover ?? '')
+  const me = $derived(currentProfile())
+  // placar de fliperama: o "recorde" é o tempo total jogado (HHH:MM)
+  const hiScore = $derived.by(() => {
+    const total = app.games.reduce((sum, g) => sum + (g.playTime || 0), 0)
+    const h = Math.floor(total / 3600)
+    const m = Math.floor((total % 3600) / 60)
+    return `${String(h).padStart(3, '0')}:${String(m).padStart(2, '0')}`
+  })
 </script>
 
 <div class="home">
@@ -201,6 +209,13 @@
   </TopBar>
 
   <main class="content" aria-labelledby="hero-title">
+    {#if app.games.length}
+      <div class="hud pixel" aria-label="Placar">
+        <p><span>1UP</span> {(me?.name ?? 'Jogador').toUpperCase()}</p>
+        <p><span>HI-SCORE</span> {hiScore}</p>
+        <p><span>JOGOS</span> {String(app.games.length).padStart(3, '0')}</p>
+      </div>
+    {/if}
     {#if app.games.length === 0}
       <section class="empty panel">
         <h1 class="pixel" id="hero-title">Nenhum jogo ainda</h1>
@@ -293,6 +308,7 @@
   </main>
 
   <HelpBar
+    coin
     hints={[
       { button: 'south', label: 'Abrir' },
       { button: 'north', label: 'Favorito' },
@@ -353,8 +369,24 @@
   .tab[aria-current='page'] {
     color: var(--on-accent);
     background: var(--accent);
-    border-color: #05040a;
-    box-shadow: 3px 3px 0 var(--shadow);
+    border-color: var(--accent);
+    box-shadow: var(--glow);
+  }
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 0.2rem 0 0.8rem;
+    font-size: 1.2rem;
+    color: #fff;
+  }
+  .hud p {
+    line-height: 1;
+  }
+  .hud span {
+    margin-right: 0.6em;
+    color: var(--accent);
+    text-shadow: 0 0 8px var(--accent);
   }
   .content {
     flex: 1;
@@ -397,7 +429,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    padding-top: 2vh;
   }
   .system-pill {
     color: var(--accent-2);
@@ -408,7 +439,6 @@
   .title {
     font-size: clamp(2rem, 4.5vw, 3.6rem);
     line-height: 1.05;
-    text-shadow: 4px 4px 0 var(--shadow);
   }
   .meta {
     display: flex;
@@ -464,6 +494,10 @@
     padding: 0;
     border: none;
     background: none;
+    /* contorno neon da cor do console (o foco troca por amarelo) */
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--accent) 75%, transparent),
+      0 0 14px color-mix(in srgb, var(--accent) 35%, transparent);
     cursor: pointer;
     scroll-snap-align: center;
     transition: transform var(--t) var(--ease);

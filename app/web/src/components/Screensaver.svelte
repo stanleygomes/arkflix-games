@@ -138,7 +138,7 @@
   .saver {
     position: fixed;
     inset: 0;
-    z-index: 200;
+    z-index: 10000; /* acima das camadas de tubo (o protetor tem as próprias) */
     background: #000;
     color: #33ff66;
     display: grid;

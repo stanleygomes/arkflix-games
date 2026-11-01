@@ -6,7 +6,7 @@
   let { game, system, large = false }: { game: Game; system?: System; large?: boolean } = $props()
   let failed = $state(false)
   const media = $derived(system?.media ?? 'cartridge')
-  const accent = $derived(system?.palette.accent ?? '#ff9b54')
+  const accent = $derived(system?.palette.accent ?? '#ff3cac')
   const accent2 = $derived(system?.palette.accent2 ?? '#5ad1ff')
 </script>
 

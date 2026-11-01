@@ -98,10 +98,11 @@ pastas dos Flatpaks (veja [Emuladores](#emuladores)).
 
 ## O app
 
-Interface pensada pra controle, com o esqueleto de um console atual e o
-acabamento de um cartucho dos anos 90: fontes em pixel nos títulos, a paleta de
-cada console (o SNES roxo, o Mega Drive preto e vermelho...), sons de menu e uma
-trilha chiptune, tudo desligável.
+Interface pensada pra controle, com cara de fliperama: fundo de tubo de TV com
+scanlines, contorno neon com brilho na cor de cada console, letreiro e placar
+(1UP, HI-SCORE) na fonte de arcade, seleção em amarelo e INSERT COIN piscando.
+Títulos e rótulos na Press Start 2P; texto corrido na Atkinson Hyperlegible, de
+leitura fácil. Sons de menu e trilha chiptune, tudo desligável.
 
 | Tela | O que faz |
 | --- | --- |
@@ -363,7 +364,7 @@ Smash Bros. Ultimate, via [SmashWiki](https://www.ssbwiki.com); os personagens
 pertencem à Nintendo, Sega, Bandai Namco, Konami, Capcom, Square Enix, SNK e
 Microsoft, e são usados aqui sem fins comerciais.
 
-As fontes do app (Pixelify Sans e Atkinson Hyperlegible) estão sob a SIL Open
+As fontes do app (Press Start 2P, VT323, Pixelify Sans e Atkinson Hyperlegible) estão sob a SIL Open
 Font License, com o texto da licença em `app/web/public/fonts/`.
 
 Os arquivos próprios deste repositório ainda não têm uma licença definida.

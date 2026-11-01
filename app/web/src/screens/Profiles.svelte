@@ -142,7 +142,6 @@
   }
   h1 {
     font-size: clamp(1.8rem, 4vw, 3rem);
-    text-shadow: 4px 4px 0 var(--shadow);
     text-align: center;
   }
   .cards {

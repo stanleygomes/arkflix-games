@@ -30,7 +30,7 @@
     padding: 0.8rem 1rem;
     background: var(--surface);
     border: 3px solid var(--accent-2);
-    box-shadow: 4px 4px 0 var(--shadow);
+    box-shadow: var(--glow-2);
     white-space: pre-line;
     animation: pop 220ms var(--ease);
   }

@@ -49,7 +49,7 @@
     align-items: center;
     background: var(--surface);
     border: 3px solid var(--accent-2);
-    box-shadow: 4px 4px 0 var(--shadow);
+    box-shadow: var(--glow-2);
     padding: 0.6rem 0.9rem;
   }
   .bar {

@@ -232,8 +232,8 @@
     font: inherit;
     color: var(--text);
     text-align: left;
-    background: var(--surface);
-    border: 3px solid color-mix(in srgb, var(--text) 20%, var(--surface));
+    background: #000;
+    border: 2px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
     padding: 0.6rem 0.9rem;
     display: grid;
     grid-template-columns: 10rem 1fr auto;

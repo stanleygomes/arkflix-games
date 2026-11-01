@@ -20,19 +20,19 @@
     padding: 0 0.35em;
     display: inline-grid;
     place-items: center;
-    background: #f4f1e8;
-    color: #111;
-    border: 2px solid #05040a;
-    box-shadow: 2px 2px 0 #05040a;
+    background: #000;
+    color: var(--accent-2);
+    border: 2px solid currentColor;
+    box-shadow: 0 0 6px color-mix(in srgb, currentColor 60%, transparent);
   }
   .round {
     border-radius: 50%;
     padding: 0;
   }
-  .xbox.south { background: #5dc44f; }
-  .xbox.east { background: #c62828; color: #fff; }
-  .xbox.west { background: #1d5fd6; color: #fff; }
-  .xbox.north { background: #f5c518; }
+  .xbox.south { color: #5dff4f; }
+  .xbox.east { color: #ff5a6a; }
+  .xbox.west { color: #5c9dff; }
+  .xbox.north { color: #ffe600; }
   .ps.south { color: #3b82f6; background: #111; }
   .ps.east { color: #e5484d; background: #111; }
   .ps.west { color: #e879b8; background: #111; }

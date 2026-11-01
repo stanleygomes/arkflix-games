@@ -131,9 +131,9 @@
     margin: 0;
   }
   .tile {
-    background: var(--surface);
-    border: 3px solid color-mix(in srgb, var(--text) 18%, var(--surface));
-    box-shadow: 4px 4px 0 var(--shadow);
+    background: #000;
+    border: 2px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+    box-shadow: var(--glow-2);
     padding: 0.9rem 1rem;
   }
   dt {

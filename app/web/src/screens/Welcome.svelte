@@ -149,12 +149,14 @@
     display: grid;
     gap: 1rem;
     padding: 2rem 2.2rem;
-    box-shadow: 8px 8px 0 var(--shadow);
+    border-color: var(--accent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 40px color-mix(in srgb, var(--accent) 25%, transparent);
   }
   .logo {
     font-size: 2.4rem;
     text-align: center;
-    text-shadow: 4px 4px 0 var(--shadow);
+    font-size-adjust: 0.42;
+    text-shadow: 0 0 6px var(--accent), 0 0 18px var(--accent), 3px 3px 0 #000;
   }
   .logo span {
     color: var(--accent);
@@ -180,12 +182,12 @@
     color: var(--text);
     text-align: left;
     background: color-mix(in srgb, var(--bg) 70%, #000);
-    border: 3px solid color-mix(in srgb, var(--text) 25%, var(--surface));
+    border: 2px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
     cursor: text;
   }
   .field:focus-visible,
   .field:hover {
-    border-color: var(--accent);
+    border-color: var(--focus);
   }
   .label {
     font-weight: 700;

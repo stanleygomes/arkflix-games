@@ -76,9 +76,11 @@
   }
   .brand {
     font-family: var(--font-title);
-    font-size: 1.5rem;
-    color: var(--text);
-    text-shadow: 3px 3px 0 var(--shadow);
+    font-size: 1.9rem;
+    font-size-adjust: 0.42;
+    letter-spacing: 0.08em;
+    color: #fff;
+    text-shadow: 0 0 6px var(--accent), 0 0 16px var(--accent), 3px 3px 0 #000;
   }
   .brand span {
     color: var(--accent);

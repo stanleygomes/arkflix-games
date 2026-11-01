@@ -302,7 +302,6 @@
   }
   h1 {
     font-size: clamp(2rem, 4vw, 3.2rem);
-    text-shadow: 4px 4px 0 var(--shadow);
   }
   .facts {
     list-style: none;
@@ -359,9 +358,9 @@
     padding: 0.4rem;
     font: inherit;
     color: var(--text);
-    background: var(--surface);
-    border: 3px solid color-mix(in srgb, var(--text) 20%, var(--surface));
-    box-shadow: 4px 4px 0 var(--shadow);
+    background: #000;
+    border: 2px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+    box-shadow: var(--glow-2);
     cursor: pointer;
   }
   .thumb img,
@@ -406,9 +405,9 @@
     font: inherit;
     color: var(--text);
     text-align: left;
-    background: var(--surface);
-    border: 3px solid color-mix(in srgb, var(--text) 20%, var(--surface));
-    box-shadow: 4px 4px 0 var(--shadow);
+    background: #000;
+    border: 2px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+    box-shadow: var(--glow-2);
     cursor: pointer;
   }
   .state img,
