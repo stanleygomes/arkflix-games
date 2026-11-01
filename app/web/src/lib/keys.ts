@@ -14,6 +14,7 @@ export type Action =
   | 'menu'
   | 'prevTab'
   | 'nextTab'
+  | 'search'
 
 /** Botão físico (nomes do Go) -> ação. Confirma com o botão de baixo. */
 export function padAction(button: string): Action | null {
@@ -29,6 +30,7 @@ export function padAction(button: string): Action | null {
     start: 'menu',
     l1: 'prevTab',
     r1: 'nextTab',
+    select: 'search',
   }
   return map[button] ?? null
 }
@@ -60,6 +62,7 @@ export function keyAction(key: string, typing: boolean): Action | null {
     PageDown: 'nextTab',
     q: 'prevTab',
     e: 'nextTab',
+    '/': 'search',
   }
   return map[key] ?? null
 }

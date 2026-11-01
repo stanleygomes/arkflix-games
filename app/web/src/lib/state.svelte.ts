@@ -5,6 +5,7 @@ export type Screen =
   | { name: 'home' }
   | { name: 'game'; id: string }
   | { name: 'import' }
+  | { name: 'search' }
   | { name: 'settings'; tab?: SettingsTab }
 
 export type SettingsTab = 'library' | 'controls' | 'a11y' | 'about'

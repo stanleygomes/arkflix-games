@@ -5,7 +5,7 @@ import { api, on } from './api'
 import { keyAction, padAction, type Action } from './keys'
 import { current, move, type Dir } from './nav'
 import { play, unlock } from './sound'
-import { app, back } from './state.svelte'
+import { app, back, go, screen } from './state.svelte'
 import type { PadEvent } from './types'
 
 export type Source = 'pad' | 'key'
@@ -63,6 +63,12 @@ export function dispatch(action: Action, src: Source = 'key') {
     }
     case 'back':
       if (back()) play('back')
+      return
+    case 'search':
+      if (screen().name !== 'search') {
+        play('accept')
+        go({ name: 'search' })
+      }
       return
   }
 }

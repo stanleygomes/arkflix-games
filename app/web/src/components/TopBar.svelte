@@ -20,6 +20,9 @@
   <div class="middle">{@render children?.()}</div>
   <div class="right">
     {#if actions}
+      <button class="icon-btn" data-nav aria-label="Buscar jogos" onclick={() => go({ name: 'search' })}>
+        <Icon name="search" />
+      </button>
       <button class="icon-btn" data-nav aria-label="Importar jogos" onclick={() => go({ name: 'import' })}>
         <Icon name="plus" />
       </button>

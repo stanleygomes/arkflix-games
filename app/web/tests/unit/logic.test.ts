@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { ago, bytes, playTime } from '../../src/lib/format'
 import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
+import { normalize, search } from '../../src/lib/library'
+import type { Game } from '../../src/lib/types'
 import { pickTarget, type Box } from '../../src/lib/nav'
 import { contrast, highContrastPalette, homePalette, onColor } from '../../src/lib/palette'
 
@@ -59,7 +61,8 @@ describe('entrada', () => {
     expect(padAction('east')).toBe('back')
     expect(padAction('north')).toBe('fav')
     expect(padAction('l1')).toBe('prevTab')
-    expect(padAction('select')).toBeNull()
+    expect(padAction('select')).toBe('search')
+    expect(padAction('home')).toBeNull()
   })
   it('teclado: setas e Enter; num campo de texto só Esc e cima/baixo', () => {
     expect(keyAction('ArrowLeft', false)).toBe('left')
@@ -115,5 +118,29 @@ describe('formatação', () => {
     expect(bytes(512)).toBe('512 B')
     expect(bytes(1536)).toBe('1,5 KB')
     expect(bytes(4.7 * 1024 ** 3)).toBe('4,7 GB')
+  })
+})
+
+const fakeGame = (name: string, extra: Partial<Game> = {}): Game => ({
+  id: name, system: 'snes', title: name, fileName: `${name}.zip`, folder: 'snes', root: '/', local: true, size: 1,
+  name, summary: '', year: 0, genres: [], players: '', cover: '', snap: '', titleShot: '', favorite: false,
+  lastPlayed: 0, playTime: 0, plays: 0, ...extra,
+})
+
+describe('busca', () => {
+  const games = ['Super Mario World', 'Super Mario 64', 'Pokémon Gold', 'Mega Man X', 'Mario Kart 64'].map((n) => fakeGame(n))
+  it('normaliza acento, maiúscula e pontuação', () => {
+    expect(normalize('Pokémon: Gold!')).toBe('pokemon gold')
+    expect(normalize('Tom & Jerry')).toBe('tom and jerry')
+  })
+  it('acha por parte do nome, sem acento', () => {
+    expect(search(games, 'mario').map((g) => g.name)).toEqual(['Mario Kart 64', 'Super Mario 64', 'Super Mario World'])
+    expect(search(games, 'POKEMON').map((g) => g.name)).toEqual(['Pokémon Gold'])
+    expect(search(games, 'mario 64').map((g) => g.name)).toEqual(['Mario Kart 64', 'Super Mario 64'])
+  })
+  it('acha pelo nome do arquivo e ignora busca vazia', () => {
+    const g = fakeGame('Sonic 2', { fileName: 'Sonic The Hedgehog 2 (World).zip' })
+    expect(search([g], 'hedgehog')).toHaveLength(1)
+    expect(search(games, '   ')).toEqual([])
   })
 })

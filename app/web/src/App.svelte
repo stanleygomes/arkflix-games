@@ -13,6 +13,7 @@
   import Game_ from './screens/Game.svelte'
   import Home from './screens/Home.svelte'
   import Import from './screens/Import.svelte'
+  import Search from './screens/Search.svelte'
   import Settings from './screens/Settings.svelte'
 
   const current = $derived(screen())
@@ -103,6 +104,8 @@
       <Game_ id={current.id} />
     {:else if current.name === 'import'}
       <Import />
+    {:else if current.name === 'search'}
+      <Search />
     {:else if current.name === 'settings'}
       <Settings tab={current.tab} />
     {/if}

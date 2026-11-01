@@ -238,6 +238,7 @@
       { button: 'west', label: 'Detalhes' },
       { button: 'l1', label: 'Console anterior' },
       { button: 'r1', label: 'Próximo console' },
+      { button: 'select', label: 'Buscar' },
       { button: 'start', label: 'Configurações' },
     ]}
   />
