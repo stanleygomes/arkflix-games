@@ -148,6 +148,9 @@ func RetroArchConfig(m Mapping) string {
 		`savestate_auto_index = "false"`,
 		`quit_press_twice = "false"`,
 		`pause_nonactive = "false"`,
+		// sem isso o RetroArch grava esta config (e as pastas de save de um
+		// perfil) por cima da config do Flatpak ao sair
+		`config_save_on_exit = "false"`,
 	}
 	for _, b := range RetroPad {
 		bind(&lines, "input_player1_"+b.ID, m.Pad[b.ID])
