@@ -1,0 +1,107 @@
+// Transporte da API. No desktop, o Wails injeta window.go.core.Service (cada
+// método do Go vira uma Promise) e window.runtime (eventos). No navegador, os
+// mesmos métodos vão por POST /api/call/<Método> e os eventos por SSE.
+// Trocar pra um servidor remoto no futuro = mudar só a URL base daqui.
+import type {
+  Boot,
+  Game,
+  ImportItem,
+  ImportResult,
+  InputResult,
+  Listing,
+  Mapping,
+  Pad,
+  Settings,
+} from './types'
+
+type Service = Record<string, (...args: unknown[]) => Promise<unknown>>
+
+interface WailsWindow {
+  go?: { core?: { Service?: Service } }
+  runtime?: {
+    EventsOn: (name: string, cb: (data: unknown) => void) => (() => void) | void
+    EventsOff: (name: string) => void
+  }
+}
+
+const w = window as unknown as WailsWindow
+
+export const isDesktop = (): boolean => typeof w.runtime?.EventsOn === 'function'
+
+async function binding(): Promise<Service> {
+  for (let i = 0; i < 100; i++) {
+    const svc = w.go?.core?.Service
+    if (svc) return svc
+    await new Promise((r) => setTimeout(r, 50))
+  }
+  throw new Error('ligação com o Go não ficou pronta')
+}
+
+export async function call<T>(method: string, ...args: unknown[]): Promise<T> {
+  if (isDesktop()) {
+    const svc = await binding()
+    const fn = svc[method]
+    if (!fn) throw new Error(`método ${method} não existe`)
+    try {
+      return (await fn(...args)) as T
+    } catch (err) {
+      throw new Error(typeof err === 'string' ? err : String((err as Error)?.message ?? err))
+    }
+  }
+  const res = await fetch(`/api/call/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Arkflix': '1' },
+    body: JSON.stringify(args),
+  })
+  const body = (await res.json().catch(() => ({}))) as { result?: T; error?: string }
+  if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`)
+  return body.result as T
+}
+
+type Listener = (data: unknown) => void
+const listeners = new Map<string, Set<Listener>>()
+let source: EventSource | null = null
+
+function ensureSource() {
+  if (source || isDesktop()) return
+  source = new EventSource('/api/events')
+  source.onmessage = (msg) => {
+    const { name, data } = JSON.parse(msg.data) as { name: string; data: unknown }
+    listeners.get(name)?.forEach((fn) => fn(data))
+  }
+}
+
+/** Assina um evento do Go ("pad", "pads", "game", "library"). Devolve o cancelamento. */
+export function on<T>(name: string, fn: (data: T) => void): () => void {
+  const cb = fn as Listener
+  if (isDesktop()) {
+    const off = w.runtime!.EventsOn(name, cb)
+    return typeof off === 'function' ? off : () => w.runtime!.EventsOff(name)
+  }
+  ensureSource()
+  if (!listeners.has(name)) listeners.set(name, new Set())
+  listeners.get(name)!.add(cb)
+  return () => listeners.get(name)?.delete(cb)
+}
+
+export const api = {
+  bootstrap: () => call<Boot>('Bootstrap'),
+  ready: () => call<void>('Ready'),
+  refresh: () => call<Game[]>('Refresh'),
+  setFavorite: (id: string, fav: boolean) => call<Game>('SetFavorite', id, fav),
+  play: (id: string, state = '') => call<void>('Play', id, state),
+  saves: (id: string) => call<Listing>('Saves', id),
+  deleteState: (id: string, state: string) => call<Listing>('DeleteState', id, state),
+  analyzeImport: (paths: string[]) => call<ImportItem[]>('AnalyzeImport', paths),
+  importItems: (items: ImportItem[]) => call<ImportResult[]>('Import', items),
+  pickFiles: () => call<string[] | null>('PickFiles'),
+  getSettings: () => call<Settings>('GetSettings'),
+  saveSettings: (s: Settings) => call<Settings>('SaveSettings', s),
+  resetSettings: () => call<Settings>('ResetSettings'),
+  getInput: () => call<Mapping>('GetInput'),
+  saveInput: (m: Mapping) => call<InputResult>('SaveInput', m),
+  resetInput: () => call<InputResult>('ResetInput'),
+  pads: () => call<Pad[]>('Pads'),
+  toggleFullscreen: () => call<void>('ToggleFullscreen'),
+  quit: () => call<void>('Quit'),
+}

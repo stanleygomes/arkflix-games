@@ -1,0 +1,317 @@
+<script lang="ts">
+  import { tick } from 'svelte'
+  import GameArt from '../components/GameArt.svelte'
+  import HelpBar from '../components/HelpBar.svelte'
+  import Icon from '../components/Icon.svelte'
+  import TopBar from '../components/TopBar.svelte'
+  import { api, on } from '../lib/api'
+  import { ago, bytes, dateTime, playTime } from '../lib/format'
+  import { pushHandler } from '../lib/input'
+  import { current, focusDefault } from '../lib/nav'
+  import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
+  import { play } from '../lib/sound'
+  import { app, back, confirm, game, putGame, system, toast } from '../lib/state.svelte'
+  import type { GameEvent, Listing, SaveState } from '../lib/types'
+
+  let { id }: { id: string } = $props()
+  const g = $derived(game(id))
+  const sys = $derived(g ? system(g.system) : undefined)
+  let listing = $state<Listing | null>(null)
+  let loadError = $state('')
+  let stamp = $state(Date.now())
+
+  async function load() {
+    try {
+      listing = await api.saves(id)
+      loadError = ''
+      stamp = Date.now()
+    } catch (err) {
+      loadError = (err as Error).message
+    }
+  }
+
+  $effect(() => {
+    load()
+    tick().then(focusDefault)
+    // depois de jogar, recarrega (state novo, miniatura nova)
+    return on<GameEvent>('game', (e) => {
+      if (e.state === 'exited' && e.id === id) load()
+    })
+  })
+
+  $effect(() => {
+    if (app.settings?.a11y.highContrast) applyPalette(highContrastPalette)
+    else applyPalette(sys?.palette ?? homePalette)
+  })
+
+  const auto = $derived(listing?.states.find((s) => s.slot === -1))
+
+  async function launch(state = '') {
+    if (!g) return
+    try {
+      play('start')
+      await api.play(g.id, state)
+    } catch (err) {
+      play('error')
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  async function toggleFav() {
+    if (!g) return
+    try {
+      const updated = await api.setFavorite(g.id, !g.favorite)
+      putGame(updated)
+      play('toggle')
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  async function remove(st: SaveState) {
+    const ok = await confirm(`Apagar o ponto salvo "${st.label}" de ${dateTime(st.modified)}? Não dá pra desfazer.`, 'Apagar', true)
+    if (!ok) return
+    try {
+      listing = await api.deleteState(id, st.id)
+      toast('Ponto salvo apagado', 'ok', 2500)
+      tick().then(focusDefault)
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  $effect(() =>
+    pushHandler((a) => {
+      if (a === 'fav') {
+        const stateId = current()?.dataset.state
+        const st = listing?.states.find((s) => s.id === stateId)
+        if (st) remove(st)
+        else toggleFav()
+        return true
+      }
+      return a === 'details' || a === 'prevTab' || a === 'nextTab'
+    }),
+  )
+</script>
+
+{#if g}
+  <div class="page">
+    <div class="backdrop" style:background-image={g.cover ? `url("${g.cover}")` : 'none'} aria-hidden="true"></div>
+    <TopBar />
+    <main class="layout">
+      <div class="art">
+        <GameArt game={g} system={sys} large />
+      </div>
+      <div class="info">
+        <p class="system pixel">{sys?.name ?? g.system}</p>
+        <h1 class="pixel">{g.name}</h1>
+        <ul class="facts">
+          {#if g.year}<li class="chip">{g.year}</li>{/if}
+          {#if g.players}<li class="chip">{g.players} jogador{g.players === '1' ? '' : 'es'}</li>{/if}
+          {#each g.genres as genre (genre)}<li class="chip">{genre}</li>{/each}
+          <li class="chip">Tempo: {playTime(g.playTime)}</li>
+          <li class="chip">Última vez: {ago(g.lastPlayed)}</li>
+          <li class="chip">{bytes(g.size)}</li>
+        </ul>
+        {#if g.summary}<p class="summary">{g.summary}</p>{/if}
+        <div class="actions">
+          <button class="btn primary" data-nav data-nav-default onclick={() => launch()}><Icon name="play" /> Jogar do início</button>
+          {#if auto}
+            <button class="btn" data-nav onclick={() => launch('auto')}><Icon name="resume" /> Continuar de onde parei</button>
+          {/if}
+          <button class="btn" data-nav aria-pressed={g.favorite} onclick={toggleFav}>
+            <Icon name="star" /> {g.favorite ? 'Favorito' : 'Favoritar'}
+          </button>
+          <button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>
+        </div>
+
+        <section class="saves" aria-labelledby="saves-title">
+          <h2 id="saves-title">Pontos salvos</h2>
+          {#if loadError}
+            <p class="error">{loadError}</p>
+          {:else if listing}
+            {#if listing.states.length === 0}
+              <p class="muted">Nenhum ponto salvo ainda. No jogo, segure Select e aperte R pra salvar.</p>
+            {:else}
+              <ul class="states">
+                {#each listing.states as st (st.id)}
+                  <li>
+                    <button
+                      class="state"
+                      data-nav
+                      data-state={st.id}
+                      title={`Salvo em ${dateTime(st.modified)}`}
+                      onclick={() => launch(st.id)}
+                    >
+                      {#if st.thumb}
+                        <img src={`/media/thumb/${st.id}?v=${stamp}`} alt="" loading="lazy" />
+                      {:else}
+                        <span class="nothumb pixel" aria-hidden="true">{st.slot === -1 ? 'AUTO' : `#${st.slot}`}</span>
+                      {/if}
+                      <span class="state-label"><span class="sr-only">Carregar </span>{st.label}</span>
+                      <span class="state-date muted">{ago(st.modified)}</span>
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+            {#if listing.files.length}
+              <h3 class="sub">Saves do jogo</h3>
+              <ul class="files">
+                {#each listing.files as f (f.path)}
+                  <li>
+                    <Icon name="folder" />
+                    <span>{f.name}</span>
+                    <span class="muted">{bytes(f.size)} · {ago(f.modified)}{f.shared ? ' · compartilhado entre jogos' : ''}</span>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+            {#if listing.note}<p class="muted note">{listing.note}</p>{/if}
+          {/if}
+        </section>
+      </div>
+    </main>
+    <HelpBar
+      hints={[
+        { button: 'south', label: 'Escolher' },
+        { button: 'north', label: 'Favorito / apagar save' },
+        { button: 'east', label: 'Voltar' },
+      ]}
+    />
+  </div>
+{:else}
+  <main class="layout">
+    <p>Jogo não encontrado.</p>
+    <button class="btn" data-nav data-nav-default onclick={() => back()}>Voltar</button>
+  </main>
+{/if}
+
+<style>
+  .page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: blur(14px) saturate(1.2);
+    opacity: 0.22;
+    z-index: -1;
+  }
+  .layout {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: minmax(12rem, 22rem) 1fr;
+    gap: 3rem;
+    padding: 1rem 2.5rem 2rem 3.5rem;
+    align-items: start;
+  }
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+  .system {
+    color: var(--accent-2);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    text-shadow: 4px 4px 0 var(--shadow);
+  }
+  .facts {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .summary {
+    max-width: 48rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+  }
+  .saves {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .saves h2 {
+    font-size: 1.4rem;
+  }
+  .sub {
+    font-size: 1.05rem;
+    margin-top: 0.5rem;
+  }
+  .states {
+    list-style: none;
+    padding: 0.4rem;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 1rem;
+  }
+  .state {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.5rem;
+    font: inherit;
+    color: var(--text);
+    text-align: left;
+    background: var(--surface);
+    border: 3px solid color-mix(in srgb, var(--text) 20%, var(--surface));
+    box-shadow: 4px 4px 0 var(--shadow);
+    cursor: pointer;
+  }
+  .state img,
+  .nothumb {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    image-rendering: pixelated;
+    background: #000;
+  }
+  .nothumb {
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    font-size: 1.6rem;
+  }
+  .state-label {
+    font-weight: 700;
+  }
+  .files {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+  .files li {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .error {
+    color: #ff8a8a;
+  }
+  .note {
+    font-style: italic;
+  }
+</style>

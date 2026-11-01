@@ -1,0 +1,93 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte'
+  import { app, go } from '../lib/state.svelte'
+  import Icon from './Icon.svelte'
+
+  let { children, actions = true }: { children?: Snippet; actions?: boolean } = $props()
+  let now = $state(new Date())
+  $effect(() => {
+    const t = setInterval(() => (now = new Date()), 15000)
+    return () => clearInterval(t)
+  })
+  const clock = $derived(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
+  const padLabel = $derived(
+    app.pads.length === 0 ? 'Nenhum controle conectado' : `${app.pads.length} controle(s): ${app.pads.map((p) => p.name).join(', ')}`,
+  )
+</script>
+
+<header class="top">
+  <div class="brand pixel" aria-hidden="true">ARK<span>FLIX</span></div>
+  <div class="middle">{@render children?.()}</div>
+  <div class="right">
+    {#if actions}
+      <button class="icon-btn" data-nav aria-label="Importar jogos" onclick={() => go({ name: 'import' })}>
+        <Icon name="plus" />
+      </button>
+      <button class="icon-btn" data-nav aria-label="Configurações" onclick={() => go({ name: 'settings' })}>
+        <Icon name="gear" />
+      </button>
+    {/if}
+    <span class="status" role="img" aria-label={padLabel} title={padLabel}>
+      <Icon name="pad" />
+      <span class="count">{app.pads.length}</span>
+    </span>
+    <time class="clock pixel" datetime={now.toISOString()}>{clock}</time>
+  </div>
+</header>
+
+<style>
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 2.5rem;
+    min-height: 4.5rem;
+  }
+  .brand {
+    font-family: var(--font-title);
+    font-size: 1.5rem;
+    color: var(--text);
+    text-shadow: 3px 3px 0 var(--shadow);
+  }
+  .brand span {
+    color: var(--accent);
+  }
+  .middle {
+    flex: 1;
+    min-width: 0;
+  }
+  .right {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .icon-btn {
+    font-size: 1.3rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    background: transparent;
+    border: 3px solid transparent;
+    cursor: pointer;
+  }
+  .icon-btn:hover {
+    border-color: color-mix(in srgb, var(--text) 30%, transparent);
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 1.2rem;
+    color: var(--muted);
+  }
+  .count {
+    font-size: 0.85rem;
+  }
+  .clock {
+    font-size: 1.2rem;
+    min-width: 3.5em;
+    text-align: right;
+  }
+</style>
