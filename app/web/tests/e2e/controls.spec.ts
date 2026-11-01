@@ -50,3 +50,12 @@ test('teclado: remapear Start pra P', async ({ page, app }) => {
   await expect(page.locator('.toasts')).toContainText('Cancelado')
   expect(app.read(`${app.data}/retroarch-input.cfg`)).toContain('input_player1_select = "rshift"')
 })
+
+test('testar L1/R1 na prévia não troca de seção', async ({ page, app }) => {
+  await openControls(page, app)
+  await page.locator('[data-retropad="up"]').focus()
+  await app.pad('r1')
+  await app.pad('l1')
+  await expect(page.getByRole('heading', { name: 'Controles' })).toBeVisible()
+  await expect(page.locator('[data-retropad="up"]')).toBeFocused()
+})

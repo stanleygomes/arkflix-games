@@ -6,7 +6,7 @@ import type { Settings } from '../../lib/types'
 
 let timer: number | undefined
 
-export function saveSoon(next: Settings, delay = 350) {
+export function saveSoon(next: Settings, delay = 120) {
   app.settings = next
   clearTimeout(timer)
   timer = window.setTimeout(async () => {

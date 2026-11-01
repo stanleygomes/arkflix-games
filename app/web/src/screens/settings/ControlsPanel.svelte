@@ -3,7 +3,7 @@
   import Glyph from '../../components/Glyph.svelte'
   import Icon from '../../components/Icon.svelte'
   import { api } from '../../lib/api'
-  import { onPad, setCapture, type Captured } from '../../lib/input'
+  import { onPad, pushHandler, setCapture, type Captured } from '../../lib/input'
   import { glyph, keyLabel, retroArchKey } from '../../lib/keys'
   import { play } from '../../lib/sound'
   import { app, confirm, toast } from '../../lib/state.svelte'
@@ -44,6 +44,9 @@
     setCapture(null)
     clearTimeout(timeout)
   })
+
+  // aqui L1/R1/X/Y/Start servem pra testar a prévia: não trocam de seção nem abrem nada
+  $effect(() => pushHandler((a) => a === 'prevTab' || a === 'nextTab' || a === 'fav' || a === 'details' || a === 'menu'))
 
   async function save(next: Mapping) {
     try {
