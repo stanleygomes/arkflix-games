@@ -161,6 +161,20 @@ export interface MetaInfo {
   edit: MetaEdit
 }
 
+export interface Stats {
+  period: string
+  totalSeconds: number
+  plays: number
+  sessions: number
+  gamesPlayed: number
+  libraryGames: number
+  byGame: { id: string; name: string; system: string; seconds: number; plays: number; last: number }[]
+  bySystem: { system: string; seconds: number; plays: number; games: number; played: number }[]
+  byWeekday: number[]
+  byDay: { date: string; seconds: number }[]
+  bestDay: { date: string; seconds: number }
+}
+
 export interface GameList {
   id: string
   name: string

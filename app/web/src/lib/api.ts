@@ -16,6 +16,7 @@ import type {
   Pad,
   ScriptsInfo,
   Settings,
+  Stats,
 } from './types'
 
 type Service = Record<string, (...args: unknown[]) => Promise<unknown>>
@@ -114,6 +115,7 @@ export const api = {
   deleteList: (id: string) => call<void>('DeleteList', id),
   setInList: (id: string, game: string, inList: boolean) => call<GameList>('SetInList', id, game, inList),
   metaDetails: (id: string) => call<MetaInfo>('MetaDetails', id),
+  stats: (period: string) => call<Stats>('Stats', period),
   saveMeta: (id: string, edit: MetaEdit) => call<Game>('SaveMeta', id, edit),
   resetMeta: (id: string) => call<Game>('ResetMeta', id),
   toggleFullscreen: () => call<void>('ToggleFullscreen'),

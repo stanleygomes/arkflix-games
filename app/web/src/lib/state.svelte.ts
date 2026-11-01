@@ -8,6 +8,7 @@ export type Screen =
   | { name: 'search' }
   | { name: 'library'; source: string }
   | { name: 'edit'; id: string }
+  | { name: 'stats' }
   | { name: 'settings'; tab?: SettingsTab }
 
 export type SettingsTab = 'library' | 'controls' | 'a11y' | 'about'

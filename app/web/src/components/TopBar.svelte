@@ -23,6 +23,9 @@
       <button class="icon-btn" data-nav aria-label="Buscar jogos" onclick={() => go({ name: 'search' })}>
         <Icon name="search" />
       </button>
+      <button class="icon-btn" data-nav aria-label="Estatísticas" onclick={() => go({ name: 'stats' })}>
+        <Icon name="chart" />
+      </button>
       <button class="icon-btn" data-nav aria-label="Importar jogos" onclick={() => go({ name: 'import' })}>
         <Icon name="plus" />
       </button>

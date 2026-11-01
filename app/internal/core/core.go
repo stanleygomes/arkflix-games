@@ -32,6 +32,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/saves"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
+	"github.com/stanleygomes/arkflix-games/app/internal/stats"
 	"github.com/stanleygomes/arkflix-games/app/internal/thumbs"
 )
 
@@ -815,3 +816,19 @@ func (s *Service) SaveMeta(id string, edit meta.Override) (GameView, error) {
 
 // ResetMeta volta tudo do jogo pro automático.
 func (s *Service) ResetMeta(id string) (GameView, error) { return s.SaveMeta(id, meta.Override{}) }
+
+// Stats resume o histórico de jogo no período ("7d", "30d" ou "all").
+func (s *Service) Stats(period string) (stats.Stats, error) {
+	if period != "7d" && period != "30d" && period != "all" {
+		return stats.Stats{}, errors.New("período inválido")
+	}
+	sessions, err := s.hist.All()
+	if err != nil {
+		return stats.Stats{}, err
+	}
+	var games []stats.Game
+	for _, v := range s.views() {
+		games = append(games, stats.Game{ID: v.ID, Name: v.Name, System: v.System})
+	}
+	return stats.Compute(s.hist, sessions, games, period, time.Now(), time.Local), nil
+}
