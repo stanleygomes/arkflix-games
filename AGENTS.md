@@ -14,6 +14,21 @@ Leia o [README](README.md) antes. Resumo do que importa:
   que o `make home` já faz: são os saves e a config reais do dono.
 - `make deps` usa sudo: peça pro dono rodar (`! make deps`).
 
+## App (app/)
+
+- Backend Go em `app/internal`, interface Svelte 5 + TypeScript em `app/web`.
+  Métodos exportados de `core.Service` são a API (Wails no desktop, HTTP no web):
+  não exporte método que não deva ser chamado pela interface.
+- Fonte de jogos, metadados e saves entram por interface (`GameSource`,
+  `MetaProvider`, `SaveStore`). Hoje tudo é local, por pedido do dono; o servidor
+  vem depois. Não acople nada remoto nos pacotes locais.
+- Mudou o app? `make check-app` (Go com race, svelte-check, Vitest, Playwright
+  com axe). Tela nova ou mudada = teste de ponta a ponta + `axe(page, ...)` nela.
+- Acessibilidade é requisito: contraste AA (paletas testadas no Go), nome
+  acessível contendo o texto visível, foco sempre visível, tudo navegável por
+  controle e teclado (`data-nav`).
+- Dependência nova (Go ou npm): versão exata, publicada há pelo menos duas semanas.
+
 ## Git: commit + push sempre
 
 Toda iteração que mudar arquivo termina com commit e push. Sem perguntar.
