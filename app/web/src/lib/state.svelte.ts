@@ -1,5 +1,5 @@
 // Estado global da interface (Svelte 5 runes).
-import type { Family, Game, GameEvent, GameList, Mapping, Pad, Settings, System, RetroPadButton } from './types'
+import type { Boot, Family, Game, GameEvent, GameList, Mapping, Pad, ProfileState, Settings, System, RetroPadButton } from './types'
 
 export type Screen =
   | { name: 'home' }
@@ -10,6 +10,8 @@ export type Screen =
   | { name: 'edit'; id: string }
   | { name: 'stats' }
   | { name: 'settings'; tab?: SettingsTab }
+  | { name: 'profiles' }
+  | { name: 'profile'; id?: string }
 
 export type SettingsTab = 'library' | 'controls' | 'a11y' | 'about'
 
@@ -24,6 +26,13 @@ export interface Confirm {
   ok: string
   danger: boolean
   resolve: (v: boolean) => void
+}
+
+export interface PinAsk {
+  title: string
+  error: string
+  submit: (pin: string) => Promise<string | null>
+  resolve: (pin: string | null) => void
 }
 
 export interface Prompt {
@@ -53,6 +62,8 @@ export const app = $state({
   toasts: [] as Toast[],
   confirm: null as Confirm | null,
   prompt: null as Prompt | null,
+  pin: null as PinAsk | null,
+  profile: null as ProfileState | null,
   lists: [] as GameList[],
   homeTab: 'home',
   selected: '',
@@ -120,6 +131,41 @@ export function prompt(
   return new Promise((resolve) => {
     app.prompt = { title, value, ok, error: '', submit, resolve, max: opts.max ?? 60, multiline: !!opts.multiline }
   })
+}
+
+/** Pede um PIN de 4 números. submit confere: devolve erro ou null. */
+export function askPIN(title: string, submit: (pin: string) => Promise<string | null>): Promise<string | null> {
+  return new Promise((resolve) => {
+    app.pin = { title, error: '', submit, resolve }
+  })
+}
+
+/** Põe o estado inicial (do app ou de um perfil) na interface. */
+export function applyBoot(boot: Boot) {
+  Object.assign(app, {
+    version: boot.version,
+    mode: boot.mode,
+    systems: boot.systems,
+    games: boot.games,
+    settings: boot.settings,
+    input: boot.input,
+    retroPad: boot.retroPad,
+    pads: boot.pads ?? [],
+    lists: boot.lists ?? [],
+    profile: boot.profile,
+  })
+}
+
+/** Perfil em uso. */
+export function currentProfile() {
+  return app.profile?.profiles.find((p) => p.id === app.profile?.current)
+}
+
+/** Recomeça a navegação numa tela (troca de perfil). */
+export function resetTo(s: Screen) {
+  app.stack = [s]
+  app.homeTab = 'home'
+  app.selected = ''
 }
 
 export function putList(l: GameList) {

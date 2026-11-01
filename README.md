@@ -154,8 +154,19 @@ jogo.
 rsync -a --update ~/.var/app/org.libretro.RetroArch/config/retroarch/saves/ /mnt/backup/saves/
 ```
 
+**Perfis.** Com mais de um perfil, o app abre em "Quem vai jogar?" (avatar em
+pixel art, cor e PIN opcional de 4 números). Cada perfil tem os próprios
+favoritos, listas, histórico, estatísticas, acessibilidade, mapeamento de
+controle e saves do RetroArch. Saves de PSP e PS2 são compartilhados: o PPSSPP e
+o PCSX2 não deixam trocar a pasta de saves por linha de comando. Troque de
+perfil pelo avatar no topo.
+
 **Dados.** Configurações, favoritos e tempo de jogo ficam em
-`~/.config/arkflix-games`. Os saves continuam nas pastas dos emuladores.
+`~/.config/arkflix-games`. O primeiro perfil usa essa pasta (quem já usava o
+app não perde nada); os outros ficam em `profiles/<id>/`, com os saves do
+RetroArch em `profiles/<id>/saves/retroarch/`. Apagar um perfil move a pasta
+dele para `profiles/apagados/`. Os saves do primeiro perfil continuam nas pastas
+dos emuladores.
 
 ### Arquitetura
 

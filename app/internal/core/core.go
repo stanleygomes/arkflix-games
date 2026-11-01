@@ -30,6 +30,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/library"
 	"github.com/stanleygomes/arkflix-games/app/internal/lists"
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
+	"github.com/stanleygomes/arkflix-games/app/internal/profiles"
 	"github.com/stanleygomes/arkflix-games/app/internal/saves"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 	"github.com/stanleygomes/arkflix-games/app/internal/stats"
@@ -148,19 +149,20 @@ type entry struct {
 // Service é a API do app.
 type Service struct {
 	opt     Options
-	inputs  input.Store
 	ready   chan struct{}
 	readyMu sync.Once
 
-	hist   *history.Log
-	lists  *lists.Store
-	over   *meta.Overrides
-	thumbs *thumbs.Store
+	over     *meta.Overrides
+	thumbs   *thumbs.Store
+	profiles *profiles.Store
+
+	umu    sync.RWMutex
+	u      *user // perfil em uso
+	chosen bool  // alguém já escolheu o perfil nesta execução
 
 	mu      sync.Mutex
 	entries []entry
 	running string
-	plays   map[string]int
 	tasks   map[string]bool
 }
 
@@ -185,9 +187,6 @@ func New(opt Options) (*Service, error) {
 		local := &meta.Local{ESDEDir: func() string { return store.Settings().ESDEDir }}
 		opt.Meta = &thumbs.Provider{Base: local, Store: covers}
 	}
-	if opt.Saves == nil {
-		opt.Saves = saves.Local{Dirs: func() settings.SaveDirs { return store.Settings().Saves }}
-	}
 	if opt.Hooks == nil {
 		runner := &hooks.Runner{Dir: filepath.Join(store.Dir(), "scripts"), Log: filepath.Join(store.Dir(), "logs", "scripts.log")}
 		if err := runner.Prepare(); err != nil {
@@ -195,22 +194,20 @@ func New(opt Options) (*Service, error) {
 		}
 		opt.Hooks = runner
 	}
-	s := &Service{opt: opt, inputs: input.Store{Dir: store.Dir()}, ready: make(chan struct{}), thumbs: covers, tasks: map[string]bool{}}
-	s.hist = &history.Log{Path: filepath.Join(store.Dir(), "sessions.jsonl"), MinPlay: opt.MinPlay}
-	s.lists = &lists.Store{Path: filepath.Join(store.Dir(), "lists.json")}
+	s := &Service{opt: opt, ready: make(chan struct{}), thumbs: covers, tasks: map[string]bool{}}
+	if s.opt.Saves == nil {
+		s.opt.Saves = saves.Local{Dirs: s.saveDirs}
+	}
 	s.over = &meta.Overrides{Path: filepath.Join(store.Dir(), "metadata.json")}
-	sessions, err := s.hist.All()
+	s.profiles = &profiles.Store{Dir: store.Dir()}
+	if _, err := s.profiles.All(); err != nil {
+		return nil, err
+	}
+	u, err := s.loadUser(profiles.Main)
 	if err != nil {
 		return nil, err
 	}
-	s.plays = s.hist.Plays(sessions)
-	m, err := s.inputs.Load()
-	if err != nil {
-		m = input.Default()
-	}
-	if err := s.inputs.WriteConfig(m); err != nil {
-		return nil, err
-	}
+	s.u = u
 	if opt.Pads != nil {
 		opt.Pads.Subscribe(func(e gamepad.Event) { s.opt.Emitter.Emit("pad", e) })
 		opt.Pads.OnPadsChanged(func(p []gamepad.Pad) { s.opt.Emitter.Emit("pads", p) })
@@ -256,7 +253,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	v := GameView{
 		Game: g, Name: g.Title, Summary: e.info.Summary, Year: e.info.Year, Genres: e.info.Genres,
 		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
-		Plays: s.plays[g.ID], HasSaves: e.hasSaves, Developer: e.info.Developer,
+		Plays: s.cur().plays[g.ID], HasSaves: e.hasSaves, Developer: e.info.Developer,
 		Rating: e.edit.Rating, Completed: e.edit.Completed, Broken: e.edit.Broken, Edited: !e.edit.Empty(),
 	}
 	if e.info.Name != "" {
@@ -284,7 +281,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 }
 
 func (s *Service) views() []GameView {
-	st := s.opt.Store.State()
+	st := s.cur().store.State()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	out := make([]GameView, len(s.entries))
@@ -318,18 +315,23 @@ type Boot struct {
 	Pads     []gamepad.Pad     `json:"pads"`
 	Running  string            `json:"running"`
 	Lists    []lists.List      `json:"lists"`
+	Profile  ProfileState      `json:"profile"`
 }
 
 // Bootstrap devolve o estado inicial.
 func (s *Service) Bootstrap() (Boot, error) {
-	m, _ := s.inputs.Load()
+	u := s.cur()
+	m, _ := u.inputs.Load()
 	b := Boot{
 		Version: s.opt.Version, Mode: s.opt.Mode, Systems: catalog.Systems,
-		Games: s.views(), Settings: s.opt.Store.Settings(), Input: m, RetroPad: input.RetroPad,
+		Games: s.views(), Settings: s.GetSettings(), Input: m, RetroPad: input.RetroPad,
 		Pads: s.Pads(), Running: s.Running(),
 	}
 	var err error
-	b.Lists, err = s.lists.All()
+	if b.Lists, err = u.lists.All(); err != nil {
+		return b, err
+	}
+	b.Profile, err = s.Profiles()
 	return b, err
 }
 
@@ -358,7 +360,7 @@ func (s *Service) SetFavorite(id string, fav bool) (GameView, error) {
 	if err != nil {
 		return GameView{}, err
 	}
-	err = s.opt.Store.UpdateState(func(st *settings.State) {
+	err = s.cur().store.UpdateState(func(st *settings.State) {
 		if fav {
 			st.Favorites[id] = true
 		} else {
@@ -368,7 +370,7 @@ func (s *Service) SetFavorite(id string, fav bool) (GameView, error) {
 	if err != nil {
 		return GameView{}, err
 	}
-	st := s.opt.Store.State()
+	st := s.cur().store.State()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.view(e, st), nil
@@ -427,7 +429,8 @@ func (s *Service) Play(id, stateID string) error {
 		}
 	}
 	cfg := s.opt.Store.Settings()
-	spec := launcher.Spec{Bin: cfg.EmulatorBin, Cores: cfg.CoresDir, Fullscreen: cfg.Fullscreen, RAAppend: []string{s.inputs.ConfigPath()}}
+	u := s.cur()
+	spec := launcher.Spec{Bin: cfg.EmulatorBin, Cores: cfg.CoresDir, Fullscreen: cfg.Fullscreen, RAAppend: u.raAppend()}
 	args, env, err := launcher.Command(sys, g.Launch, spec, resume)
 	if err != nil {
 		return err
@@ -450,16 +453,16 @@ func (s *Service) Play(id, stateID string) error {
 	go func() {
 		res, err := launcher.Run(context.Background(), args, env)
 		s.opt.Window.Show()
-		s.opt.Store.RecordPlay(id, res.Duration, time.Now())
+		u.store.RecordPlay(id, res.Duration, time.Now())
 		session := history.Session{Game: id, System: sys.Slug, Name: name, Start: started.Unix(), Seconds: int64(res.Duration.Seconds()), Mode: mode, Code: res.Code}
 		if err != nil {
 			session.Code = -1
 		}
-		s.hist.Append(session)
+		u.hist.Append(session)
 		s.mu.Lock()
 		s.running = ""
-		if s.hist.Counts(session) {
-			s.plays[id]++
+		if u.hist.Counts(session) {
+			u.plays[id]++
 		}
 		s.mu.Unlock()
 		ev := GameEvent{State: "exited", ID: id, Name: name, Seconds: int64(res.Duration.Seconds()), Code: res.Code}
@@ -508,6 +511,9 @@ func (s *Service) Saves(id string) (saves.Listing, error) {
 		return saves.Listing{}, err
 	}
 	l := s.opt.Saves.List(saves.Game{System: sys, Launch: e.game.Launch})
+	if sys.Emulator != catalog.RetroArch && s.cur().id != profiles.Main && l.Note == "" {
+		l.Note = "Saves de PSP e PS2 são compartilhados entre os perfis."
+	}
 	for i := range l.States {
 		l.States[i].Token = encodeToken(l.States[i].Path)
 	}
@@ -576,22 +582,40 @@ func (s *Service) ToggleFullscreen() { s.opt.Window.ToggleFullscreen() }
 func (s *Service) Quit() { s.opt.Window.Quit() }
 
 // GetSettings devolve as configurações.
-func (s *Service) GetSettings() settings.Settings { return s.opt.Store.Settings() }
+// No perfil que não é o principal, a acessibilidade vem do perfil.
+func (s *Service) GetSettings() settings.Settings {
+	g := s.opt.Store.Settings()
+	if u := s.cur(); u.id != profiles.Main {
+		g.A11y = u.store.Settings().A11y
+	}
+	return g
+}
 
 // SaveSettings grava as configurações e varre a biblioteca de novo.
 func (s *Service) SaveSettings(next settings.Settings) (settings.Settings, error) {
-	saved, err := s.opt.Store.Save(next)
-	if err != nil {
-		return saved, err
+	if u := s.cur(); u.id != profiles.Main {
+		mine := u.store.Settings()
+		mine.A11y = next.A11y
+		if _, err := u.store.Save(mine); err != nil {
+			return s.GetSettings(), err
+		}
+		next.A11y = s.opt.Store.Settings().A11y
+	}
+	if _, err := s.opt.Store.Save(next); err != nil {
+		return s.GetSettings(), err
 	}
 	s.scan()
 	s.opt.Emitter.Emit("library", s.views())
-	return saved, nil
+	return s.GetSettings(), nil
 }
 
 // ResetSettings volta ao padrão.
 func (s *Service) ResetSettings() (settings.Settings, error) {
-	saved, err := s.opt.Store.Reset()
+	_, err := s.opt.Store.Reset()
+	if u := s.cur(); u.id != profiles.Main && err == nil {
+		_, err = u.store.Reset()
+	}
+	saved := s.GetSettings()
 	s.scan()
 	s.opt.Emitter.Emit("library", s.views())
 	return saved, err
@@ -604,11 +628,11 @@ type InputResult struct {
 }
 
 // GetInput devolve o mapeamento de controle e teclado.
-func (s *Service) GetInput() (input.Mapping, error) { return s.inputs.Load() }
+func (s *Service) GetInput() (input.Mapping, error) { return s.cur().inputs.Load() }
 
 // SaveInput grava o mapeamento e regenera a config do RetroArch.
 func (s *Service) SaveInput(m input.Mapping) (InputResult, error) {
-	saved, err := s.inputs.Save(m)
+	saved, err := s.cur().inputs.Save(m)
 	if err != nil {
 		return InputResult{}, err
 	}
@@ -763,23 +787,25 @@ func (s *Service) UpdateCovers(all bool) error {
 }
 
 // Lists devolve as listas pessoais.
-func (s *Service) Lists() ([]lists.List, error) { return s.lists.All() }
+func (s *Service) Lists() ([]lists.List, error) { return s.cur().lists.All() }
 
 // CreateList cria uma lista vazia.
-func (s *Service) CreateList(name string) (lists.List, error) { return s.lists.Create(name) }
+func (s *Service) CreateList(name string) (lists.List, error) { return s.cur().lists.Create(name) }
 
 // RenameList troca o nome da lista.
-func (s *Service) RenameList(id, name string) (lists.List, error) { return s.lists.Rename(id, name) }
+func (s *Service) RenameList(id, name string) (lists.List, error) {
+	return s.cur().lists.Rename(id, name)
+}
 
 // DeleteList apaga a lista (os jogos continuam na biblioteca).
-func (s *Service) DeleteList(id string) error { return s.lists.Delete(id) }
+func (s *Service) DeleteList(id string) error { return s.cur().lists.Delete(id) }
 
 // SetInList põe ou tira o jogo da lista.
 func (s *Service) SetInList(id, gameID string, in bool) (lists.List, error) {
 	if _, _, err := s.find(gameID); err != nil {
 		return lists.List{}, err
 	}
-	return s.lists.Set(id, gameID, in)
+	return s.cur().lists.Set(id, gameID, in)
 }
 
 // MetaInfo é o que o editor mostra: o automático e a edição.
@@ -814,7 +840,7 @@ func (s *Service) SaveMeta(id string, edit meta.Override) (GameView, error) {
 	if err != nil {
 		return GameView{}, err
 	}
-	st := s.opt.Store.State()
+	st := s.cur().store.State()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i, e := range s.entries {
@@ -835,7 +861,8 @@ func (s *Service) Stats(period string) (stats.Stats, error) {
 	if period != "7d" && period != "30d" && period != "all" {
 		return stats.Stats{}, errors.New("período inválido")
 	}
-	sessions, err := s.hist.All()
+	u := s.cur()
+	sessions, err := u.hist.All()
 	if err != nil {
 		return stats.Stats{}, err
 	}
@@ -843,7 +870,7 @@ func (s *Service) Stats(period string) (stats.Stats, error) {
 	for _, v := range s.views() {
 		games = append(games, stats.Game{ID: v.ID, Name: v.Name, System: v.System})
 	}
-	return stats.Compute(s.hist, sessions, games, period, time.Now(), time.Local), nil
+	return stats.Compute(u.hist, sessions, games, period, time.Now(), time.Local), nil
 }
 
 // OpenManual abre o manual do jogo no leitor de PDF do sistema (desktop).

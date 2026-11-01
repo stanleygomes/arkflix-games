@@ -210,6 +210,25 @@ export interface Boot {
   pads: Pad[]
   running: string
   lists: GameList[]
+  profile: ProfileState
+}
+
+export interface Profile {
+  id: string
+  name: string
+  avatar: string
+  color: string
+  kids: boolean
+  hasPIN: boolean
+  main: boolean
+}
+
+export interface ProfileState {
+  profiles: Profile[]
+  current: string
+  choose: boolean
+  avatars: string[]
+  colors: string[]
 }
 
 export interface GameEvent {

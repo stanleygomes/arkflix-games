@@ -3,6 +3,7 @@
   import ConfirmDialog from './components/ConfirmDialog.svelte'
   import Playing from './components/Playing.svelte'
   import PromptDialog from './components/PromptDialog.svelte'
+  import PinDialog from './components/PinDialog.svelte'
   import Screensaver from './components/Screensaver.svelte'
   import Tasks from './components/Tasks.svelte'
   import Toasts from './components/Toasts.svelte'
@@ -10,7 +11,7 @@
   import { startInput } from './lib/input'
   import { focusDefault, setReducedMotion } from './lib/nav'
   import { configure, pauseMusic, play } from './lib/sound'
-  import { app, screen, toast } from './lib/state.svelte'
+  import { app, applyBoot, resetTo, screen, toast } from './lib/state.svelte'
   import type { Game, GameEvent, Pad } from './lib/types'
   import Game_ from './screens/Game.svelte'
   import Home from './screens/Home.svelte'
@@ -20,24 +21,17 @@
   import MetaEditor from './screens/MetaEditor.svelte'
   import StatsScreen from './screens/Stats.svelte'
   import Settings from './screens/Settings.svelte'
+  import Profiles from './screens/Profiles.svelte'
+  import ProfileEditor from './screens/ProfileEditor.svelte'
 
   const current = $derived(screen())
 
   onMount(async () => {
     try {
       const boot = await api.bootstrap()
-      Object.assign(app, {
-        version: boot.version,
-        mode: boot.mode,
-        systems: boot.systems,
-        games: boot.games,
-        settings: boot.settings,
-        input: boot.input,
-        retroPad: boot.retroPad,
-        pads: boot.pads ?? [],
-        lists: boot.lists ?? [],
-        ready: true,
-      })
+      applyBoot(boot)
+      if (boot.profile?.choose) resetTo({ name: 'profiles' })
+      app.ready = true
       if (boot.pads?.length) app.family = boot.pads[0].family
       if (boot.running) app.playing = { state: 'running', id: boot.running, name: '' }
     } catch (err) {
@@ -103,7 +97,7 @@
 {:else if !app.ready}
   <main class="loading" aria-busy="true"><p class="pixel">Carregando…</p></main>
 {:else}
-  {#key app.stack.length + (current.name === 'game' ? current.id : current.name === 'library' ? current.source : '')}
+  {#key app.stack.length + current.name + (current.name === 'game' ? current.id : current.name === 'library' ? current.source : '') + (app.profile?.current ?? '')}
     {#if current.name === 'home'}
       <Home />
     {:else if current.name === 'game'}
@@ -120,6 +114,10 @@
       <StatsScreen />
     {:else if current.name === 'settings'}
       <Settings tab={current.tab} />
+    {:else if current.name === 'profiles'}
+      <Profiles />
+    {:else if current.name === 'profile'}
+      <ProfileEditor id={current.id} />
     {/if}
   {/key}
 {/if}
@@ -129,6 +127,7 @@
 <Toasts />
 <ConfirmDialog />
 <PromptDialog />
+<PinDialog />
 <Screensaver />
 
 <style>

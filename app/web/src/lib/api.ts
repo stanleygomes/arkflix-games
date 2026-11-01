@@ -14,6 +14,8 @@ import type {
   MetaEdit,
   MetaInfo,
   Pad,
+  Profile,
+  ProfileState,
   ScriptsInfo,
   Settings,
   Stats,
@@ -91,6 +93,13 @@ export function on<T>(name: string, fn: (data: T) => void): () => void {
 
 export const api = {
   bootstrap: () => call<Boot>('Bootstrap'),
+  profiles: () => call<ProfileState>('Profiles'),
+  selectProfile: (id: string, pin: string) => call<Boot>('SelectProfile', id, pin),
+  createProfile: (name: string, avatar: string, color: string) => call<Profile>('CreateProfile', name, avatar, color),
+  updateProfile: (id: string, name: string, avatar: string, color: string) => call<Profile>('UpdateProfile', id, name, avatar, color),
+  setProfilePIN: (id: string, current: string, next: string) => call<Profile>('SetProfilePIN', id, current, next),
+  checkProfilePIN: (id: string, pin: string) => call<void>('CheckProfilePIN', id, pin),
+  deleteProfile: (id: string, pin: string) => call<void>('DeleteProfile', id, pin),
   ready: () => call<void>('Ready'),
   refresh: () => call<Game[]>('Refresh'),
   setFavorite: (id: string, fav: boolean) => call<Game>('SetFavorite', id, fav),

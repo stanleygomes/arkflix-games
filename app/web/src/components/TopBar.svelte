@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { app, go } from '../lib/state.svelte'
+  import { app, currentProfile, go } from '../lib/state.svelte'
+  import Avatar from './Avatar.svelte'
   import Icon from './Icon.svelte'
 
   let { children, actions = true }: { children?: Snippet; actions?: boolean } = $props()
@@ -9,6 +10,7 @@
     const t = setInterval(() => (now = new Date()), 15000)
     return () => clearInterval(t)
   })
+  const me = $derived(currentProfile())
   const clock = $derived(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
   const padLabel = $derived(
     app.pads.length === 0 ? 'Nenhum controle conectado' : `${app.pads.length} controle(s): ${app.pads.map((p) => p.name).join(', ')}`,
@@ -20,6 +22,11 @@
   <div class="middle">{@render children?.()}</div>
   <div class="right">
     {#if actions}
+      {#if me}
+        <button class="profile-btn" data-nav aria-label={`Trocar perfil (${me.name})`} onclick={() => go({ name: 'profiles' })}>
+          <Avatar avatar={me.avatar} color={me.color} size="2.1rem" />
+        </button>
+      {/if}
       <button class="icon-btn" data-nav aria-label="Buscar jogos" onclick={() => go({ name: 'search' })}>
         <Icon name="search" />
       </button>
@@ -42,6 +49,17 @@
 </header>
 
 <style>
+  .profile-btn {
+    padding: 0;
+    background: none;
+    border: 3px solid transparent;
+    cursor: pointer;
+    display: grid;
+  }
+  .profile-btn:focus-visible,
+  .profile-btn:hover {
+    border-color: var(--accent);
+  }
   .top {
     display: flex;
     align-items: center;
