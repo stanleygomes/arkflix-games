@@ -39,6 +39,13 @@ type Covers struct {
 	DB      string `json:"db"`     // servidor do banco (DATs)
 }
 
+// UI guarda preferências da interface: ordem de cada lista (console,
+// coleção) e filtros.
+type UI struct {
+	Sort    map[string]string   `json:"sort"`
+	Filters map[string][]string `json:"filters"`
+}
+
 // SaveDirs são as pastas de save de cada emulador (as dos Flatpaks, que os
 // lançadores compartilham).
 type SaveDirs struct {
@@ -59,6 +66,7 @@ type Settings struct {
 	Fullscreen  bool          `json:"fullscreen"`
 	ESDEDir     string        `json:"esdeDir"` // capas e descrições locais (gamelists do ES-DE)
 	Covers      Covers        `json:"covers"`
+	UI          UI            `json:"ui"`
 	A11y        Accessibility `json:"a11y"`
 	Saves       SaveDirs      `json:"saves"`
 }
@@ -99,6 +107,12 @@ func Defaults(home, bin, cores string) Settings {
 
 // Validate corrige valores fora do intervalo em vez de falhar: a tela sempre abre.
 func (s *Settings) Validate() {
+	if s.UI.Sort == nil {
+		s.UI.Sort = map[string]string{}
+	}
+	if s.UI.Filters == nil {
+		s.UI.Filters = map[string][]string{}
+	}
 	if s.A11y.FontScale < 0.75 || s.A11y.FontScale > 2 {
 		s.A11y.FontScale = 1
 	}

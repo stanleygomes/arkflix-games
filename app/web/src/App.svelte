@@ -14,6 +14,7 @@
   import Home from './screens/Home.svelte'
   import Import from './screens/Import.svelte'
   import Search from './screens/Search.svelte'
+  import Library from './screens/Library.svelte'
   import Settings from './screens/Settings.svelte'
 
   const current = $derived(screen())
@@ -97,7 +98,7 @@
 {:else if !app.ready}
   <main class="loading" aria-busy="true"><p class="pixel">Carregando…</p></main>
 {:else}
-  {#key app.stack.length + (current.name === 'game' ? current.id : '')}
+  {#key app.stack.length + (current.name === 'game' ? current.id : current.name === 'library' ? current.source : '')}
     {#if current.name === 'home'}
       <Home />
     {:else if current.name === 'game'}
@@ -106,6 +107,8 @@
       <Import />
     {:else if current.name === 'search'}
       <Search />
+    {:else if current.name === 'library'}
+      <Library source={current.source} />
     {:else if current.name === 'settings'}
       <Settings tab={current.tab} />
     {/if}

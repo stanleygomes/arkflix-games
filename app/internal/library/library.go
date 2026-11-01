@@ -27,6 +27,7 @@ type Game struct {
 	Root     string `json:"root"`
 	Local    bool   `json:"local"` // raiz gravável (neste PC)
 	Size     int64  `json:"size"`
+	Added    int64  `json:"added"` // quando entrou na biblioteca (data do arquivo)
 }
 
 // ID estável: console + nome no disco. Igual em qualquer raiz, então o mesmo
@@ -147,6 +148,9 @@ func Scan(dirs []settings.LibraryDir) []Game {
 				g := Game{
 					System: sys.Slug, FileName: it.Name(), Folder: c.Name(), Title: CleanTitle(it.Name()),
 					Entry: filepath.Join(base, it.Name()), Root: root.Path, Local: root.Writable,
+				}
+				if info, err := it.Info(); err == nil {
+					g.Added = info.ModTime().Unix()
 				}
 				if it.IsDir() {
 					g.Launch = launchFile(g.Entry, sys)

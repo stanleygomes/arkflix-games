@@ -29,3 +29,35 @@ export function search(games: Game[], query: string): Game[] {
     .sort((a, b) => a.score - b.score || a.g.name.localeCompare(b.g.name, 'pt-BR'))
     .map((x) => x.g)
 }
+
+export type SortKey = 'name' | 'yearAsc' | 'yearDesc' | 'plays' | 'recent' | 'playTime' | 'rating' | 'added'
+
+export const SORTS: { key: SortKey; label: string }[] = [
+  { key: 'name', label: 'Nome (A–Z)' },
+  { key: 'yearAsc', label: 'Ano (mais antigos)' },
+  { key: 'yearDesc', label: 'Ano (mais novos)' },
+  { key: 'plays', label: 'Mais jogados' },
+  { key: 'recent', label: 'Jogados recentemente' },
+  { key: 'playTime', label: 'Mais tempo de jogo' },
+  { key: 'rating', label: 'Nota' },
+  { key: 'added', label: 'Adicionados recentemente' },
+]
+
+const byName = (a: Game, b: Game) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+
+/** Ordena sem mexer na lista original; empate desempata pelo nome. Sem ano vai pro fim. */
+export function sortGames(games: Game[], key: SortKey | string | undefined): Game[] {
+  const rating = (g: Game) => (g as Game & { rating?: number }).rating ?? 0
+  const cmp: Record<SortKey, (a: Game, b: Game) => number> = {
+    name: () => 0,
+    yearAsc: (a, b) => (a.year || 9999) - (b.year || 9999),
+    yearDesc: (a, b) => (b.year || 0) - (a.year || 0),
+    plays: (a, b) => b.plays - a.plays,
+    recent: (a, b) => b.lastPlayed - a.lastPlayed,
+    playTime: (a, b) => b.playTime - a.playTime,
+    rating: (a, b) => rating(b) - rating(a),
+    added: (a, b) => b.added - a.added,
+  }
+  const fn = cmp[(key as SortKey) in cmp ? (key as SortKey) : 'name']
+  return [...games].sort((a, b) => fn(a, b) || byName(a, b))
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ago, bytes, playTime } from '../../src/lib/format'
 import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
-import { normalize, search } from '../../src/lib/library'
+import { normalize, search, sortGames } from '../../src/lib/library'
 import type { Game } from '../../src/lib/types'
 import { pickTarget, type Box } from '../../src/lib/nav'
 import { contrast, highContrastPalette, homePalette, onColor } from '../../src/lib/palette'
@@ -122,7 +122,7 @@ describe('formatação', () => {
 })
 
 const fakeGame = (name: string, extra: Partial<Game> = {}): Game => ({
-  id: name, system: 'snes', title: name, fileName: `${name}.zip`, folder: 'snes', root: '/', local: true, size: 1,
+  id: name, system: 'snes', title: name, fileName: `${name}.zip`, folder: 'snes', root: '/', local: true, size: 1, added: 0,
   name, summary: '', year: 0, genres: [], players: '', cover: '', snap: '', titleShot: '', favorite: false,
   lastPlayed: 0, playTime: 0, plays: 0, ...extra,
 })
@@ -142,5 +142,30 @@ describe('busca', () => {
     const g = fakeGame('Sonic 2', { fileName: 'Sonic The Hedgehog 2 (World).zip' })
     expect(search([g], 'hedgehog')).toHaveLength(1)
     expect(search(games, '   ')).toEqual([])
+  })
+})
+
+describe('ordenação', () => {
+  const games = [
+    fakeGame('Beta', { year: 1995, plays: 2, lastPlayed: 100, playTime: 50, added: 3 }),
+    fakeGame('alfa', { year: 1990, plays: 5, lastPlayed: 300, playTime: 10, added: 1 }),
+    fakeGame('Gama', { year: 0, plays: 2, lastPlayed: 0, playTime: 900, added: 2 }),
+  ]
+  const order = (key: string) => sortGames(games, key).map((g) => g.name)
+  it.each([
+    ['name', ['alfa', 'Beta', 'Gama']],
+    ['yearAsc', ['alfa', 'Beta', 'Gama']],
+    ['yearDesc', ['Beta', 'alfa', 'Gama']],
+    ['plays', ['alfa', 'Beta', 'Gama']],
+    ['recent', ['alfa', 'Beta', 'Gama']],
+    ['playTime', ['Gama', 'Beta', 'alfa']],
+    ['added', ['Beta', 'Gama', 'alfa']],
+    ['desconhecida', ['alfa', 'Beta', 'Gama']],
+  ])('%s', (key, want) => {
+    expect(order(key)).toEqual(want)
+  })
+  it('não altera a lista original', () => {
+    sortGames(games, 'playTime')
+    expect(games[0].name).toBe('Beta')
   })
 })

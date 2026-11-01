@@ -9,6 +9,8 @@
   import { current, focusEl } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
+  import { sortGames } from '../lib/library'
+  import { sortOf } from '../lib/sources'
   import { app, go, putGame, system, toast } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
 
@@ -17,12 +19,15 @@
     ...app.systems.filter((s) => app.games.some((g) => g.system === s.slug)),
   ])
 
-  type Row = { id: string; title: string; games: Game[] }
+  type Row = { id: string; title: string; games: Game[]; source?: string }
   const rows = $derived.by((): Row[] => {
     if (app.homeTab !== 'home') {
       const sys = system(app.homeTab)
-      const games = app.games.filter((g) => g.system === app.homeTab)
-      return [{ id: app.homeTab, title: `${sys?.name ?? ''} · ${games.length} jogo${games.length === 1 ? '' : 's'}`, games }]
+      const games = sortGames(
+        app.games.filter((g) => g.system === app.homeTab),
+        sortOf(`system:${app.homeTab}`),
+      )
+      return [{ id: app.homeTab, title: `${sys?.name ?? ''} · ${games.length} jogo${games.length === 1 ? '' : 's'}`, games, source: `system:${app.homeTab}` }]
     }
     const out: Row[] = []
     const recent = app.games.filter((g) => g.lastPlayed > 0).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 12)
@@ -224,6 +229,13 @@
                   </button>
                 </li>
               {/each}
+              {#if row.source}
+                <li>
+                  <button class="card see-all pixel" data-nav data-nav-inline="center" onclick={() => go({ name: 'library', source: row.source! })}>
+                    <Icon name="sliders" size="1.6em" /> Ver tudo
+                  </button>
+                </li>
+              {/if}
             </ul>
           </section>
         {/each}
@@ -396,6 +408,18 @@
     cursor: pointer;
     scroll-snap-align: center;
     transition: transform var(--t) var(--ease);
+  }
+  .see-all {
+    aspect-ratio: 3 / 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    border: 3px dashed color-mix(in srgb, var(--text) 40%, transparent);
+    font-size: 1rem;
   }
   .card.selected,
   .card:focus {

@@ -31,6 +31,7 @@ export interface Game {
   root: string
   local: boolean
   size: number
+  added: number
   name: string
   summary: string
   year: number
@@ -94,6 +95,7 @@ export interface Settings {
   fullscreen: boolean
   esdeDir: string
   covers: Covers
+  ui: { sort: Record<string, string> | null; filters: Record<string, string[]> | null }
   a11y: Accessibility
   saves: SaveDirs
 }
