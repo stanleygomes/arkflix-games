@@ -1,0 +1,17 @@
+//go:build !desktop
+
+package main
+
+import (
+	"io/fs"
+	"log"
+
+	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
+	"github.com/stanleygomes/arkflix-games/app/internal/settings"
+)
+
+// Sem a tag desktop (testes, modo web) não há janela: use --web.
+func runDesktop(*settings.Store, *gamepad.Manager, fs.FS, bool) int {
+	log.Print("compilado sem janela (tag desktop): use --web 127.0.0.1:8484")
+	return 2
+}
