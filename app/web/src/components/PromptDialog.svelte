@@ -53,9 +53,22 @@
     <div class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="prompt-title" data-nav-scope>
       <h2 id="prompt-title">{p.title}</h2>
       <label class="sr-only" for="prompt-input">{p.title}</label>
+      {#if p.multiline}
+        <textarea
+          id="prompt-input"
+          data-nav
+          data-nav-default={typing ? '' : undefined}
+          bind:value={p.value}
+          rows="6"
+          maxlength={p.max}
+          aria-invalid={p.error ? 'true' : undefined}
+          aria-describedby={p.error ? 'prompt-error' : undefined}
+        ></textarea>
+      {:else}
       <input
         id="prompt-input"
         type="text"
+        maxlength={p.max}
         data-nav
         data-nav-default={typing ? '' : undefined}
         bind:value={p.value}
@@ -70,8 +83,9 @@
           }
         }}
       />
+      {/if}
       {#if p.error}<p id="prompt-error" class="error" role="alert">{p.error}</p>{/if}
-      <Keyboard bind:value={p.value} autofocus={!typing} max={60} />
+      <Keyboard bind:value={p.value} autofocus={!typing} max={p.max} />
       <div class="actions">
         <button class="btn" data-nav onclick={() => close(null)}>Cancelar</button>
         <button class="btn primary" data-nav disabled={busy} onclick={submit}>{p.ok}</button>
@@ -93,6 +107,18 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+  textarea {
+    font: inherit;
+    color: var(--text);
+    background: color-mix(in srgb, var(--bg) 70%, #000);
+    border: 3px solid color-mix(in srgb, var(--text) 30%, var(--surface));
+    padding: 0.55rem 0.7rem;
+    width: min(40rem, 80vw);
+    resize: vertical;
+  }
+  textarea:focus {
+    border-color: var(--accent);
   }
   .error {
     color: #ffb4b4;

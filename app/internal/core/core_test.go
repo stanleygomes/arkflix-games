@@ -14,6 +14,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/fixture"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
 	"github.com/stanleygomes/arkflix-games/app/internal/hooks"
+	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
 
@@ -370,3 +371,47 @@ func TestHasSaves(t *testing.T) {
 		}
 	}
 }
+
+func TestMetaEditor(t *testing.T) {
+	h := setup(t)
+	g := h.game(t, "Super Mario World")
+	name, year, genres := "SMW", 1991, []string{" Plataforma ", "", "Clássico"}
+	cover := filepath.Join(h.env.Local, "genesis", "covers", "Sonic The Hedgehog 2 (World) (Rev A).png")
+	v, err := h.svc.SaveMeta(g.ID, meta.Override{Name: &name, Year: &year, Genres: &genres, Rating: 5, Completed: true, Cover: cover})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Name != "SMW" || v.Year != 1991 || len(v.Genres) != 2 || v.Rating != 5 || !v.Completed || !v.Edited {
+		t.Fatalf("editado: %+v", v)
+	}
+	if v.Summary == "" {
+		t.Error("campo não editado (descrição) devia continuar automático")
+	}
+	details, _ := h.svc.MetaDetails(g.ID)
+	if details.Auto.Name != "Super Mario World" || details.Auto.Year != 1990 || details.Edit.Rating != 5 {
+		t.Fatalf("detalhes: %+v", details)
+	}
+	// persiste e sobrevive a uma nova varredura
+	h.svc.Refresh()
+	if got := h.game(t, "SMW"); got.Rating != 5 || got.Cover == "" {
+		t.Fatalf("depois de varrer: %+v", got)
+	}
+	bad := []meta.Override{
+		{Rating: 6},
+		{Year: ptr(1800)},
+		{Name: ptr("   ")},
+		{Cover: "/nao/existe.png"},
+		{Cover: filepath.Join(h.env.Local, "snes", "Super Mario World (U) [!].zip")},
+	}
+	for i, o := range bad {
+		if _, err := h.svc.SaveMeta(g.ID, o); err == nil {
+			t.Errorf("edição inválida %d aceita", i)
+		}
+	}
+	v, _ = h.svc.ResetMeta(g.ID)
+	if v.Name != "Super Mario World" || v.Edited || v.Rating != 0 {
+		t.Fatalf("restaurar: %+v", v)
+	}
+}
+
+func ptr[T any](v T) *T { return &v }

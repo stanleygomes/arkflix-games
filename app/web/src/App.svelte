@@ -16,6 +16,7 @@
   import Import from './screens/Import.svelte'
   import Search from './screens/Search.svelte'
   import Library from './screens/Library.svelte'
+  import MetaEditor from './screens/MetaEditor.svelte'
   import Settings from './screens/Settings.svelte'
 
   const current = $derived(screen())
@@ -111,6 +112,8 @@
       <Search />
     {:else if current.name === 'library'}
       <Library source={current.source} />
+    {:else if current.name === 'edit'}
+      <MetaEditor id={current.id} />
     {:else if current.name === 'settings'}
       <Settings tab={current.tab} />
     {/if}

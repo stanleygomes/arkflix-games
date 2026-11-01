@@ -104,6 +104,11 @@ type GameView struct {
 	PlayTime   int64    `json:"playTime"`
 	Plays      int      `json:"plays"`
 	HasSaves   bool     `json:"hasSaves"`
+	Developer  string   `json:"developer"`
+	Rating     int      `json:"rating"`
+	Completed  bool     `json:"completed"`
+	Broken     bool     `json:"broken"`
+	Edited     bool     `json:"edited"`
 }
 
 // Options vem de quem inicia o app (main). Fonte, metadados e saves vazios
@@ -127,7 +132,9 @@ type Options struct {
 
 type entry struct {
 	game     library.Game
-	info     meta.Info
+	auto     meta.Info // o que veio do ES-DE/libretro/arquivo
+	info     meta.Info // auto + edição
+	edit     meta.Override
 	hasSaves bool
 }
 
@@ -140,6 +147,7 @@ type Service struct {
 
 	hist   *history.Log
 	lists  *lists.Store
+	over   *meta.Overrides
 	thumbs *thumbs.Store
 
 	mu      sync.Mutex
@@ -183,6 +191,7 @@ func New(opt Options) (*Service, error) {
 	s := &Service{opt: opt, inputs: input.Store{Dir: store.Dir()}, ready: make(chan struct{}), thumbs: covers, tasks: map[string]bool{}}
 	s.hist = &history.Log{Path: filepath.Join(store.Dir(), "sessions.jsonl"), MinPlay: opt.MinPlay}
 	s.lists = &lists.Store{Path: filepath.Join(store.Dir(), "lists.json")}
+	s.over = &meta.Overrides{Path: filepath.Join(store.Dir(), "metadata.json")}
 	sessions, err := s.hist.All()
 	if err != nil {
 		return nil, err
@@ -208,7 +217,9 @@ func (s *Service) scan() {
 	games := s.opt.Source.Scan()
 	entries := make([]entry, len(games))
 	for i, g := range games {
-		entries[i] = entry{game: g, info: s.opt.Meta.Lookup(g), hasSaves: s.hasSaves(g)}
+		auto := s.opt.Meta.Lookup(g)
+		edit := s.over.Get(g.ID)
+		entries[i] = entry{game: g, auto: auto, info: edit.Apply(auto), edit: edit, hasSaves: s.hasSaves(g)}
 	}
 	s.mu.Lock()
 	s.entries = entries
@@ -238,7 +249,8 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	v := GameView{
 		Game: g, Name: g.Title, Summary: e.info.Summary, Year: e.info.Year, Genres: e.info.Genres,
 		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
-		Plays: s.plays[g.ID], HasSaves: e.hasSaves,
+		Plays: s.plays[g.ID], HasSaves: e.hasSaves, Developer: e.info.Developer,
+		Rating: e.edit.Rating, Completed: e.edit.Completed, Broken: e.edit.Broken, Edited: !e.edit.Empty(),
 	}
 	if e.info.Name != "" {
 		v.Name = e.info.Name
@@ -755,3 +767,51 @@ func (s *Service) SetInList(id, gameID string, in bool) (lists.List, error) {
 	}
 	return s.lists.Set(id, gameID, in)
 }
+
+// MetaInfo é o que o editor mostra: o automático e a edição.
+type MetaInfo struct {
+	Auto      meta.Info     `json:"auto"`
+	AutoCover bool          `json:"autoCover"`
+	Edit      meta.Override `json:"edit"`
+}
+
+// MetaDetails devolve os metadados automáticos e a edição do jogo.
+func (s *Service) MetaDetails(id string) (MetaInfo, error) {
+	e, _, err := s.find(id)
+	if err != nil {
+		return MetaInfo{}, err
+	}
+	auto := e.auto
+	if auto.Name == "" {
+		auto.Name = e.game.Title
+	}
+	if auto.Genres == nil {
+		auto.Genres = []string{}
+	}
+	return MetaInfo{Auto: auto, AutoCover: e.auto.Cover != "", Edit: e.edit}, nil
+}
+
+// SaveMeta grava a edição do jogo e devolve o jogo atualizado.
+func (s *Service) SaveMeta(id string, edit meta.Override) (GameView, error) {
+	if _, _, err := s.find(id); err != nil {
+		return GameView{}, err
+	}
+	saved, err := s.over.Set(id, edit)
+	if err != nil {
+		return GameView{}, err
+	}
+	st := s.opt.Store.State()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, e := range s.entries {
+		if e.game.ID == id {
+			s.entries[i].edit = saved
+			s.entries[i].info = saved.Apply(e.auto)
+			return s.view(s.entries[i], st), nil
+		}
+	}
+	return GameView{}, errors.New("jogo não encontrado (a biblioteca mudou?)")
+}
+
+// ResetMeta volta tudo do jogo pro automático.
+func (s *Service) ResetMeta(id string) (GameView, error) { return s.SaveMeta(id, meta.Override{}) }

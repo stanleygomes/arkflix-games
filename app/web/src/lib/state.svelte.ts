@@ -7,6 +7,7 @@ export type Screen =
   | { name: 'import' }
   | { name: 'search' }
   | { name: 'library'; source: string }
+  | { name: 'edit'; id: string }
   | { name: 'settings'; tab?: SettingsTab }
 
 export type SettingsTab = 'library' | 'controls' | 'a11y' | 'about'
@@ -29,6 +30,8 @@ export interface Prompt {
   value: string
   ok: string
   error: string
+  max: number
+  multiline: boolean
   submit: (v: string) => Promise<string | null>
   resolve: (v: string | null) => void
 }
@@ -106,9 +109,15 @@ export function glyphFamily(): Family {
 }
 
 /** Pede um texto (com teclado na tela). submit valida/salva: devolve erro ou null. */
-export function prompt(title: string, value: string, ok: string, submit: (v: string) => Promise<string | null>): Promise<string | null> {
+export function prompt(
+  title: string,
+  value: string,
+  ok: string,
+  submit: (v: string) => Promise<string | null>,
+  opts: { max?: number; multiline?: boolean } = {},
+): Promise<string | null> {
   return new Promise((resolve) => {
-    app.prompt = { title, value, ok, error: '', submit, resolve }
+    app.prompt = { title, value, ok, error: '', submit, resolve, max: opts.max ?? 60, multiline: !!opts.multiline }
   })
 }
 

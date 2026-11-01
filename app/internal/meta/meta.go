@@ -22,7 +22,9 @@ type Info struct {
 	Year    int      `json:"year"`
 	Genres  []string `json:"genres"`
 	Players string   `json:"players"`
-	Cover   string   `json:"-"`
+	// Developer: desenvolvedora (gamelist do ES-DE ou edição).
+	Developer string `json:"developer"`
+	Cover     string `json:"-"`
 	// Snap (print do jogo) e TitleShot (tela de título): caminhos locais.
 	Snap      string `json:"-"`
 	TitleShot string `json:"-"`
@@ -36,6 +38,7 @@ type gameList struct {
 		ReleaseDate string `xml:"releasedate"`
 		Genre       string `xml:"genre"`
 		Players     string `xml:"players"`
+		Developer   string `xml:"developer"`
 	} `xml:"game"`
 }
 
@@ -80,7 +83,7 @@ func (l *Local) gamelist(folder string) map[string]Info {
 		return m
 	}
 	for _, g := range gl.Games {
-		info := Info{Name: strings.TrimSpace(g.Name), Summary: strings.TrimSpace(g.Desc), Players: strings.TrimSpace(g.Players)}
+		info := Info{Name: strings.TrimSpace(g.Name), Summary: strings.TrimSpace(g.Desc), Players: strings.TrimSpace(g.Players), Developer: strings.TrimSpace(g.Developer)}
 		if len(g.ReleaseDate) >= 4 {
 			info.Year, _ = strconv.Atoi(g.ReleaseDate[:4])
 		}

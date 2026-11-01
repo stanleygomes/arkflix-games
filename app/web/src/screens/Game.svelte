@@ -11,7 +11,7 @@
   import { current, focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
-  import { app, back, confirm, game, putGame, system, toast } from '../lib/state.svelte'
+  import { app, back, confirm, game, go, putGame, system, toast } from '../lib/state.svelte'
   import type { GameEvent, Listing, SaveState } from '../lib/types'
 
   let { id }: { id: string } = $props()
@@ -110,7 +110,11 @@
         <p class="system pixel">{sys?.name ?? g.system}</p>
         <h1 class="pixel">{g.name}</h1>
         <ul class="facts">
+          {#if g.rating}<li class="chip rating" aria-label={`Nota ${g.rating} de 5`}>{'★'.repeat(g.rating)}</li>{/if}
+          {#if g.completed}<li class="chip done">Completo</li>{/if}
+          {#if g.broken}<li class="chip broken">Quebrado</li>{/if}
           {#if g.year}<li class="chip">{g.year}</li>{/if}
+          {#if g.developer}<li class="chip">{g.developer}</li>{/if}
           {#if g.players}<li class="chip">{g.players} jogador{g.players === '1' ? '' : 'es'}</li>{/if}
           {#each g.genres as genre (genre)}<li class="chip">{genre}</li>{/each}
           <li class="chip">{g.plays} partida{g.plays === 1 ? '' : 's'}</li>
@@ -127,6 +131,7 @@
           <button class="btn" data-nav aria-pressed={g.favorite} onclick={toggleFav}>
             <Icon name="star" /> {g.favorite ? 'Favorito' : 'Favoritar'}
           </button>
+          <button class="btn" data-nav onclick={() => go({ name: 'edit', id })}><Icon name="sliders" /> Editar</button>
           <button class="btn" data-nav aria-haspopup="dialog" onclick={() => (picking = true)}>
             <Icon name="plus" /> Listas{inLists ? ` (${inLists})` : ''}
           </button>
@@ -245,6 +250,15 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+  .chip.rating,
+  .chip.done {
+    color: var(--accent);
+    border-color: currentColor;
+  }
+  .chip.broken {
+    color: #ffb4b4;
+    border-color: currentColor;
   }
   .summary {
     max-width: 48rem;

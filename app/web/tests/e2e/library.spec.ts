@@ -56,12 +56,16 @@ test('surpresa sorteia dentro do console e não repete o último', async ({ page
   let last = ''
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press('r')
-    await expect(page.locator('.toasts')).toContainText('Surpresa:')
-    await expect(page.locator('.shelf [data-game]:focus')).toHaveCount(1, { timeout: 4000 })
-    const title = (await page.locator('#hero-title').textContent())!.trim()
+    // o aviso diz o sorteado quando a roleta para; o destaque tem que bater
+    const toast = page.locator('.toast', { hasText: 'Surpresa:' }).last()
+    await expect(toast).toBeVisible()
+    const title = (await toast.textContent())!.replace(/.*Surpresa:\s*/, '').trim()
+    await expect(page.locator('#hero-title')).toHaveText(title)
+    await expect(page.locator(`.shelf [data-game]:focus`)).toHaveAttribute('aria-label', new RegExp(`^${title}`))
     expect(snes).toContain(title)
     expect(title).not.toBe(last) // com 2 jogos, alterna
     last = title
+    await toast.evaluate((el) => el.remove())
   }
   await page.getByRole('button', { name: 'Ver tudo' }).click()
   await app.pad('r3')

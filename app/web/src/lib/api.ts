@@ -11,6 +11,8 @@ import type {
   InputResult,
   Listing,
   Mapping,
+  MetaEdit,
+  MetaInfo,
   Pad,
   ScriptsInfo,
   Settings,
@@ -111,6 +113,9 @@ export const api = {
   renameList: (id: string, name: string) => call<GameList>('RenameList', id, name),
   deleteList: (id: string) => call<void>('DeleteList', id),
   setInList: (id: string, game: string, inList: boolean) => call<GameList>('SetInList', id, game, inList),
+  metaDetails: (id: string) => call<MetaInfo>('MetaDetails', id),
+  saveMeta: (id: string, edit: MetaEdit) => call<Game>('SaveMeta', id, edit),
+  resetMeta: (id: string) => call<Game>('ResetMeta', id),
   toggleFullscreen: () => call<void>('ToggleFullscreen'),
   quit: () => call<void>('Quit'),
 }

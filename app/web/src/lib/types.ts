@@ -47,6 +47,9 @@ export interface Game {
   hasSaves: boolean
   completed?: boolean
   rating?: number
+  broken?: boolean
+  developer?: string
+  edited?: boolean
 }
 
 export interface LibraryDir {
@@ -128,6 +131,34 @@ export interface PadEvent {
   button: string
   pressed: boolean
   source?: string
+}
+
+export interface MetaFields {
+  name: string
+  summary: string
+  year: number
+  genres: string[] | null
+  players: string
+  developer: string
+}
+
+export interface MetaEdit {
+  name?: string
+  summary?: string
+  developer?: string
+  players?: string
+  year?: number
+  genres?: string[]
+  cover?: string
+  rating: number
+  completed: boolean
+  broken: boolean
+}
+
+export interface MetaInfo {
+  auto: MetaFields
+  autoCover: boolean
+  edit: MetaEdit
 }
 
 export interface GameList {
