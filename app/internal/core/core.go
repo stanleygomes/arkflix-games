@@ -413,6 +413,9 @@ func (s *Service) SetFavorite(id string, fav bool) (GameView, error) {
 	return s.view(e, st), nil
 }
 
+// hideDelay: quanto o app espera o emulador abrir antes de esconder a janela.
+const hideDelay = 1500 * time.Millisecond
+
 // GameEvent avisa a interface sobre o jogo em execução.
 type GameEvent struct {
 	State   string `json:"state"` // running ou exited
@@ -508,9 +511,24 @@ func (s *Service) Play(id, stateID string) error {
 	started := time.Now()
 	s.opt.Emitter.Emit("game", GameEvent{State: "running", ID: id, Name: name})
 	s.opt.Hooks.Run(hooks.GameStart, g.Launch, name, sys.Slug)
-	s.opt.Window.Hide()
+	// A janela só some depois que o emulador teve tempo de abrir: enquanto
+	// isso a interface mostra "PLAYER 1 START" e a área de trabalho não pisca.
+	// O jogo fechou antes? Não esconde (e o mutex impede esconder depois do Show).
+	var winMu sync.Mutex
+	exited := false
+	go func() {
+		time.Sleep(hideDelay)
+		winMu.Lock()
+		if !exited {
+			s.opt.Window.Hide()
+		}
+		winMu.Unlock()
+	}()
 	go func() {
 		res, err := launcher.Run(context.Background(), args, nil)
+		winMu.Lock()
+		exited = true
+		winMu.Unlock()
 		s.opt.Window.Show()
 		u.store.RecordPlay(id, res.Duration, time.Now())
 		session := history.Session{Game: id, System: sys.Slug, Name: name, Start: started.Unix(), Seconds: int64(res.Duration.Seconds()), Mode: mode, Code: res.Code}
