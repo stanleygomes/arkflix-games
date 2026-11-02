@@ -38,6 +38,15 @@ os emuladores vêm prontos.
   tela retrô.
 - Perfis estilo Netflix, com PIN opcional e modo infantil.
 - Configuração de controle com prévia ao vivo e opções de acessibilidade.
+- Guia rápido no botão Home, até por cima do jogo: voltar, salvar ou carregar
+  estado e fechar o jogo.
+- Central de downloads e avisos, com cancelar e histórico.
+- Conquistas do RetroAchievements por perfil, com troféus na página do jogo.
+- Pareamento de controle Bluetooth pela tela (Linux).
+- Emuladores instalados e atualizados pelo próprio app, nos três sistemas.
+- Atualização automática do app pela última release.
+- Busca global (jogos, consoles, listas e configurações), sons de interface,
+  tela de boot e modo descanso.
 - Emuladores do Flathub: mesma configuração, saves e BIOS de quem já usa os
   Flatpaks.
 - Testes automatizados do app (Go, interface e ponta a ponta com axe).
@@ -318,6 +327,10 @@ cores do RetroArch e libera leitura da home pro PCSX2, cujo Flatpak não enxerga
 os jogos por padrão. Rodar de novo só instala o que falta; atualizar os
 emuladores é com `flatpak update`.
 
+O mesmo dá pra fazer de dentro do app: **Você › Emuladores** instala o que falta
+ou atualiza tudo. No Windows e no macOS, baixa os pacotes oficiais (RetroArch do
+buildbot, PPSSPP do ppsspp.org, PCSX2 do GitHub) e os cores do buildbot.
+
 | Emulador | Saves e BIOS |
 | --- | --- |
 | RetroArch | `~/.var/app/org.libretro.RetroArch/config/retroarch/{saves,states,system}` |
@@ -325,8 +338,9 @@ emuladores é com `flatpak update`.
 | PCSX2 | `~/.var/app/net.pcsx2.PCSX2/config/PCSX2/{memcards,sstates,bios}` |
 
 No RetroArch, o app acrescenta à configuração do Flatpak só o mapeamento da tela
-de controles e, nos perfis extras, as pastas de save do perfil
-(`--appendconfig`).
+de controles, nos perfis extras as pastas de save do perfil, a conta do
+RetroAchievements (se o perfil entrou) e, no Linux, a porta de comandos local
+que o guia usa pra salvar, carregar e fechar o jogo (`--appendconfig`).
 
 ## Testes
 
