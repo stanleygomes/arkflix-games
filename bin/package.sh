@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Empacota o app pra um sistema, em build/dist (o CI anexa na release).
 # Uso: bin/package.sh linux|windows|macos <versão>
+# Cada arquivo sai também sem a versão no nome (arkflix-games-linux-x86_64.tar.gz),
+# pro link fixo .../releases/latest/download/<nome>.
 #   linux:   arkflix-games-<v>-linux-x86_64.tar.gz (o que o install.sh baixa)
 #   windows: arkflix-games-<v>-windows-x86_64-setup.exe (NSIS) e .zip portátil
 #   macos:   arkflix-games-<v>-macos-universal.dmg (Intel + Apple Silicon)
@@ -15,9 +17,18 @@ ldflags="-s -w -X main.version=$version"
 name=arkflix-games-$version
 
 # sha256sum no Linux, shasum no macOS (mesmo formato de saída)
-checksum() {
+sha() {
   if command -v sha256sum >/dev/null; then (cd "$dist" && sha256sum "$1" >"$1.sha256")
   else (cd "$dist" && shasum -a 256 "$1" >"$1.sha256"); fi
+}
+
+# checksum do arquivo e uma cópia com nome sem versão: o GitHub entrega essa
+# em .../releases/latest/download/<nome>, link fixo pro site e pro README
+checksum() {
+  local stable=${1/-$version/}
+  sha "$1"
+  cp "$dist/$1" "$dist/$stable"
+  sha "$stable"
 }
 
 case $target in
