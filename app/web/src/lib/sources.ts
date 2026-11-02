@@ -1,6 +1,6 @@
 // Fontes de lista: console, coleção automática ou lista pessoal. A chave
 // ("system:snes", "collection:all") guarda a ordem e os filtros de cada uma.
-import { app, system } from './state.svelte'
+import { app, shown, system } from './state.svelte'
 import type { Game } from './types'
 
 export interface Collection {
@@ -21,6 +21,9 @@ export const COLLECTIONS: Collection[] = [
   { id: 'server', label: 'No servidor', short: 'Servidor', pick: (g) => !!g.remote, sort: 'name' },
 ]
 
+/** Os ocultos pelo perfil: só pela Biblioteca nas configurações. */
+export const HIDDEN = 'collection:hidden'
+
 export function collection(id: string): Collection | undefined {
   return COLLECTIONS.find((c) => c.id === id)
 }
@@ -33,6 +36,7 @@ export function activeCollections(games: Game[]): Collection[] {
 export function sourceTitle(source: string): string {
   const [kind, id] = source.split(':')
   if (kind === 'system') return system(id)?.name ?? id
+  if (source === HIDDEN) return 'Jogos ocultos'
   if (kind === 'collection') return collection(id)?.label ?? id
   if (kind === 'list') return app.lists.find((l) => l.id === id)?.name ?? 'Lista'
   return id
@@ -40,10 +44,11 @@ export function sourceTitle(source: string): string {
 
 export function sourceGames(source: string): Game[] {
   const [kind, id] = source.split(':')
-  if (kind === 'system') return app.games.filter((g) => g.system === id)
+  if (kind === 'system') return shown().filter((g) => g.system === id)
+  if (source === HIDDEN) return app.games.filter((g) => g.hidden)
   if (kind === 'collection') {
     const c = collection(id)
-    return c ? app.games.filter(c.pick) : []
+    return c ? shown().filter(c.pick) : []
   }
   if (kind === 'list') {
     // jogo apagado do disco some da lista sem erro

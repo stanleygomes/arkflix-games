@@ -43,6 +43,7 @@ export interface Game {
   manual?: string
   video?: string
   favorite: boolean
+  hidden?: boolean
   lastPlayed: number
   playTime: number
   plays: number

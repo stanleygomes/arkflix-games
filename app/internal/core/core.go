@@ -118,6 +118,7 @@ type GameView struct {
 	Manual     string   `json:"manual"`
 	Video      string   `json:"video"`
 	Favorite   bool     `json:"favorite"`
+	Hidden     bool     `json:"hidden"` // oculto pelo perfil (só a página e a lista de ocultos mostram)
 	LastPlayed int64    `json:"lastPlayed"`
 	PlayTime   int64    `json:"playTime"`
 	Plays      int      `json:"plays"`
@@ -296,7 +297,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	g := e.game
 	v := GameView{
 		Game: g, Name: g.Title, Summary: e.info.Summary, Year: e.info.Year, Genres: e.info.Genres,
-		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
+		Players: e.info.Players, Favorite: st.Favorites[g.ID], Hidden: st.Hidden[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
 		Plays: s.cur().plays[g.ID], HasSaves: e.hasSaves, Developer: e.info.Developer,
 		Rating: e.edit.Rating, Completed: e.edit.Completed, Broken: e.edit.Broken, Edited: !e.edit.Empty(),
 		KidsOK: e.edit.KidsOK, Remote: e.remote,
@@ -421,6 +422,31 @@ func (s *Service) SetFavorite(id string, fav bool) (GameView, error) {
 			st.Favorites[id] = true
 		} else {
 			delete(st.Favorites, id)
+		}
+	})
+	if err != nil {
+		return GameView{}, err
+	}
+	st := s.cur().store.State()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.view(e, st), nil
+}
+
+// SetHidden oculta ou mostra o jogo na biblioteca do perfil (não apaga nada).
+func (s *Service) SetHidden(id string, hidden bool) (GameView, error) {
+	if err := s.adult(); err != nil {
+		return GameView{}, err
+	}
+	e, _, err := s.find(id)
+	if err != nil {
+		return GameView{}, err
+	}
+	err = s.cur().store.UpdateState(func(st *settings.State) {
+		if hidden {
+			st.Hidden[id] = true
+		} else {
+			delete(st.Hidden, id)
 		}
 	})
 	if err != nil {

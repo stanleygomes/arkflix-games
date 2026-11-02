@@ -2,11 +2,13 @@
   import Icon from '../../components/Icon.svelte'
   import { api } from '../../lib/api'
   import { play } from '../../lib/sound'
-  import { app, confirm, toast } from '../../lib/state.svelte'
+  import { HIDDEN } from '../../lib/sources'
+  import { app, confirm, go, toast } from '../../lib/state.svelte'
   import type { EmulatorPaths, SaveDirs, Settings } from '../../lib/types'
 
   let draft = $state<Settings>($state.snapshot(app.settings!) as Settings)
   let busy = $state(false)
+  const hiddenCount = $derived(app.games.filter((g) => g.hidden).length)
   const dirty = $derived(JSON.stringify(draft) !== JSON.stringify(app.settings))
 
   function addDir() {
@@ -96,6 +98,10 @@
     </ul>
     <button type="button" class="btn small" data-nav onclick={addDir}><Icon name="plus" /> Adicionar pasta</button>
   </fieldset>
+
+  <button type="button" class="btn small" data-nav onclick={() => go({ name: 'library', source: HIDDEN })}>
+    <Icon name="close" /> Jogos ocultos ({hiddenCount})
+  </button>
 
   <div class="field">
     <label for="import-dir">Pasta onde os jogos importados ficam</label>

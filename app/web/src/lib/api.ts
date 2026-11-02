@@ -118,6 +118,7 @@ export const api = {
   ready: () => call<void>('Ready'),
   refresh: () => call<Game[]>('Refresh'),
   setFavorite: (id: string, fav: boolean) => call<Game>('SetFavorite', id, fav),
+  setHidden: (id: string, hidden: boolean) => call<Game>('SetHidden', id, hidden),
   play: (id: string, state = '') => call<void>('Play', id, state),
   saves: (id: string) => call<Listing>('Saves', id),
   deleteState: (id: string, state: string) => call<Listing>('DeleteState', id, state),

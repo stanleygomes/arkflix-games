@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { axe, expect, test, type App, switchProfile } from './fixtures'
+import { axe, expect, gameOption, test, type App, switchProfile } from './fixtures'
 
 const call = async (page: Page, app: App, m: string, args: unknown[] = []) => {
   const res = await page.request.post(`${app.url}/api/call/${m}`, { data: args, headers: { 'X-Arkflix': '1' } })
@@ -10,7 +10,7 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
   // o adulto libera um jogo no editor e cria o perfil infantil
   await page.goto(app.url)
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first().click()
-  await page.getByRole('button', { name: 'Editar' }).click()
+  await gameOption(page, 'Editar informações')
   await page.getByRole('switch', { name: /Liberado no perfil infantil/ }).click()
   await expect(page.getByRole('switch', { name: /Liberado no perfil infantil/ })).toHaveAttribute('aria-checked', 'true')
 
@@ -48,7 +48,12 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
 
   // na página do jogo: sem editar, e o botão de cima não apaga save
   await page.locator('.shelf [data-game]').first().click()
-  await expect(page.getByRole('button', { name: 'Editar' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Opções', exact: true }).click()
+  const opts = page.getByRole('dialog', { name: 'Opções' })
+  await expect(opts.getByRole('button')).toHaveText([/Listas/, 'Cancelar'])
+  await axe(page, 'opções do jogo no infantil')
+  await page.keyboard.press('Escape')
+  await expect(opts).toBeHidden()
 
   // a API também trava
   const s = (await call(page, app, 'GetSettings')).body.result

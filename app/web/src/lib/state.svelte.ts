@@ -161,6 +161,11 @@ export function game(id: string): Game | undefined {
   return app.games.find((g) => g.id === id)
 }
 
+/** Jogos que aparecem na biblioteca (sem os ocultos pelo perfil). */
+export function shown(): Game[] {
+  return app.games.filter((g) => !g.hidden)
+}
+
 export function putGame(g: Game) {
   const i = app.games.findIndex((x) => x.id === g.id)
   if (i >= 0) app.games[i] = g

@@ -1,0 +1,33 @@
+import { axe, expect, gameOption, open, settings, test } from './fixtures'
+
+test('ocultar jogo: some do Início e da busca, volta pela Biblioteca', async ({ page, app }) => {
+  await open(page, app)
+  await page.locator('.shelf [data-game][aria-label^="Mega Man X"]').first().click()
+  await page.getByRole('button', { name: 'Opções', exact: true }).click()
+  const menu = page.getByRole('dialog', { name: 'Opções' })
+  await expect(menu.getByRole('button', { name: /^Listas/ })).toBeFocused()
+  await axe(page, 'opções do jogo')
+  await menu.getByRole('button', { name: 'Ocultar da biblioteca' }).click()
+  await expect(menu).toBeHidden()
+  await expect(page.locator('.facts')).toContainText('Oculto')
+  expect(Object.values(JSON.parse(app.read(`${app.data}/state.json`)).hidden)).toEqual([true])
+
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first()).toBeVisible()
+  await expect(page.locator('.shelf [data-game][aria-label^="Mega Man X"]')).toHaveCount(0)
+  await page.keyboard.press('/')
+  await page.keyboard.type('mega man')
+  await expect(page.locator('#results-count')).toBeVisible()
+  await expect(page.locator('.results [data-game]')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+
+  await settings(page)
+  await page.getByRole('button', { name: 'Jogos ocultos (1)' }).click()
+  await expect(page.getByRole('heading', { name: 'Jogos ocultos' })).toBeVisible()
+  await axe(page, 'jogos ocultos')
+  await page.locator('.grid [data-game]').filter({ hasText: 'Mega Man X' }).click()
+  await gameOption(page, 'Mostrar na biblioteca')
+  await expect(page.locator('.facts')).not.toContainText('Oculto')
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.grid [data-game]')).toHaveCount(0)
+})

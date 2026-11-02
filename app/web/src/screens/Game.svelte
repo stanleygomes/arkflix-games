@@ -2,6 +2,7 @@
   import { tick } from 'svelte'
   import Cheevos from '../components/Cheevos.svelte'
   import GameArt from '../components/GameArt.svelte'
+  import GameOptions from '../components/GameOptions.svelte'
   import ListPicker from '../components/ListPicker.svelte'
   import MediaViewer from '../components/MediaViewer.svelte'
   import HelpBar from '../components/HelpBar.svelte'
@@ -15,7 +16,7 @@
   import { current, focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
-  import { app, back, confirm, game, go, isKids, putGame, system, toast } from '../lib/state.svelte'
+  import { app, back, confirm, game, isKids, putGame, system, toast } from '../lib/state.svelte'
   import type { GameEvent, Listing, MediaItem, SaveState } from '../lib/types'
 
   let { id }: { id: string } = $props()
@@ -25,6 +26,8 @@
   let loadError = $state('')
   let stamp = $state(Date.now())
   let picking = $state(false)
+  let menu = $state(false)
+  let optionsBtn = $state<HTMLButtonElement>()
   let viewing = $state<number | null>(null)
   const media = $derived.by(() => {
     if (!g) return [] as MediaItem[]
@@ -38,8 +41,6 @@
     if (g.manual) out.push({ src: g.manual, caption: 'Manual', kind: 'pdf' })
     return out
   })
-  const inLists = $derived(app.lists.filter((l) => l.games.includes(id)).length)
-
   async function load() {
     try {
       listing = await api.saves(id)
@@ -104,7 +105,7 @@
 
   $effect(() =>
     pushHandler((a) => {
-      if (picking || viewing !== null) return false
+      if (menu || picking || viewing !== null) return false
       if (a === 'fav') {
         const stateId = current()?.dataset.state
         const st = isKids() ? undefined : listing?.states.find((s) => s.id === stateId)
@@ -130,6 +131,7 @@
         <h1 class="pixel">{g.name}</h1>
         <ul class="facts">
           {#if g.remote}<li class="chip remote">No servidor</li>{/if}
+          {#if g.hidden}<li class="chip">Oculto</li>{/if}
           {#if g.rating}<li class="chip rating" aria-label={`Nota ${g.rating} de 5`}>{'★'.repeat(g.rating)}</li>{/if}
           {#if g.completed}<li class="chip done">Completo</li>{/if}
           {#if g.broken}<li class="chip broken">Quebrado</li>{/if}
@@ -166,11 +168,8 @@
           <button class="btn" data-nav aria-pressed={g.favorite} onclick={toggleFav}>
             <Icon name="star" /> {g.favorite ? 'Favorito' : 'Favoritar'}
           </button>
-          {#if !isKids()}
-            <button class="btn" data-nav onclick={() => go({ name: 'edit', id })}><Icon name="sliders" /> Editar</button>
-          {/if}
-          <button class="btn" data-nav aria-haspopup="dialog" onclick={() => (picking = true)}>
-            <Icon name="plus" /> Listas{inLists ? ` (${inLists})` : ''}
+          <button class="btn" data-nav aria-haspopup="dialog" bind:this={optionsBtn} onclick={() => (menu = true)}>
+            <Icon name="sliders" /> Opções
           </button>
           <button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>
         </div>
@@ -252,8 +251,27 @@
       ]}
     />
   </div>
+  {#if menu}
+    <GameOptions
+      gameId={id}
+      onclose={() => {
+        menu = false
+        tick().then(() => optionsBtn?.focus())
+      }}
+      onlists={() => {
+        menu = false
+        picking = true
+      }}
+    />
+  {/if}
   {#if picking}
-    <ListPicker gameId={id} onclose={() => (picking = false)} />
+    <ListPicker
+      gameId={id}
+      onclose={() => {
+        picking = false
+        tick().then(() => optionsBtn?.focus())
+      }}
+    />
   {/if}
   {#if viewing !== null && media.length}
     <MediaViewer
