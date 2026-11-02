@@ -152,6 +152,8 @@ type Options struct {
 	// BrowserPads: a interface lê os controles mesmo no Linux (testes do
 	// caminho do Windows/macOS).
 	BrowserPads bool
+	// Update: atualização automática. Zero = não olha sozinho (testes).
+	Update UpdateOptions
 }
 
 type entry struct {
@@ -183,6 +185,8 @@ type Service struct {
 	entries []entry
 	running string
 	tasks   map[string]bool
+
+	upd *updateState
 }
 
 // New prepara o serviço: gera a config de entrada do RetroArch, liga os
@@ -217,6 +221,7 @@ func New(opt Options) (*Service, error) {
 	if s.opt.Saves == nil {
 		s.opt.Saves = saves.Local{Dirs: s.saveDirs}
 	}
+	s.upd = s.newUpdateState()
 	s.over = &meta.Overrides{Path: filepath.Join(store.Dir(), "metadata.json")}
 	s.profiles = &profiles.Store{Dir: store.Dir()}
 	if _, err := s.profiles.All(); err != nil {
@@ -236,6 +241,9 @@ func New(opt Options) (*Service, error) {
 	s.scan()
 	if conn, _ := s.remote.snapshot(); conn != nil {
 		s.startRemoteRefresh() // catálogo em cache já aparece; o novo chega depois
+	}
+	if opt.Update.Check {
+		go s.checkLater()
 	}
 	return s, nil
 }

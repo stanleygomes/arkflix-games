@@ -88,6 +88,8 @@ type Settings struct {
 	A11y        Accessibility `json:"a11y"`
 	Screensaver Screensaver   `json:"screensaver"`
 	Saves       SaveDirs      `json:"saves"`
+	// AutoUpdate: baixa a versão nova sozinho e instala ao fechar o app.
+	AutoUpdate bool `json:"autoUpdate"`
 }
 
 // Defaults usa a pasta do usuário.
@@ -120,6 +122,7 @@ func DefaultsFor(goos, home string) Settings {
 		},
 		ImportDir:  filepath.Join(home, "Games", "roms"),
 		Fullscreen: true,
+		AutoUpdate: true,
 		ESDEDir:    filepath.Join(home, "ES-DE"),
 		Covers: Covers{
 			Images: "https://thumbnails.libretro.com",
