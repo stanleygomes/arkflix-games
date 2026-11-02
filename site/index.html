@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>arkflix games · seus jogos retrô na TV</title>
+<meta name="description" content="Biblioteca de jogos retrô pra TV e controle: Super Nintendo, Mega Drive, PlayStation, PSP, PS2 e mais. Grátis, pra Windows, macOS e Linux.">
+<meta property="og:title" content="arkflix games">
+<meta property="og:description" content="Seus jogos retrô num lugar só, com cara de fliperama. Windows, macOS e Linux.">
+<meta property="og:image" content="/img/inicio.png">
+<meta name="theme-color" content="#050008">
+<link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/styles.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#baixar">Pular pro download</a>
+
+<header class="top">
+  <div class="hud" aria-hidden="true">
+    <p><span>1UP</span> VOCÊ</p>
+    <p><span>HI-SCORE</span> <span class="hud-value" id="hud-version">v?.?.?</span></p>
+    <p><span>CREDIT</span> 00</p>
+  </div>
+  <nav class="nav" aria-label="Seções">
+    <a href="#recursos">Recursos</a>
+    <a href="#baixar">Baixar</a>
+    <a href="https://github.com/stanleygomes/arkflix-games">GitHub</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="titulo">
+    <h1 id="titulo" class="marquee">ARK<span>FLIX</span></h1>
+    <p class="tagline">Seus jogos retrô num lugar só, com cara de fliperama.<br>Feito pra TV e pra controle.</p>
+    <div class="cta">
+      <a class="btn primary" id="cta-main" href="https://github.com/stanleygomes/arkflix-games/releases/latest">
+        <span class="btn-icon" aria-hidden="true">▼</span> <span id="cta-label">Baixar grátis</span>
+      </a>
+      <p class="muted small" id="cta-note">Windows, macOS e Linux · código aberto</p>
+    </div>
+    <figure class="screen">
+      <img src="/img/inicio.png" alt="Tela inicial do arkflix games: consoles no topo, jogo em destaque e a fileira de jogos" width="1280" height="720">
+    </figure>
+  </section>
+
+  <section id="recursos" class="features" aria-labelledby="recursos-titulo">
+    <h2 id="recursos-titulo">SELECT YOUR FEATURE</h2>
+    <ul class="grid">
+      <li class="card">
+        <h3>Tudo num lugar</h3>
+        <p>NES, Super Nintendo, Mega Drive, Game Boy, N64, DS, PlayStation, PSP, PS2 e arcade. Capas, descrições, busca, filtros e coleções automáticas.</p>
+      </li>
+      <li class="card">
+        <h3>Feito pra controle</h3>
+        <p>Xbox, PlayStation, 8BitDo ou teclado, com os símbolos certos de cada um. Mesmo botão pra sair e pro menu em todos os emuladores.</p>
+      </li>
+      <li class="card">
+        <h3>Continua de onde parou</h3>
+        <p>Pontos salvos com miniatura, retomada automática e estatísticas de quanto você jogou cada um.</p>
+      </li>
+      <li class="card">
+        <h3>A família toda</h3>
+        <p>Perfis estilo Netflix com 34 personagens clássicos de avatar, PIN opcional e modo infantil só com os jogos liberados.</p>
+      </li>
+      <li class="card">
+        <h3>Seu servidor RomM</h3>
+        <p>Entre no seu RomM: os jogos de lá aparecem na biblioteca, baixam com um botão e os saves sincronizam sozinhos.</p>
+      </li>
+      <li class="card">
+        <h3>Cara de fliperama</h3>
+        <p>Neon, scanlines, chiptune e um protetor de tela com a cobrinha jogando sozinha. Alto contraste e textos maiores pra quem precisa.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="gallery" aria-label="Telas do app">
+    <figure><img src="/img/jogo.png" alt="Página de um jogo com pontos salvos, mídia e botões de jogar" loading="lazy" width="1280" height="720"><figcaption>Saves com miniatura e mídia do jogo</figcaption></figure>
+    <figure><img src="/img/perfil.png" alt="Criação de perfil com avatares de personagens clássicos" loading="lazy" width="1280" height="720"><figcaption>Perfis com personagens clássicos</figcaption></figure>
+    <figure><img src="/img/entrada.png" alt="Tela de entrada com login no servidor RomM ou jogar offline" loading="lazy" width="1280" height="720"><figcaption>Seu RomM ou offline</figcaption></figure>
+  </section>
+
+  <section id="baixar" class="downloads" aria-labelledby="baixar-titulo">
+    <h2 id="baixar-titulo">PRESS START</h2>
+    <p class="muted center" id="release-line">Última versão: <a href="https://github.com/stanleygomes/arkflix-games/releases/latest">página de releases</a></p>
+    <ul class="os">
+      <li class="os-card" data-os="windows">
+        <h3>Windows</h3>
+        <p class="muted">10 e 11, 64 bits</p>
+        <a class="btn primary" data-asset="windows-x86_64-setup.exe" href="https://github.com/stanleygomes/arkflix-games/releases/latest">Instalador (.exe)</a>
+        <a class="btn" data-asset="windows-x86_64.zip" href="https://github.com/stanleygomes/arkflix-games/releases/latest">Portátil (.zip)</a>
+        <p class="small muted">Instale também o <a href="https://www.retroarch.com/?page=platforms">RetroArch</a>, o <a href="https://www.ppsspp.org/download/">PPSSPP</a> e o <a href="https://pcsx2.net/downloads/">PCSX2</a>.</p>
+      </li>
+      <li class="os-card" data-os="macos">
+        <h3>macOS</h3>
+        <p class="muted">11 ou mais novo · Intel e Apple Silicon</p>
+        <a class="btn primary" data-asset="macos-universal.dmg" href="https://github.com/stanleygomes/arkflix-games/releases/latest">Baixar (.dmg)</a>
+        <p class="small muted">Primeira vez: botão direito no app › Abrir (não é assinado pela Apple). Instale o RetroArch, o PPSSPP e o PCSX2.</p>
+      </li>
+      <li class="os-card" data-os="linux">
+        <h3>Linux</h3>
+        <p class="muted">Ubuntu, Debian e derivados · x86_64</p>
+        <p class="small">Um comando instala o app e os emuladores (Flatpak):</p>
+        <div class="cmd">
+          <code id="linux-cmd" tabindex="0" aria-label="Comando de instalação no Linux">curl -fsSL https://raw.githubusercontent.com/stanleygomes/arkflix-games/master/install.sh | bash</code>
+          <button class="btn small" type="button" id="copy-cmd">Copiar</button>
+        </div>
+        <a class="btn" data-asset="linux-x86_64.tar.gz" href="https://github.com/stanleygomes/arkflix-games/releases/latest">Só o app (.tar.gz)</a>
+      </li>
+    </ul>
+    <p class="muted small center">Os jogos e as BIOS são seus: o arkflix games não vem com nenhum.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <p class="coin" aria-hidden="true">INSERT COIN</p>
+  <p class="small muted">Código aberto no <a href="https://github.com/stanleygomes/arkflix-games">GitHub</a>. Personagens e jogos pertencem aos seus donos.</p>
+</footer>
+</body>
+</html>
