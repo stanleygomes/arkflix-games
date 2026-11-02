@@ -17,7 +17,8 @@
   import { pickRandom, sortGames } from '../lib/library'
   import { sortOf, sourceGames, sourceTitle } from '../lib/sources'
   import { app, currentProfile, go, isKids, system, toast } from '../lib/state.svelte'
-  import type { Game } from '../lib/types'
+  import type { Game, GameCheevos, SaveState } from '../lib/types'
+  import { ago, playTime } from '../lib/format'
 
   // abas: só o Início e os consoles. Coleções e listas viram fileiras do Início.
   type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'list' | 'system' }
@@ -62,6 +63,23 @@
   const selected = $derived(app.games.find((g) => g.id === app.selected) ?? rows[0]?.games[0])
   const selSystem = $derived(selected ? system(selected.system) : undefined)
   const canResume = $derived(!!selected && selected.lastPlayed > 0 && selSystem?.emulator === 'retroarch')
+
+  // cartões de atividade do destaque: o ponto salvo automático (com a
+  // miniatura) e as conquistas. Busca com atraso: o destaque muda a cada passo.
+  let autoState = $state<SaveState | null>(null)
+  let trophies = $state<GameCheevos | null>(null)
+  $effect(() => {
+    const g = selected
+    autoState = null
+    trophies = null
+    if (!g || g.remote) return
+    const t = setTimeout(() => {
+      if (g.hasSaves) api.saves(g.id).then((l) => selected?.id === g.id && (autoState = l.states.find((s) => s.slot === -1) ?? null)).catch(() => {})
+      api.gameCheevos(g.id).then((c) => selected?.id === g.id && (trophies = c)).catch(() => {})
+    }, 450)
+    return () => clearTimeout(t)
+  })
+  const nextTrophy = $derived(trophies?.list?.find((c) => !c.unlocked))
 
   // paleta: a do console da aba; no Início, a do jogo selecionado
   $effect(() => {
@@ -262,7 +280,7 @@
               <Icon name="play" /> Jogar
             </button>
           {/if}
-          {#if canResume && !selected.remote}
+          {#if canResume && !selected.remote && !autoState}
             <button class="btn" data-nav data-nav-group="actions" onclick={() => launch(selected, 'auto')}>
               <Icon name="resume" /> Continuar
             </button>
@@ -270,6 +288,27 @@
           <button class="btn" data-nav data-nav-group="actions" onclick={() => go({ name: 'game', id: selected.id })}>
             <Icon name="disc" /> Detalhes
           </button>
+        </div>
+        <!-- espaço fixo: o destaque troca a cada passo na fileira e as fileiras não podem pular -->
+        <div class="cards" data-nav-group="cards">
+            {#if autoState && canResume}
+              <button class="card-act" data-nav onclick={() => launch(selected, 'auto')}>
+                {#if autoState.thumb}<img src={`/media/thumb/${autoState.id}`} alt="" />{:else}<span class="nothumb pixel" aria-hidden="true">AUTO</span>{/if}
+                <span class="text">
+                  <span class="label">Continuar de onde parou</span>
+                  <span class="muted">salvo {ago(autoState.modified)} · {playTime(selected.playTime)} jogados</span>
+                </span>
+              </button>
+            {/if}
+            {#if trophies?.supported && trophies.total}
+              <button class="card-act" data-nav onclick={() => go({ name: 'game', id: selected.id })}>
+                <span class="trophy"><Icon name="trophy" size="1.8em" /></span>
+                <span class="text">
+                  <span class="label">{trophies.unlocked}/{trophies.total} conquistas</span>
+                  <span class="muted">{nextTrophy ? `próxima: ${nextTrophy.title}` : 'todas ganhas!'}</span>
+                </span>
+              </button>
+            {/if}
         </div>
       </section>
       <div class="hero-art" aria-hidden="true">
@@ -502,6 +541,53 @@
     flex-wrap: wrap;
     gap: 0.9rem;
     margin-top: 0.5rem;
+  }
+  .cards {
+    min-height: 4.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+  }
+  .card-act {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.8rem;
+    align-items: center;
+    max-width: 22rem;
+    padding: 0.5rem 0.9rem 0.5rem 0.5rem;
+    font: inherit;
+    color: var(--text);
+    text-align: left;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    border: 2px solid color-mix(in srgb, var(--accent-2) 50%, transparent);
+    cursor: pointer;
+  }
+  .card-act img,
+  .card-act .nothumb,
+  .card-act .trophy {
+    width: 5.5rem;
+    height: 3.6rem;
+    object-fit: cover;
+    image-rendering: pixelated;
+    display: grid;
+    place-items: center;
+    background: #000;
+    color: var(--focus);
+  }
+  .card-act .text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+  .card-act .label {
+    font-weight: 700;
+  }
+  .card-act .muted {
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .shelves {
     display: flex;

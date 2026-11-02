@@ -39,6 +39,9 @@ test('conquistas: entra no RetroAchievements e vê os troféus do jogo', async (
 
   await page.keyboard.press('Escape')
   await page.keyboard.press('Escape')
+  // cartão no destaque do Início
+  await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first().focus()
+  await expect(page.locator('.cards')).toContainText('1/3 conquistas')
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first().click()
   const box = page.locator('.cheevos')
   await expect(box).toContainText('1/3')
