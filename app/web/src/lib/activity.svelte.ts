@@ -16,22 +16,41 @@ export function running(): Task[] {
   return activity.tasks.filter((t) => t.state === 'running')
 }
 
-/** O que dá pra cancelar: downloads e instalações. */
+/** Ainda não terminou (em andamento, na fila, esperando ou pausado). */
+export function active(t: TaskEvent): boolean {
+  return t.state === 'running' || t.state === 'queued' || t.state === 'waiting' || t.state === 'paused'
+}
+
+/** O que dá pra cancelar: downloads (também na fila e pausados) e instalações. */
 export function cancellable(t: TaskEvent): boolean {
-  return t.state === 'running' && /^(download|emulators):/.test(t.id + ':')
+  if (t.id.startsWith('download:')) return active(t)
+  return t.state === 'running' && /^emulators:/.test(t.id + ':')
+}
+
+function upsert(ev: TaskEvent) {
+  const i = activity.tasks.findIndex((t) => t.id === ev.id)
+  if (i >= 0) activity.tasks.splice(i, 1)
+  activity.tasks.unshift({ ...ev, at: Date.now() })
+  activity.tasks.splice(30) // guarda as 30 últimas
 }
 
 let started = false
 export function watchTasks() {
   if (started) return
   started = true
+  // downloads pausados de antes de fechar o app (e o que já estiver na fila)
+  api
+    .downloads()
+    .then((list) => {
+      for (const ev of list.reverse()) if (!activity.tasks.some((t) => t.id === ev.id)) upsert(ev)
+    })
+    .catch(() => {})
   on<TaskEvent>('task', (ev) => {
-    const i = activity.tasks.findIndex((t) => t.id === ev.id)
-    const t = { ...ev, at: Date.now() }
-    if (i >= 0) activity.tasks.splice(i, 1)
-    activity.tasks.unshift(t)
-    activity.tasks.splice(30) // guarda as 30 últimas
-    if (ev.state === 'running') return
+    // progresso não reordena a lista (a fila fica parada na tela)
+    const cur = activity.tasks.find((t) => t.id === ev.id)
+    if (cur && cur.state === ev.state) Object.assign(cur, ev, { at: Date.now() })
+    else upsert(ev)
+    if (active(ev)) return
     const group = ev.id.split(':')[0]
     if (ev.state === 'done') toast(`${ev.label}: ${ev.message}`, 'ok', 7000, group)
     else if (ev.state === 'error') toast(`${ev.label} falhou: ${ev.message}`, 'error', 9000, group)
@@ -39,17 +58,24 @@ export function watchTasks() {
   })
 }
 
-export async function cancelTask(id: string) {
+async function attempt(fn: () => Promise<unknown>) {
   try {
-    await api.cancelTask(id)
+    await fn()
   } catch (err) {
     toast((err as Error).message, 'error')
   }
 }
 
+export const cancelTask = (id: string) => attempt(() => api.cancelTask(id))
+
+/** Pausar, continuar e "baixar agora" de um download (id da tarefa). */
+export const pauseDownload = (id: string) => attempt(() => api.pauseDownload(id.replace(/^download:/, '')))
+export const resumeDownload = (id: string) => attempt(() => api.resumeDownload(id.replace(/^download:/, '')))
+export const downloadNow = (id: string) => attempt(() => api.downloadNow(id.replace(/^download:/, '')))
+
 /** Some com as terminadas da lista. */
 export function clearFinished() {
-  activity.tasks = activity.tasks.filter((t) => t.state === 'running')
+  activity.tasks = activity.tasks.filter(active)
 }
 
 /** Avisos ainda não vistos (bolinha no avatar e no guia). */

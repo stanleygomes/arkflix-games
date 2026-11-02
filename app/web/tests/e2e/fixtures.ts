@@ -19,7 +19,7 @@ export interface App {
   data: string
 }
 
-type Options = { fakeExit: string; fakeSleep: string; firstRun: string; browserPads: string; releases: string }
+type Options = { fakeExit: string; fakeSleep: string; firstRun: string; browserPads: string; releases: string; rommSlow: string }
 
 export const test = base.extend<Options & { app: App }>({
   fakeExit: ['0', { option: true }],
@@ -27,10 +27,12 @@ export const test = base.extend<Options & { app: App }>({
   firstRun: ['0', { option: true }],
   browserPads: ['0', { option: true }],
   releases: ['', { option: true }],
-  app: async ({ page, fakeExit, fakeSleep, firstRun, browserPads, releases }, use, info) => {
+  // RomM falso lento: ms entre pedaços de 16 bytes (dá pra pausar no meio)
+  rommSlow: ['', { option: true }],
+  app: async ({ page, fakeExit, fakeSleep, firstRun, browserPads, releases, rommSlow }, use, info) => {
     const root = info.outputPath('fx')
     const proc = spawn(BIN, ['--web', '127.0.0.1:0', '--fixture', root, '--test', '--assets', DIST], {
-      env: { ...process.env, ARKFLIX_FAKE_EXIT: fakeExit, ARKFLIX_FAKE_SLEEP: fakeSleep, ARKFLIX_FIXTURE_FIRST_RUN: firstRun, ARKFLIX_FIXTURE_BROWSER_PADS: browserPads, ARKFLIX_FIXTURE_RELEASES: releases },
+      env: { ...process.env, ARKFLIX_FAKE_EXIT: fakeExit, ARKFLIX_FAKE_SLEEP: fakeSleep, ARKFLIX_FIXTURE_FIRST_RUN: firstRun, ARKFLIX_FIXTURE_BROWSER_PADS: browserPads, ARKFLIX_FIXTURE_RELEASES: releases, ARKFLIX_FAKE_ROMM_SLOW: rommSlow },
     })
     let log = ''
     const url = await new Promise<string>((resolve, reject) => {

@@ -25,7 +25,9 @@ Leia o [README](README.md) antes. Resumo do que importa:
   `MetaProvider`, `SaveStore`). O servidor RomM fica em `internal/romm` (cliente)
   e `internal/core/remote.go`; não acople nada remoto nos pacotes locais.
 - Nunca guarde senha: o login do RomM vira um token de dispositivo. Teste com o
-  RomM falso (`fixture.FakeRomM`, também em `/fake-romm` no `--fixture --test`).
+  RomM falso (`fixture.FakeRomM`, também em `/fake-romm` no `--fixture --test`;
+  aceita Range e fica lento com `ARKFLIX_FAKE_ROMM_SLOW=<ms>`). A fila de
+  downloads fica em `internal/core/downloads.go`.
 - Mudou o app? `make check-app` (Go com race, svelte-check, Vitest, Playwright
   com axe). Tela nova ou mudada = teste de ponta a ponta + `axe(page, ...)` nela.
 - Acessibilidade é requisito: contraste AA (paletas testadas no Go), nome

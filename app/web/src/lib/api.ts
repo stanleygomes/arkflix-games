@@ -26,6 +26,8 @@ import type {
   StorageInfo,
   ScriptsInfo,
   Settings,
+  DownloadOptions,
+  TaskEvent,
   Stats,
 } from './types'
 
@@ -115,6 +117,11 @@ export const api = {
   disconnectRemote: () => call<void>('DisconnectRemote'),
   refreshRemote: () => call<void>('RefreshRemote'),
   downloadGame: (id: string) => call<void>('DownloadGame', id),
+  downloads: () => call<TaskEvent[]>('Downloads'),
+  pauseDownload: (id: string) => call<void>('PauseDownload', id),
+  resumeDownload: (id: string) => call<void>('ResumeDownload', id),
+  downloadNow: (id: string) => call<void>('DownloadNow', id),
+  setDownloadOptions: (d: DownloadOptions) => call<Settings>('SetDownloadOptions', d),
   ready: () => call<void>('Ready'),
   refresh: () => call<Game[]>('Refresh'),
   setFavorite: (id: string, fav: boolean) => call<Game>('SetFavorite', id, fav),

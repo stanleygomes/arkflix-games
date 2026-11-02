@@ -108,6 +108,8 @@ type Client struct {
 	Base  string
 	Token string
 	HTTP  *http.Client
+	// Limit: velocidade máxima dos downloads em bytes/s (0 ou nil = sem limite).
+	Limit func() int64
 }
 
 func (c *Client) http() *http.Client {
@@ -118,15 +120,23 @@ func (c *Client) http() *http.Client {
 }
 
 func (c *Client) do(ctx context.Context, method, p string, body io.Reader, ctype string) (*http.Response, error) {
+	var hdr http.Header
+	if ctype != "" {
+		hdr = http.Header{"Content-Type": {ctype}}
+	}
+	return c.doHeader(ctx, method, p, body, hdr)
+}
+
+func (c *Client) doHeader(ctx context.Context, method, p string, body io.Reader, hdr http.Header) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, c.Base+p, body)
 	if err != nil {
 		return nil, err
 	}
+	for k, v := range hdr {
+		req.Header[k] = v
+	}
 	if c.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
-	}
-	if ctype != "" {
-		req.Header.Set("Content-Type", ctype)
 	}
 	resp, err := c.http().Do(req)
 	if err != nil {
@@ -269,13 +279,25 @@ func (c *Client) Rom(ctx context.Context, id int) (Rom, error) {
 	return r.rom(), err
 }
 
-// Download baixa o jogo pra dir/<FsName> (arquivo ou pasta). Grava em .part e
-// só renomeia no fim: download pela metade nunca vira jogo na biblioteca.
-func (c *Client) Download(ctx context.Context, r Rom, dir string, progress func(done, total int64)) (string, error) {
+// PartPath é onde fica o download pela metade do jogo (arquivo ou pasta).
+func PartPath(dir string, r Rom) (string, error) {
 	if r.FsName == "" || strings.ContainsAny(r.FsName, `/\`) || r.FsName == "." || r.FsName == ".." {
 		return "", fmt.Errorf("nome de jogo inválido: %q", r.FsName)
 	}
-	dest := filepath.Join(dir, r.FsName)
+	return filepath.Join(dir, r.FsName) + ".part", nil
+}
+
+// Download baixa o jogo pra dir/<FsName> (arquivo ou pasta). Grava em .part e
+// só renomeia no fim: download pela metade nunca vira jogo na biblioteca.
+// Se o .part já existe (download pausado), continua de onde parou: arquivo
+// único pede o resto com Range; jogo com vários arquivos pula os completos.
+// Em erro o .part fica (dá pra continuar); quem desiste apaga (PartPath).
+func (c *Client) Download(ctx context.Context, r Rom, dir string, progress func(done, total int64)) (string, error) {
+	part, err := PartPath(dir, r)
+	if err != nil {
+		return "", err
+	}
+	dest := strings.TrimSuffix(part, ".part")
 	if _, err := os.Stat(dest); err == nil {
 		return "", fmt.Errorf("já existe %s", dest)
 	}
@@ -289,14 +311,17 @@ func (c *Client) Download(ctx context.Context, r Rom, dir string, progress func(
 			progress(done, r.Size)
 		}
 	}
-	part := dest + ".part"
-	os.RemoveAll(part)
 	if !r.Multi {
-		if err := c.fetch(ctx, fmt.Sprintf("/api/roms/%d/content/%s", r.ID, url.PathEscape(r.FsName)), part, count); err != nil {
-			os.Remove(part)
+		if st, err := os.Stat(part); err == nil && st.IsDir() {
+			os.RemoveAll(part) // sobra de outro formato: recomeça
+		}
+		if err := c.resume(ctx, fmt.Sprintf("/api/roms/%d/content/%s", r.ID, url.PathEscape(r.FsName)), part, r.Size, count); err != nil {
 			return "", err
 		}
 		return dest, os.Rename(part, dest)
+	}
+	if st, err := os.Stat(part); err == nil && !st.IsDir() {
+		os.Remove(part)
 	}
 	prefix := path.Join("roms", r.Platform, r.FsName)
 	for _, f := range r.Files {
@@ -311,8 +336,7 @@ func (c *Client) Download(ctx context.Context, r Rom, dir string, progress func(
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return "", err
 		}
-		if err := c.fetch(ctx, fmt.Sprintf("/api/roms/%d/files/content/%s", f.ID, url.PathEscape(f.Name)), target, count); err != nil {
-			os.RemoveAll(part)
+		if err := c.resume(ctx, fmt.Sprintf("/api/roms/%d/files/content/%s", f.ID, url.PathEscape(f.Name)), target, f.Size, count); err != nil {
 			return "", err
 		}
 	}
@@ -330,6 +354,50 @@ func (c counter) Write(p []byte) (int, error) {
 	return n, err
 }
 
+// limited segura a leitura pra não passar de rate() bytes por segundo (lido a
+// cada pedaço: mudar o limite vale pro download em andamento).
+type limited struct {
+	ctx   context.Context
+	r     io.Reader
+	rate  func() int64
+	cur   int64
+	start time.Time
+	n     int64
+}
+
+func (l *limited) Read(p []byte) (int, error) {
+	rate := l.rate()
+	if rate <= 0 {
+		return l.r.Read(p)
+	}
+	if rate != l.cur {
+		l.cur, l.start, l.n = rate, time.Now(), 0
+	}
+	if chunk := max(rate/8, 1024); int64(len(p)) > chunk {
+		p = p[:chunk]
+	}
+	n, err := l.r.Read(p)
+	l.n += int64(n)
+	wait := time.Duration(float64(l.n)/float64(rate)*float64(time.Second)) - time.Since(l.start)
+	if wait > 0 {
+		t := time.NewTimer(wait)
+		defer t.Stop()
+		select {
+		case <-t.C:
+		case <-l.ctx.Done():
+			return n, l.ctx.Err()
+		}
+	}
+	return n, err
+}
+
+func (c *Client) body(ctx context.Context, r io.Reader) io.Reader {
+	if c.Limit == nil {
+		return r
+	}
+	return &limited{ctx: ctx, r: r, rate: c.Limit}
+}
+
 func (c *Client) fetch(ctx context.Context, p, dest string, add func(int64)) error {
 	resp, err := c.do(ctx, http.MethodGet, p, nil, "")
 	if err != nil {
@@ -340,7 +408,48 @@ func (c *Client) fetch(ctx context.Context, p, dest string, add func(int64)) err
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(counter{f, add}, resp.Body)
+	_, err = io.Copy(counter{f, add}, c.body(ctx, resp.Body))
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	return err
+}
+
+// resume baixa p pra dest continuando o que já está lá (want = tamanho
+// final, 0 = desconhecido). O RomM serve o arquivo pelo nginx
+// (X-Accel-Redirect), que aceita Range; se o servidor ignorar o Range e
+// responder 200 com o arquivo inteiro, recomeça do zero.
+func (c *Client) resume(ctx context.Context, p, dest string, want int64, add func(int64)) error {
+	var have int64
+	if st, err := os.Stat(dest); err == nil && st.Mode().IsRegular() {
+		have = st.Size()
+	}
+	if want > 0 && have == want {
+		add(have) // já completo (jogo com vários arquivos pausado no seguinte)
+		return nil
+	}
+	if want > 0 && have > want {
+		have = 0
+	}
+	var hdr http.Header
+	if have > 0 {
+		hdr = http.Header{"Range": {fmt.Sprintf("bytes=%d-", have)}}
+	}
+	resp, err := c.doHeader(ctx, http.MethodGet, p, nil, hdr)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	flag := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
+	if have > 0 && resp.StatusCode == http.StatusPartialContent {
+		flag = os.O_CREATE | os.O_WRONLY | os.O_APPEND
+		add(have)
+	}
+	f, err := os.OpenFile(dest, flag, 0o644)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(counter{f, add}, c.body(ctx, resp.Body))
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}

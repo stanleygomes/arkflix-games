@@ -31,3 +31,11 @@ var Conflict = conflict
 
 // SetRestartDelay encurta a espera antes de reiniciar.
 func SetRestartDelay(d time.Duration) { restartDelay = d }
+
+// SetDownloadClock troca o relógio da fila de downloads (madrugada).
+func SetDownloadClock(s *Service, now func() time.Time) {
+	s.dl.mu.Lock()
+	s.dl.clock = now
+	s.dl.mu.Unlock()
+	s.dlPump()
+}

@@ -40,7 +40,8 @@ os emuladores vêm prontos.
 - Configuração de controle com prévia ao vivo e opções de acessibilidade.
 - Guia rápido no botão Home, até por cima do jogo: voltar, salvar ou carregar
   estado e fechar o jogo.
-- Central de downloads e avisos, com cancelar e histórico.
+- Central de downloads e avisos: fila, pausar/continuar, limite de velocidade,
+  só de madrugada, cancelar e histórico.
 - Conquistas do RetroAchievements por perfil, com troféus na página do jogo.
 - Pareamento de controle Bluetooth pela tela (Linux).
 - Emuladores instalados e atualizados pelo próprio app, nos três sistemas.
@@ -231,7 +232,10 @@ login: o app cria um token próprio no RomM ("arkflix-games (<computador>)") e
 guarda só ele, em `~/.config/arkflix-games/romm.json` (permissão 600). Os jogos
 do servidor aparecem na biblioteca com um selo de nuvem e na coleção
 "Servidor"; "Baixar do servidor" copia o jogo pra `~/Games/roms/<console>/`
-(confere o espaço em disco antes). Os saves do RetroArch do perfil que conectou
+(confere o espaço em disco antes). Os downloads entram numa fila, um por vez:
+na Central dá pra pausar, continuar de onde parou (mesmo depois de fechar o
+app) e cancelar; em "Opções de download", limitar a velocidade e baixar só de
+madrugada (0h às 6h, com "Baixar agora mesmo assim" por jogo). Os saves do RetroArch do perfil que conectou
 sincronizam sozinhos: antes de jogar, desce o que estiver mais novo no servidor;
 ao fechar, sobe o que mudou. Um arquivo daqui nunca é trocado por um mais velho.
 Saves de PSP e PS2 não sincronizam. Sem internet, os jogos baixados abrem

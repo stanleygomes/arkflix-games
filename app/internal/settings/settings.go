@@ -77,6 +77,13 @@ type SaveDirs struct {
 	PCSX2States     string `json:"pcsx2States"`
 }
 
+// Downloads: jogos do servidor. LimitKBps = velocidade máxima (0 = sem
+// limite); NightOnly = a fila só anda entre 0h e 6h (hora local).
+type Downloads struct {
+	LimitKBps int  `json:"limitKBps"`
+	NightOnly bool `json:"nightOnly"`
+}
+
 // Settings é tudo que a tela de configurações mexe.
 type Settings struct {
 	LibraryDirs []LibraryDir  `json:"libraryDirs"`
@@ -89,6 +96,7 @@ type Settings struct {
 	A11y        Accessibility `json:"a11y"`
 	Screensaver Screensaver   `json:"screensaver"`
 	Saves       SaveDirs      `json:"saves"`
+	Downloads   Downloads     `json:"downloads"`
 	// AutoUpdate: baixa a versão nova sozinho e instala ao fechar o app.
 	AutoUpdate bool `json:"autoUpdate"`
 }
@@ -167,6 +175,7 @@ func (s *Settings) Validate() {
 		s.Screensaver.Mode = "snake"
 	}
 	s.Screensaver.Rest = clamp(s.Screensaver.Rest, 0, 240)
+	s.Downloads.LimitKBps = clamp(s.Downloads.LimitKBps, 0, 1<<20)
 }
 
 func clamp(v, lo, hi int) int {

@@ -1,11 +1,14 @@
 package fixture
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"image/color"
 	"io"
+	"maps"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,6 +24,25 @@ type FakeRomM struct {
 	nextID  int
 	uploads []string
 	tokens  []string
+	files   map[int][]byte // conteúdo dos jogos (id do jogo ou do arquivo)
+	ranges  []string       // cabeçalhos Range recebidos nos downloads
+	// Slow: espera entre pedaços de 16 bytes dos downloads (testes conseguem
+	// pausar no meio). NewFakeRomM lê ARKFLIX_FAKE_ROMM_SLOW (milissegundos).
+	Slow time.Duration
+}
+
+// SetRom troca o conteúdo de um jogo (ou arquivo de jogo) do servidor.
+func (f *FakeRomM) SetRom(id int, data []byte) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.files[id] = data
+}
+
+// Ranges: cabeçalhos Range recebidos nos downloads de jogos.
+func (f *FakeRomM) Ranges() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]string{}, f.ranges...)
 }
 
 // Uploads: envios recebidos, "<kind>:<rom>:<arquivo>".
@@ -52,7 +74,7 @@ const (
 	fakeDevice = "token-do-app"
 )
 
-// Arquivos dos jogos do servidor.
+// Arquivos dos jogos do servidor (cada FakeRomM começa com uma cópia).
 var fakeRomFiles = map[int][]byte{
 	1:  ZipBytes(map[string]string{"dkc.sfc": "SNES"}),
 	21: []byte("FILE \"Spyro the Dragon (USA).bin\" BINARY\n"),
@@ -60,7 +82,10 @@ var fakeRomFiles = map[int][]byte{
 	3:  ZipBytes(map[string]string{"smw.sfc": "SNES"}),
 }
 
-func fakeRoms() []map[string]any {
+func (f *FakeRomM) roms() []map[string]any {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	fakeRomFiles := f.files
 	rom := func(id int, name, fs, platform string, size int64, multi bool, files []map[string]any) map[string]any {
 		if files == nil {
 			files = []map[string]any{}
@@ -87,7 +112,11 @@ func fakeRoms() []map[string]any {
 
 // NewFakeRomM monta o servidor falso vazio de saves.
 func NewFakeRomM() *FakeRomM {
-	return &FakeRomM{assets: map[string][]fakeAsset{}, nextID: 1}
+	f := &FakeRomM{assets: map[string][]fakeAsset{}, nextID: 1, files: maps.Clone(fakeRomFiles)}
+	if ms, err := strconv.Atoi(os.Getenv("ARKFLIX_FAKE_ROMM_SLOW")); err == nil && ms > 0 {
+		f.Slow = time.Duration(ms) * time.Millisecond
+	}
+	return f
 }
 
 // Put grava um save/state "do servidor" (como se outro aparelho tivesse enviado).
@@ -163,7 +192,7 @@ func (f *FakeRomM) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"id": 1, "username": "stanley"})
 	case p == "/api/roms":
 		offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-		all := fakeRoms()
+		all := f.roms()
 		items := all[min(offset, len(all)):]
 		writeJSON(w, map[string]any{"items": items, "total": len(all)})
 	case strings.HasPrefix(p, "/api/roms/"):
@@ -190,7 +219,7 @@ func (f *FakeRomM) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (f *FakeRomM) serveRom(w http.ResponseWriter, r *http.Request, parts []string) {
 	id, _ := strconv.Atoi(parts[0])
 	if len(parts) == 1 {
-		for _, rom := range fakeRoms() {
+		for _, rom := range f.roms() {
 			if rom["id"] == id {
 				writeJSON(w, rom)
 				return
@@ -199,12 +228,52 @@ func (f *FakeRomM) serveRom(w http.ResponseWriter, r *http.Request, parts []stri
 	}
 	// /api/roms/<id>/content/<nome> e /api/roms/<arquivo>/files/content/<nome>
 	if len(parts) >= 3 && (parts[1] == "content" || parts[1] == "files") {
-		if data, ok := fakeRomFiles[id]; ok {
-			w.Write(data)
+		f.mu.Lock()
+		data, ok := f.files[id]
+		if ok && r.Header.Get("Range") != "" {
+			f.ranges = append(f.ranges, r.Header.Get("Range"))
+		}
+		slow := f.Slow
+		f.mu.Unlock()
+		if ok {
+			var out http.ResponseWriter = w
+			if slow > 0 {
+				out = slowWriter{w, r, slow}
+			}
+			http.ServeContent(out, r, parts[len(parts)-1], time.Time{}, bytes.NewReader(data))
 			return
 		}
 	}
 	http.NotFound(w, r)
+}
+
+// slowWriter manda o corpo em pedaços de 16 bytes, com uma pausa entre eles.
+type slowWriter struct {
+	http.ResponseWriter
+	r     *http.Request
+	pause time.Duration
+}
+
+func (w slowWriter) Write(p []byte) (int, error) {
+	n := 0
+	for len(p) > 0 {
+		k := min(16, len(p))
+		m, err := w.ResponseWriter.Write(p[:k])
+		n += m
+		if err != nil {
+			return n, err
+		}
+		if fl, ok := w.ResponseWriter.(http.Flusher); ok {
+			fl.Flush()
+		}
+		p = p[k:]
+		select {
+		case <-time.After(w.pause):
+		case <-w.r.Context().Done():
+			return n, w.r.Context().Err()
+		}
+	}
+	return n, nil
 }
 
 func (f *FakeRomM) serveAssets(w http.ResponseWriter, r *http.Request, kind string) {
