@@ -143,17 +143,18 @@ p {
 .btn {
   font: inherit;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: var(--accent-2);
   background: color-mix(in srgb, var(--bg) 80%, transparent);
   border: 2px solid var(--accent-2);
-  padding: 0.6rem 1.1rem;
+  padding: 0.75rem 1.4rem;
   box-shadow: var(--glow-2);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 2.75rem;
+  /* alvo grande pra todo mundo: é app de TV, de controle na mão */
+  min-height: 3.4rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease), background var(--t) var(--ease);
@@ -177,9 +178,9 @@ p {
   box-shadow: 0 0 8px rgba(255, 107, 129, 0.6);
 }
 .btn.small {
-  padding: 0.35rem 0.7rem;
-  min-height: 2.25rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  min-height: 2.75rem;
+  font-size: 0.95rem;
 }
 .btn[aria-pressed='true'],
 .btn[aria-checked='true'] {
@@ -355,12 +356,6 @@ html {
 }
 ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--accent) 55%, transparent);
-}
-
-/* perfil infantil: alvos maiores pra mão pequena */
-body.kids .btn {
-  min-height: 3.4rem;
-  padding-inline: 1.4rem;
 }
 
 /* barra de energia: enche em blocos, como a de vida de jogo de luta */

@@ -32,7 +32,6 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
   // entra como Nina
   await page.getByRole('button', { name: /^Nina/ }).click()
   await expect(page.getByRole('button', { name: /^Você: Nina/ })).toBeVisible()
-  await expect(page.locator('body')).toHaveClass(/kids/)
   await expect(page.locator('.shelf [data-game]')).toHaveCount(1)
   await axe(page, 'início infantil')
 
@@ -74,5 +73,4 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
   await expect(page.getByRole('alert')).toContainText('PIN errado')
   await page.keyboard.type('9090')
   await expect(page.getByRole('button', { name: 'Configurações' })).toBeVisible()
-  await expect(page.locator('body')).not.toHaveClass(/kids/)
 })

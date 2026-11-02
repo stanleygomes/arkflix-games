@@ -18,7 +18,7 @@
   import { watchTasks } from './lib/activity.svelte'
   import { focusDefault, setReducedMotion } from './lib/nav'
   import { configure, pauseMusic, play } from './lib/sound'
-  import { app, applyBoot, isKids, resetTo, screen, toast } from './lib/state.svelte'
+  import { app, applyBoot, resetTo, screen, toast } from './lib/state.svelte'
   import type { Game, GameEvent, LimitEvent, Pad } from './lib/types'
   import { watchUpdate } from './lib/update'
   import Restarting from './components/Restarting.svelte'
@@ -108,10 +108,8 @@
     document.documentElement.classList.toggle('reduce-motion', a.reduceMotion)
     body.toggle('scanlines', a.scanlines && !a.highContrast)
     body.toggle('no-pixel', !a.pixelTitles)
-    // perfil infantil: tudo um pouco maior
-    const kids = isKids()
-    body.toggle('kids', kids)
-    document.documentElement.style.setProperty('--font-scale', String(kids ? Math.max(a.fontScale, 1.25) : a.fontScale))
+    // perfil infantil tem o mesmo visual: só os jogos são filtrados
+    document.documentElement.style.setProperty('--font-scale', String(a.fontScale))
     setReducedMotion(a.reduceMotion)
     configure(a)
   })
