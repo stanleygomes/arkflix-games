@@ -244,6 +244,7 @@
 <div class="home">
   {#key hero}
     <div class="backdrop" in:shade style:background-image={hero ? `url("${hero}")` : 'none'} aria-hidden="true"></div>
+    <div class="scrim" aria-hidden="true"></div>
   {/key}
   <HeroVideo game={selected} />
   <TopBar>
@@ -319,6 +320,9 @@
           {#if selected.favorite}<span class="fav"><Icon name="star" /> Favorito</span>{/if}
         </p>
         {#if selected.summary}<p class="summary">{selected.summary}</p>{/if}
+        <!-- botões e cartões (continuar, conquistas) na mesma linha: altura fixa,
+             o destaque troca a cada passo e as fileiras não podem pular -->
+        <div class="cta">
         <div class="actions">
           {#if selected.remote}
             <button class="btn primary" data-nav data-nav-group="actions" disabled={downloads[selected.id] !== undefined || isKids()} onclick={() => downloadGame(selected)}>
@@ -339,7 +343,6 @@
             <Icon name="disc" /> Detalhes
           </button>
         </div>
-        <!-- espaço fixo: o destaque troca a cada passo na fileira e as fileiras não podem pular -->
         <div class="cards" data-nav-group="cards">
             {#if autoState && canResume}
               <button class="card-act" data-nav onclick={() => launch(selected, 'auto')}>
@@ -359,6 +362,7 @@
                 </span>
               </button>
             {/if}
+        </div>
         </div>
       </section>
       <div class="hero-art" aria-hidden="true">
@@ -440,6 +444,17 @@
     transform: scale(1.05);
     z-index: -1;
     mask-image: linear-gradient(to bottom, #000 30%, transparent 85%);
+  }
+  /* contraste sem sombra: a arte do fundo apaga onde tem texto (esquerda e
+     fileiras), como a "janela" escura dos jogos 16-bit; à direita ela respira */
+  .scrim {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 88%, transparent) 30%, transparent 55%),
+      linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 90%, transparent) 30%, color-mix(in srgb, var(--bg) 55%, transparent) 62%, color-mix(in srgb, var(--bg) 25%, transparent) 100%);
   }
   .views {
     display: flex;
@@ -525,7 +540,7 @@
     .content .hud {
       display: none;
     }
-    .hero .cards {
+    .hero .cta {
       min-height: 0;
     }
     .tabs {
@@ -559,7 +574,7 @@
     display: flex;
     justify-content: space-between;
     gap: 2rem;
-    padding: 0.2rem 0 0.8rem;
+    padding: 0.4rem 0 1.4rem;
     font-size: 1.2rem;
     color: #fff;
   }
@@ -577,7 +592,7 @@
     flex-direction: column;
     justify-content: space-between;
     min-height: 0;
-    padding: 0 2.5rem;
+    padding: 0.8rem 2.5rem 0;
     overflow-y: auto;
   }
   .stage {
@@ -590,7 +605,7 @@
     flex: 1 0 auto;
   }
   .hero-art {
-    width: clamp(10rem, 18vw, 17rem);
+    width: clamp(8rem, min(13vw, 22vh), 13rem);
     flex: none;
     margin-top: 2vh;
     transform: rotate(-2deg);
@@ -609,10 +624,10 @@
     }
   }
   .hero {
-    max-width: 52rem;
+    max-width: 68rem;
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    gap: 1.25rem;
   }
   .system-pill {
     color: var(--accent-2);
@@ -622,19 +637,20 @@
   }
   /* nome do jogo como o logo no destaque do PS5: bem grande */
   .title {
-    font-size: clamp(2.2rem, min(6.5vw, 8vh), 6rem);
+    font-size: clamp(2.2rem, min(5.2vw, 7vh), 5rem);
     line-height: 1;
     color: #fff;
-    text-shadow:
-      0 0 14px var(--accent),
-      4px 4px 0 color-mix(in srgb, var(--accent) 70%, #000);
-    max-width: 18ch;
+    /* sombra dura de pixel (a dos 16-bit), sem brilho borrado */
+    text-shadow: 5px 5px 0 color-mix(in srgb, var(--accent) 55%, #000);
+    max-width: 24ch;
+    margin: 0.2rem 0 0.3rem;
   }
   .meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    color: var(--muted);
+    gap: 0.6rem 1.6rem;
+    color: #e6deef;
+    font-size: 1.05rem;
   }
   .meta .fav {
     color: var(--accent);
@@ -644,7 +660,9 @@
   }
   .summary {
     max-width: 44rem;
-    color: var(--text);
+    color: #fff;
+    font-size: 1.08rem;
+    line-height: 1.65;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
@@ -654,11 +672,17 @@
   .actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.9rem;
-    margin-top: 0.5rem;
+    gap: 1.2rem;
+  }
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.2rem 2rem;
+    min-height: 4.8rem;
+    margin-top: 0.6rem;
   }
   .cards {
-    min-height: 4.8rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.9rem;
@@ -707,31 +731,31 @@
   .shelves {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding-bottom: 0.5rem;
+    gap: 2rem;
+    padding: 0.4rem 0 0.5rem;
   }
   .row-title .smart {
     margin-left: 0.5rem;
     opacity: 0.7;
   }
   .row-title {
-    font-size: 1.15rem;
-    color: var(--text);
-    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 0.4rem;
   }
   .row {
     list-style: none;
     margin: 0;
-    padding: 0.8rem 0.5rem 1.2rem;
+    padding: 0.8rem 0.5rem 1.4rem;
     display: flex;
-    gap: 1.1rem;
+    gap: 1.8rem;
     overflow-x: auto;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
   }
   .card {
     /* capa grande (é o que a pessoa procura), mas cabendo na altura da TV */
-    width: clamp(8.5rem, min(14.5vw, 22vh), 14rem);
+    width: clamp(7.5rem, min(12vw, 17vh), 11.5rem);
     padding: 0;
     border: none;
     background: none;
