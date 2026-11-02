@@ -121,7 +121,8 @@ func NeededCores() []Core {
 		}
 		out[i].Systems = append(out[i].Systems, sys.Slug)
 	}
-	return out
+	// PCSX ReARMed: PS1 sem a BIOS da Sony (o app usa quando ela falta)
+	return append(out, Core{ID: "pcsx_rearmed", Systems: []string{"psx"}})
 }
 
 // CheckNames confere os nomes pedidos (retroarch, ppsspp, pcsx2, cores).

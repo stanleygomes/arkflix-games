@@ -269,6 +269,7 @@ func (s *Service) startRemoteRefresh() bool {
 		}
 		s.scan()
 		s.opt.Emitter.Emit("library", s.views())
+		s.syncBiosLater() // a BIOS que a pessoa subiu no RomM chega sozinha
 		return fmt.Sprintf("%d jogos no servidor", s.RemoteStatus().Games), nil
 	})
 }

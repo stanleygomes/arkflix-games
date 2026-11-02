@@ -56,7 +56,7 @@
     if (!slug) return
     api
       .biosStatus()
-      .then((all) => (bios = all.find((b) => b.system === slug && b.required && !b.ok) ?? null))
+      .then((all) => (bios = all.find((b) => b.system === slug && b.required && !b.ok && !b.fallback) ?? null))
       .catch(() => (bios = null))
   })
   // perfil infantil com limite: sem tempo, o Jogar fica desligado com o motivo
@@ -196,7 +196,7 @@
         {#if bios}
           <p class="bios-warn" role="note">
             <Icon name="warn" />
-            <span>Falta a BIOS do {bios.name} ({orList(bios.missing.map((m) => m.file))}). Coloque em <span class="path">{bios.dir}</span></span>
+            <span>Falta a BIOS do {bios.name} ({orList(bios.missing.map((m) => m.file))}). Suba no seu RomM (página do console › Firmware) que o app baixa sozinho, ou coloque em <span class="path">{bios.dir}</span></span>
           </p>
         {/if}
         <div class="actions">

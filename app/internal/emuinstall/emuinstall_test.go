@@ -200,12 +200,12 @@ func TestWindows(t *testing.T) {
 	web := newFakeWeb(t)
 	in := newInstaller(t, "windows", web, &fakeRun{})
 	st := in.Status(context.Background())
-	if !st.CanInstall || len(st.Emulators) != 3 || len(st.Cores) != 8 || st.Emulators[0].Installed {
+	if !st.CanInstall || len(st.Emulators) != 3 || len(st.Cores) != 9 || st.Emulators[0].Installed {
 		t.Fatalf("antes: %+v", st)
 	}
 	var p progressLog
 	msg, err := in.Install(context.Background(), nil, p.add)
-	if err != nil || msg != "RetroArch, PPSSPP, PCSX2 e 8 cores prontos" {
+	if err != nil || msg != "RetroArch, PPSSPP, PCSX2 e 9 cores prontos" {
 		t.Fatalf("install: %q %v", msg, err)
 	}
 	p.check(t)
@@ -260,7 +260,7 @@ func TestLinux(t *testing.T) {
 	}
 	var p progressLog
 	msg, err := in.Install(context.Background(), nil, p.add)
-	if err != nil || msg != "PPSSPP e 8 cores prontos" {
+	if err != nil || msg != "PPSSPP e 9 cores prontos" {
 		t.Fatalf("install: %q %v", msg, err)
 	}
 	p.check(t)
@@ -295,7 +295,7 @@ func TestLinux(t *testing.T) {
 	// uma falha não para o resto e aparece na mensagem
 	run.failCmd = "org.ppsspp.PPSSPP"
 	_, err = in.Install(context.Background(), []string{"ppsspp", "cores"}, func(float64) {})
-	if err == nil || !strings.Contains(err.Error(), "8 cores prontos; falhou: PPSSPP") {
+	if err == nil || !strings.Contains(err.Error(), "9 cores prontos; falhou: PPSSPP") {
 		t.Fatalf("falha parcial: %v", err)
 	}
 }
@@ -305,7 +305,7 @@ func TestMac(t *testing.T) {
 	run := &fakeRun{}
 	in := newInstaller(t, "darwin", web, run)
 	in.GOARCH = "arm64"
-	if msg, err := in.Install(context.Background(), []string{"retroarch", "pcsx2", "cores"}, func(float64) {}); err != nil || msg != "RetroArch, PCSX2 e 8 cores prontos" {
+	if msg, err := in.Install(context.Background(), []string{"retroarch", "pcsx2", "cores"}, func(float64) {}); err != nil || msg != "RetroArch, PCSX2 e 9 cores prontos" {
 		t.Fatalf("install: %q %v", msg, err)
 	}
 	if _, err := in.Install(context.Background(), []string{"ppsspp"}, func(float64) {}); err != nil {
@@ -424,7 +424,7 @@ func TestSandbox(t *testing.T) {
 	os.WriteFile(filepath.Join(s.Bin, "retroarch"), []byte("meu"), 0o755)
 	var p progressLog
 	msg, err := s.Install(context.Background(), nil, p.add)
-	if err != nil || msg != "PPSSPP, PCSX2 e 8 cores prontos" {
+	if err != nil || msg != "PPSSPP, PCSX2 e 9 cores prontos" {
 		t.Fatalf("%q %v", msg, err)
 	}
 	p.check(t)

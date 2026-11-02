@@ -209,6 +209,7 @@ export interface BiosInfo {
   missing: BiosFile[]
   warnings: string[]
   dir: string
+  fallback?: string // joga sem a BIOS (PS1: core que imita ela)
 }
 
 export interface BTDevice {

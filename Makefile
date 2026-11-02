@@ -17,7 +17,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 # Emuladores (Flathub) e os cores que o catálogo do app usa
 FLATPAKS  := org.libretro.RetroArch org.ppsspp.PPSSPP net.pcsx2.PCSX2
 CORE_LIST := mesen snes9x gambatte genesis_plus_gx mupen64plus_next mednafen_psx \
-             fbneo melondsds
+             fbneo melondsds pcsx_rearmed
 RA_CORES  := $(HOME)/.var/app/org.libretro.RetroArch/config/retroarch/cores
 BUILDBOT  := https://buildbot.libretro.com/nightly/linux/x86_64/latest
 

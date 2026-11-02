@@ -14,7 +14,7 @@ func TestInstallEmulatorsFixture(t *testing.T) {
 	os.Remove(filepath.Join(h.env.Bin, "ppsspp"))
 	os.Remove(filepath.Join(h.env.Cores, "snes9x_libretro.so"))
 	st := h.svc.EmulatorStatus()
-	if !st.CanInstall || st.Busy || len(st.Emulators) != 3 || len(st.Cores) != 8 || st.Emulators[1].Installed || !st.Emulators[0].Installed {
+	if !st.CanInstall || st.Busy || len(st.Emulators) != 3 || len(st.Cores) != 9 || st.Emulators[1].Installed || !st.Emulators[0].Installed {
 		t.Fatalf("status: %+v", st)
 	}
 	if err := h.svc.InstallEmulators([]string{"dolphin"}); err == nil {
@@ -27,7 +27,7 @@ func TestInstallEmulatorsFixture(t *testing.T) {
 		t.Fatalf("duas ao mesmo tempo: %v", err)
 	}
 	ev := h.rec.waitTask(t, "emulators")
-	if ev.State != "done" || ev.Message != "PPSSPP e 1 core prontos" {
+	if ev.State != "done" || ev.Message != "PPSSPP e 2 cores prontos" {
 		t.Fatalf("fim: %+v", ev)
 	}
 	for _, f := range []string{filepath.Join(h.env.Bin, "ppsspp"), filepath.Join(h.env.Cores, "snes9x_libretro.so")} {

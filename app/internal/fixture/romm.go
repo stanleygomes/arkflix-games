@@ -9,6 +9,7 @@ import (
 	"maps"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,13 +20,14 @@ import (
 // dispositivo, catálogo, download e saves/states. Usuário "stanley", senha
 // "senha123".
 type FakeRomM struct {
-	mu      sync.Mutex
-	assets  map[string][]fakeAsset // "saves"/"states"
-	nextID  int
-	uploads []string
-	tokens  []string
-	files   map[int][]byte // conteúdo dos jogos (id do jogo ou do arquivo)
-	ranges  []string       // cabeçalhos Range recebidos nos downloads
+	mu       sync.Mutex
+	firmware []fakeFirmware
+	assets   map[string][]fakeAsset // "saves"/"states"
+	nextID   int
+	uploads  []string
+	tokens   []string
+	files    map[int][]byte // conteúdo dos jogos (id do jogo ou do arquivo)
+	ranges   []string       // cabeçalhos Range recebidos nos downloads
 	// Slow: espera entre pedaços de 16 bytes dos downloads (testes conseguem
 	// pausar no meio). NewFakeRomM lê ARKFLIX_FAKE_ROMM_SLOW (milissegundos).
 	Slow time.Duration
@@ -197,6 +199,31 @@ func (f *FakeRomM) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"items": items, "total": len(all)})
 	case strings.HasPrefix(p, "/api/roms/"):
 		f.serveRom(w, r, strings.Split(strings.TrimPrefix(p, "/api/roms/"), "/"))
+	case p == "/api/platforms":
+		out := []map[string]any{}
+		for i, slug := range fakePlatforms {
+			out = append(out, map[string]any{"id": i + 1, "fs_slug": slug})
+		}
+		writeJSON(w, out)
+	case p == "/api/firmware":
+		f.mu.Lock()
+		out := []map[string]any{}
+		for i, fw := range f.firmware {
+			out = append(out, map[string]any{"id": i + 1, "platform_id": slices.Index(fakePlatforms, fw.platform) + 1,
+				"file_name": fw.name, "file_size_bytes": len(fw.data), "md5_hash": ""})
+		}
+		f.mu.Unlock()
+		writeJSON(w, out)
+	case strings.HasPrefix(p, "/api/firmware/"):
+		parts := strings.Split(strings.TrimPrefix(p, "/api/firmware/"), "/")
+		id, _ := strconv.Atoi(parts[0])
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		if len(parts) == 3 && parts[1] == "content" && id >= 1 && id <= len(f.firmware) && f.firmware[id-1].name == parts[2] {
+			w.Write(f.firmware[id-1].data)
+			return
+		}
+		http.NotFound(w, r)
 	case p == "/api/saves" || p == "/api/states":
 		f.serveAssets(w, r, strings.TrimPrefix(p, "/api/"))
 	case strings.HasSuffix(p, "/content") && (strings.HasPrefix(p, "/api/saves/") || strings.HasPrefix(p, "/api/states/")):
@@ -302,4 +329,19 @@ func (f *FakeRomM) serveAssets(w http.ResponseWriter, r *http.Request, kind stri
 	}
 	f.mu.Unlock()
 	writeJSON(w, out)
+}
+
+// BIOS guardada no RomM falso (console › Firmware).
+type fakeFirmware struct {
+	platform, name string
+	data           []byte
+}
+
+var fakePlatforms = []string{"genesis", "n64", "nds", "psx", "arcade", "gbc", "nes", "snes", "psp", "ps2"}
+
+// PutFirmware guarda uma BIOS no servidor falso.
+func (f *FakeRomM) PutFirmware(platform, name string, data []byte) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.firmware = append(f.firmware, fakeFirmware{platform, name, data})
 }

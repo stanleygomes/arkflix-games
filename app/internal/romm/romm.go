@@ -21,8 +21,9 @@ import (
 	"time"
 )
 
-// Scopes do token do app: ler o catálogo e ler/gravar saves e states.
-var Scopes = []string{"me.read", "roms.read", "platforms.read", "assets.read", "assets.write"}
+// Scopes do token do app: ler o catálogo e a BIOS (firmware) e ler/gravar
+// saves e states.
+var Scopes = []string{"me.read", "roms.read", "platforms.read", "assets.read", "assets.write", "firmware.read"}
 
 var (
 	ErrAuth = errors.New("o servidor recusou o acesso: conecte de novo nas configurações")
@@ -535,6 +536,62 @@ func (c *Client) Cover(ctx context.Context, p, dest string) error {
 	}
 	part := dest + ".part"
 	if err := c.fetch(ctx, p, part, func(int64) {}); err != nil {
+		os.Remove(part)
+		return err
+	}
+	return os.Rename(part, dest)
+}
+
+// Firmware é uma BIOS guardada no RomM (página do console › Firmware).
+type Firmware struct {
+	ID       int
+	FileName string
+	Size     int64
+	MD5      string
+	Platform string // pasta do console no RomM (psx, ps2...)
+}
+
+// Firmwares lista as BIOS do servidor, com o console de cada uma.
+func (c *Client) Firmwares(ctx context.Context) ([]Firmware, error) {
+	var plats []struct {
+		ID     int    `json:"id"`
+		FsSlug string `json:"fs_slug"`
+	}
+	if err := c.getJSON(ctx, "/api/platforms", &plats); err != nil {
+		return nil, err
+	}
+	slug := map[int]string{}
+	for _, p := range plats {
+		slug[p.ID] = p.FsSlug
+	}
+	var raw []struct {
+		ID         int    `json:"id"`
+		PlatformID int    `json:"platform_id"`
+		FileName   string `json:"file_name"`
+		Size       int64  `json:"file_size_bytes"`
+		MD5        string `json:"md5_hash"`
+	}
+	if err := c.getJSON(ctx, "/api/firmware", &raw); err != nil {
+		return nil, err
+	}
+	out := make([]Firmware, 0, len(raw))
+	for _, f := range raw {
+		out = append(out, Firmware{ID: f.ID, FileName: f.FileName, Size: f.Size, MD5: f.MD5, Platform: slug[f.PlatformID]})
+	}
+	return out, nil
+}
+
+// FetchFirmware baixa a BIOS pra dest (temporário + rename: nunca deixa
+// arquivo pela metade com o nome certo).
+func (c *Client) FetchFirmware(ctx context.Context, f Firmware, dest string) error {
+	if f.FileName == "" || filepath.Base(f.FileName) != f.FileName || f.FileName == ".." {
+		return fmt.Errorf("nome de BIOS inválido no servidor: %q", f.FileName)
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	part := dest + ".part"
+	if err := c.fetch(ctx, fmt.Sprintf("/api/firmware/%d/content/%s", f.ID, url.PathEscape(f.FileName)), part, func(int64) {}); err != nil {
 		os.Remove(part)
 		return err
 	}

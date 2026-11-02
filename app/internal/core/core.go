@@ -526,7 +526,8 @@ func (s *Service) Play(id, stateID string) error {
 			resume.Slot = 0
 		}
 	}
-	if err := s.biosError(sys.Slug); err != nil {
+	noBiosCore, err := s.biosPlan(sys.Slug)
+	if err != nil {
 		return err
 	}
 	cfg := s.opt.Store.Settings()
@@ -541,6 +542,9 @@ func (s *Service) Play(id, stateID string) error {
 	spec.Fullscreen, spec.RAAppend, spec.Work = cfg.Fullscreen, append(u.raAppend(), s.guideCfg(u)...), u.dir
 	if sys.Emulator == catalog.RetroArch {
 		s.applyGameConfig(u, id, &spec)
+		if noBiosCore != "" {
+			spec.Core = noBiosCore // PS1 sem BIOS: o core que imita a BIOS
+		}
 	}
 	args, err := launcher.Command(sys, g.Launch, spec, resume)
 	if err != nil {

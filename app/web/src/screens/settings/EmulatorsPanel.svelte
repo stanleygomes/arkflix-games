@@ -17,7 +17,7 @@
     try {
       bios = await api.biosStatus()
       if (announce) {
-        const missing = bios.filter((b) => b.required && !b.ok).length
+        const missing = bios.filter((b) => b.required && !b.ok && !b.fallback).length
         toast(missing ? `Falta BIOS de ${missing} console${missing === 1 ? '' : 's'}` : 'BIOS conferidas', missing ? 'info' : 'ok', 2500, 'bios')
       }
     } catch (err) {
@@ -37,6 +37,7 @@
 
   const biosText = (b: BiosInfo) => {
     if (b.ok) return `ok: ${b.found.join(', ')}`
+    if (b.fallback) return `sem BIOS: joga com o ${b.fallback}, que imita ela`
     const files = b.missing.map((m) => (m.note ? `${m.file} (${m.note})` : m.file))
     const list = b.required && files.length > 1 ? `${files.slice(0, -1).join(', ')} ou ${files[files.length - 1]}` : files.join(', ')
     return `${b.required ? 'falta' : 'opcional, não tem'} ${list}`
@@ -144,10 +145,10 @@
       </header>
       <ul class="bios-list">
         {#each bios as b (b.system)}
-          <li class:ok={b.ok} class:optional={!b.required && !b.ok} data-bios={b.system}>
-            <Icon name={b.ok ? 'check' : b.required ? 'warn' : 'info'} />
+          <li class:ok={b.ok || !!b.fallback} class:optional={!b.required && !b.ok} data-bios={b.system}>
+            <Icon name={b.ok || b.fallback ? 'check' : b.required ? 'warn' : 'info'} />
             <span class="text">
-              <span class="label">{b.name} <span class:missing={b.required && !b.ok} class:muted={b.ok || !b.required}>· {biosText(b)}</span></span>
+              <span class="label">{b.name} <span class:missing={b.required && !b.ok && !b.fallback} class:muted={b.ok || !!b.fallback || !b.required}>· {biosText(b)}</span></span>
               {#each b.warnings as w (w)}<span class="small warn">{w}</span>{/each}
               <span class="muted small path">{b.dir}</span>
             </span>
@@ -155,7 +156,10 @@
           </li>
         {/each}
       </ul>
-      <p class="muted small">A BIOS vem do seu console: o app não baixa. Ponha o arquivo na pasta e confira de novo.</p>
+      <p class="muted small">
+        A BIOS é da fabricante e vem do seu console, então o app não traz junto. O jeito fácil: suba uma vez no seu RomM (página do
+        console › Firmware) e todo aparelho com o arkflix baixa sozinho. O PS1 joga mesmo sem ela, com um core que imita a BIOS.
+      </p>
     </section>
   {/if}
 </div>
