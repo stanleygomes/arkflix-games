@@ -161,6 +161,23 @@ export interface EmulatorsInfo {
   busy: boolean
 }
 
+export interface BiosFile {
+  file: string
+  md5?: string
+  note?: string
+}
+
+export interface BiosInfo {
+  system: string
+  name: string
+  required: boolean
+  ok: boolean
+  found: string[]
+  missing: BiosFile[]
+  warnings: string[]
+  dir: string
+}
+
 export interface BTDevice {
   address: string
   name: string

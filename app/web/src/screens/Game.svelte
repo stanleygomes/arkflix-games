@@ -16,7 +16,7 @@
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { app, back, confirm, game, go, isKids, putGame, system, toast } from '../lib/state.svelte'
-  import type { GameEvent, Listing, MediaItem, SaveState } from '../lib/types'
+  import type { BiosInfo, GameEvent, Listing, MediaItem, SaveState } from '../lib/types'
 
   let { id }: { id: string } = $props()
   const g = $derived(game(id))
@@ -37,6 +37,17 @@
     }
     if (g.manual) out.push({ src: g.manual, caption: 'Manual', kind: 'pdf' })
     return out
+  })
+  // BIOS obrigatória do console faltando: um aviso só, acima dos botões
+  let bios = $state<BiosInfo | null>(null)
+  const orList = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} ou ${xs[xs.length - 1]}` : (xs[0] ?? ''))
+  $effect(() => {
+    const slug = g?.system
+    if (!slug) return
+    api
+      .biosStatus()
+      .then((all) => (bios = all.find((b) => b.system === slug && b.required && !b.ok) ?? null))
+      .catch(() => (bios = null))
   })
   const inLists = $derived(app.lists.filter((l) => l.games.includes(id)).length)
 
@@ -143,6 +154,12 @@
           <li class="chip">{bytes(g.size)}</li>
         </ul>
         {#if g.summary}<p class="summary">{g.summary}</p>{/if}
+        {#if bios}
+          <p class="bios-warn" role="note">
+            <Icon name="warn" />
+            <span>Falta a BIOS do {bios.name} ({orList(bios.missing.map((m) => m.file))}). Coloque em <span class="path">{bios.dir}</span></span>
+          </p>
+        {/if}
         <div class="actions">
           {#if g.remote}
             {#if downloads[g.id] !== undefined}
@@ -274,6 +291,24 @@
 {/if}
 
 <style>
+  .bios-warn {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    margin: 0;
+    padding: 0.5rem 0.8rem;
+    border-left: 3px solid var(--focus);
+    font-size: 0.9rem;
+  }
+  .bios-warn :global(svg) {
+    color: var(--focus);
+    flex: none;
+    margin-top: 0.2rem;
+  }
+  .bios-warn .path {
+    overflow-wrap: anywhere;
+    font-family: monospace;
+  }
   .page {
     height: 100vh;
     display: flex;
