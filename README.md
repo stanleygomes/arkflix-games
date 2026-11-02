@@ -3,6 +3,8 @@
 [![release](https://img.shields.io/github/v/release/stanleygomes/arkflix-games?sort=semver)](https://github.com/stanleygomes/arkflix-games/releases)
 [![workflow](https://github.com/stanleygomes/arkflix-games/actions/workflows/release.yml/badge.svg)](https://github.com/stanleygomes/arkflix-games/actions/workflows/release.yml)
 
+![Tela inicial do arkflix games: Mario Kart 64 em destaque e a fileira de jogos com capas](site/img/inicio.webp)
+
 App de biblioteca de jogos para Linux, Windows e macOS (Go + Svelte), feito
 para controle e TV. Os jogos abrem no [RetroArch](https://www.retroarch.com)
 com oito cores, no [PPSSPP](https://www.ppsspp.org) e no

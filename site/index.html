@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>arkflix games · seus jogos retrô na TV</title>
-<meta name="description" content="Biblioteca de jogos retrô pra TV e controle: Super Nintendo, Mega Drive, PlayStation, PSP, PS2 e mais. Grátis, pra Windows, macOS e Linux.">
+<title>arkflix games · seus jogos retrô na TV, com cara de fliperama</title>
+<meta name="description" content="Transforme sua coleção de jogos clássicos num console de verdade: capas, perfis da família, modo infantil, saves na nuvem com o RomM e tudo no controle. Grátis, pra Windows, macOS e Linux.">
 <meta property="og:title" content="arkflix games">
-<meta property="og:description" content="Seus jogos retrô num lugar só, com cara de fliperama. Windows, macOS e Linux.">
-<meta property="og:image" content="/img/inicio.png">
+<meta property="og:description" content="Sua coleção de jogos clássicos com cara de fliperama. Na TV, no controle, pra família toda. Windows, macOS e Linux.">
+<meta property="og:image" content="/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#050008">
 <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/PressStart2P-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="/styles.css">
 <script src="/app.js" defer></script>
 </head>
@@ -19,7 +21,7 @@
 <header class="top">
   <div class="hud" aria-hidden="true">
     <p><span>1UP</span> VOCÊ</p>
-    <p><span>HI-SCORE</span> <span class="hud-value" id="hud-version">v?.?.?</span></p>
+    <p class="hide-sm"><span>HI-SCORE</span> <span id="hud-version">v?.?.?</span></p>
     <p><span>CREDIT</span> 00</p>
   </div>
   <nav class="nav" aria-label="Seções">
@@ -32,57 +34,166 @@
 <main>
   <section class="hero" aria-labelledby="titulo">
     <h1 id="titulo" class="marquee">ARK<span>FLIX</span></h1>
-    <p class="tagline">Seus jogos retrô num lugar só, com cara de fliperama.<br>Feito pra TV e pra controle.</p>
+    <p class="tagline">Sua coleção de jogos clássicos virando um console de verdade.<br class="hide-sm"> Com cara de fliperama, no controle, pra família toda.</p>
     <div class="cta">
-      <a class="btn primary" id="cta-main" href="https://github.com/stanleygomes/arkflix-games/releases/latest">
-        <span class="btn-icon" aria-hidden="true">▼</span> <span id="cta-label">Baixar grátis</span>
+      <a class="btn primary big" id="cta-main" href="#baixar">
+        <span aria-hidden="true">▼</span> <span id="cta-label">Baixar grátis</span>
       </a>
-      <p class="muted small" id="cta-note">Windows, macOS e Linux · código aberto</p>
+      <a class="btn" href="#recursos">Ver o que ele faz</a>
     </div>
-    <figure class="screen">
-      <img src="/img/inicio.png" alt="Tela inicial do arkflix games: consoles no topo, jogo em destaque e a fileira de jogos" width="1280" height="720">
+    <p class="muted small" id="cta-note">Grátis e de código aberto · Windows, macOS e Linux</p>
+    <figure class="screen hero-shot">
+      <picture>
+        <source media="(max-width: 720px)" srcset="/img/inicio-720.webp">
+        <img src="/img/inicio.webp" alt="Tela inicial do arkflix games: Mario Kart 64 em destaque com capa, descrição e botões; abaixo, a fileira de jogos com capas de Super Mario World, Sonic 2, Mega Man X e outros" width="1440" height="810" fetchpriority="high">
+      </picture>
     </figure>
-  </section>
-
-  <section id="recursos" class="features" aria-labelledby="recursos-titulo">
-    <h2 id="recursos-titulo">SELECT YOUR FEATURE</h2>
-    <ul class="grid">
-      <li class="card">
-        <h3>Tudo num lugar</h3>
-        <p>NES, Super Nintendo, Mega Drive, Game Boy, N64, DS, PlayStation, PSP, PS2 e arcade. Capas, descrições, busca, filtros e coleções automáticas.</p>
-      </li>
-      <li class="card">
-        <h3>Feito pra controle</h3>
-        <p>Xbox, PlayStation, 8BitDo ou teclado, com os símbolos certos de cada um. Mesmo botão pra sair e pro menu em todos os emuladores.</p>
-      </li>
-      <li class="card">
-        <h3>Continua de onde parou</h3>
-        <p>Pontos salvos com miniatura, retomada automática e estatísticas de quanto você jogou cada um.</p>
-      </li>
-      <li class="card">
-        <h3>A família toda</h3>
-        <p>Perfis estilo Netflix com 34 personagens clássicos de avatar, PIN opcional e modo infantil só com os jogos liberados.</p>
-      </li>
-      <li class="card">
-        <h3>Seu servidor RomM</h3>
-        <p>Entre no seu RomM: os jogos de lá aparecem na biblioteca, baixam com um botão e os saves sincronizam sozinhos.</p>
-      </li>
-      <li class="card">
-        <h3>Cara de fliperama</h3>
-        <p>Neon, scanlines, chiptune e um protetor de tela com a cobrinha jogando sozinha. Alto contraste e textos maiores pra quem precisa.</p>
-      </li>
+    <ul class="consoles" aria-label="Consoles suportados">
+      <li>NES</li><li>Super Nintendo</li><li>Mega Drive</li><li>Game Boy Color</li><li>Nintendo 64</li>
+      <li>Nintendo DS</li><li>PlayStation</li><li>PSP</li><li>PlayStation 2</li><li>Arcade</li>
     </ul>
   </section>
 
-  <section class="gallery" aria-label="Telas do app">
-    <figure><img src="/img/jogo.png" alt="Página de um jogo com pontos salvos, mídia e botões de jogar" loading="lazy" width="1280" height="720"><figcaption>Saves com miniatura e mídia do jogo</figcaption></figure>
-    <figure><img src="/img/perfil.png" alt="Criação de perfil com avatares de personagens clássicos" loading="lazy" width="1280" height="720"><figcaption>Perfis com personagens clássicos</figcaption></figure>
-    <figure><img src="/img/entrada.png" alt="Tela de entrada com login no servidor RomM ou jogar offline" loading="lazy" width="1280" height="720"><figcaption>Seu RomM ou offline</figcaption></figure>
+  <section class="steps" aria-labelledby="como-titulo">
+    <h2 id="como-titulo" class="neon-title">COMO FUNCIONA</h2>
+    <ol>
+      <li><span class="step" aria-hidden="true">1</span><h3>Instale</h3><p>Um instalador no Windows e no Mac; um comando no Linux, que já traz os emuladores.</p></li>
+      <li><span class="step" aria-hidden="true">2</span><h3>Traga seus jogos</h3><p>Aponte a pasta das suas ROMs, importe de qualquer lugar ou entre no seu servidor RomM.</p></li>
+      <li><span class="step" aria-hidden="true">3</span><h3>Jogue</h3><p>Capas e descrições aparecem sozinhas. Pegue o controle e escolha.</p></li>
+    </ol>
+  </section>
+
+  <div id="recursos" class="features">
+    <article class="feature">
+      <div class="text">
+        <p class="kicker">BIBLIOTECA</p>
+        <h2>Uma estante que dá vontade de jogar</h2>
+        <p>Cada jogo com capa, ano, gênero e descrição, baixados automaticamente. Organizado por console, com coleções prontas: favoritos, continuar jogando, mais jogados e nunca jogados.</p>
+        <ul class="ticks">
+          <li>Capas do acervo aberto do libretro, sem conta</li>
+          <li>Vídeo do jogo tocando no fundo do destaque</li>
+          <li>"Surpresa" escolhe um jogo pra você</li>
+        </ul>
+      </div>
+      <figure class="screen" data-crop="left">
+        <picture><source media="(max-width: 720px)" srcset="/img/inicio-720.webp"><img src="/img/inicio.webp" alt="Início com jogo em destaque e fileiras de capas" loading="lazy" width="1440" height="810"></picture>
+      </figure>
+    </article>
+
+    <article class="feature flip">
+      <div class="text">
+        <p class="kicker">SERVIDOR ROMM</p>
+        <h2>Seu RomM, na sala</h2>
+        <p>Entre no seu servidor <a href="https://romm.app">RomM</a> e toda a coleção de lá aparece na biblioteca, com selo de nuvem. Um botão baixa o jogo; os saves sobem ao fechar e descem antes de jogar, em qualquer computador da casa.</p>
+        <ul class="ticks">
+          <li>A senha só serve pra entrar: o app guarda um token</li>
+          <li>Nunca troca um save novo por um velho</li>
+          <li>Sem internet? Os jogos baixados abrem normalmente</li>
+        </ul>
+      </div>
+      <figure class="screen" data-crop="left">
+        <picture><source media="(max-width: 720px)" srcset="/img/servidor-720.webp"><img src="/img/servidor.webp" alt="Coleção do servidor RomM: Crash Bandicoot em destaque com o botão Baixar do servidor e a fileira de jogos de PlayStation, PSP e PS2" loading="lazy" width="1440" height="810"></picture>
+      </figure>
+    </article>
+
+    <article class="feature">
+      <div class="text">
+        <p class="kicker">CADA JOGO</p>
+        <h2>Tudo sobre o jogo, num lugar só</h2>
+        <p>Nota, completo, tempo jogado, partidas e a última vez que você jogou. Continue de onde parou, carregue pontos salvos pela miniatura e veja capa, prints e manual em tela cheia.</p>
+        <ul class="ticks">
+          <li>Pontos salvos com miniatura e retomada automática</li>
+          <li>Editor de nome, descrição, ano, gêneros e capa</li>
+          <li>Listas suas: "Futebol da galera", "Zerar em 2027"...</li>
+        </ul>
+      </div>
+      <figure class="screen" data-crop="right">
+        <picture><source media="(max-width: 720px)" srcset="/img/jogo-720.webp"><img src="/img/jogo.webp" alt="Página do Super Mario World com nota cinco estrelas, completo, 13 partidas e 8 horas e 57 minutos jogados" loading="lazy" width="1440" height="810"></picture>
+      </figure>
+    </article>
+
+    <article class="feature flip">
+      <div class="text">
+        <p class="kicker">PERFIS</p>
+        <h2>Quem vai jogar?</h2>
+        <p>Um perfil pra cada pessoa da casa, com 34 personagens clássicos de avatar: Mario, Sonic, Link, Pac-Man, Mega Man e mais. Cada um com os seus favoritos, listas, histórico, controles e saves.</p>
+        <ul class="ticks">
+          <li>PIN opcional de 4 números</li>
+          <li>Ninguém apaga o save de ninguém</li>
+        </ul>
+      </div>
+      <figure class="screen" data-crop="center">
+        <picture><source media="(max-width: 720px)" srcset="/img/perfis-720.webp"><img src="/img/perfis.webp" alt="Tela Quem vai jogar com os perfis Stanley (Sonic), Bia (Peach), Leo (Link), Vovó (Kirby) e Nina (Yoshi, infantil)" loading="lazy" width="1440" height="810"></picture>
+      </figure>
+    </article>
+
+    <article class="feature">
+      <div class="text">
+        <p class="kicker">MODO INFANTIL</p>
+        <h2>Pode deixar a criança sozinha</h2>
+        <p>No perfil infantil só aparecem os jogos que você liberou, com botões maiores. Nada de configurações, importar, apagar saves ou editar: travado no próprio app, não só escondido. Pra sair, o PIN do adulto.</p>
+      </div>
+      <figure class="screen" data-crop="left">
+        <picture><source media="(max-width: 720px)" srcset="/img/infantil-720.webp"><img src="/img/infantil.webp" alt="Perfil infantil da Nina com só quatro jogos liberados e botões maiores" loading="lazy" width="1440" height="810"></picture>
+      </figure>
+    </article>
+
+    <article class="feature flip">
+      <div class="text">
+        <p class="kicker">CONTROLE</p>
+        <h2>Feito pro sofá, não pro mouse</h2>
+        <p>Xbox, PlayStation, 8BitDo ou teclado, com os símbolos certos de cada um. Remapeie botão a botão com a prévia do controle acendendo ao vivo.</p>
+        <ul class="ticks">
+          <li>Mesmos atalhos em todos os emuladores: menu e sair</li>
+          <li>Teclado na tela pra digitar com o controle</li>
+        </ul>
+      </div>
+      <figure class="screen" data-crop="center">
+        <picture><source media="(max-width: 720px)" srcset="/img/controles-720.webp"><img src="/img/controles.webp" alt="Configuração de controle com o desenho do controle de PlayStation e a lista de botões" loading="lazy" width="1440" height="810"></picture>
+      </figure>
+    </article>
+
+    <article class="feature">
+      <div class="text">
+        <p class="kicker">ESTATÍSTICAS</p>
+        <h2>Quanto você jogou de verdade</h2>
+        <p>Tempo total, partidas, os jogos e consoles favoritos da casa, o dia da semana que mais se joga e os últimos 30 dias. O placar de fliperama mostra seu "HI-SCORE" de horas.</p>
+      </div>
+      <figure class="screen" data-crop="left">
+        <picture><source media="(max-width: 720px)" srcset="/img/estatisticas-720.webp"><img src="/img/estatisticas.webp" alt="Estatísticas: 31 horas jogando, 47 partidas, ranking de jogos e de consoles e gráficos por dia" loading="lazy" width="1440" height="810"></picture>
+      </figure>
+    </article>
+  </div>
+
+  <section class="extras" aria-labelledby="extras-titulo">
+    <h2 id="extras-titulo" class="neon-title">DETALHES QUE FAZEM DIFERENÇA</h2>
+    <div class="gallery">
+      <figure><picture><source media="(max-width: 720px)" srcset="/img/busca-720.webp"><img src="/img/busca.webp" alt="Busca por mario com teclado na tela e resultados" loading="lazy" width="1440" height="810"></picture><figcaption>Busca com teclado na tela</figcaption></figure>
+      <figure><picture><source media="(max-width: 720px)" srcset="/img/protetor-720.webp"><img src="/img/protetor.webp" alt="Protetor de tela: a cobrinha verde jogando sozinha num monitor de fósforo" loading="lazy" width="1440" height="810"></picture><figcaption>Protetor: a cobrinha joga sozinha</figcaption></figure>
+      <figure><picture><source media="(max-width: 720px)" srcset="/img/entrada-720.webp"><img src="/img/entrada.webp" alt="Tela de entrada: entrar no servidor RomM ou jogar offline" loading="lazy" width="1440" height="810"></picture><figcaption>Entre no RomM ou jogue offline</figcaption></figure>
+    </div>
+
+    <h3 class="list-title">E mais</h3>
+    <ul class="checklist">
+      <li>Ordenar e filtrar por console, gênero, jogadores e ano</li>
+      <li>Coleções automáticas e listas pessoais</li>
+      <li>Jogo surpresa</li>
+      <li>Importar ROMs de qualquer pasta, com detecção do console</li>
+      <li>Manual em PDF e prints em tela cheia</li>
+      <li>Liberar jogos pro modo infantil</li>
+      <li>Telas que deslizam, capas que acendem, "PLAYER 1 START"</li>
+      <li>Trilha chiptune e sons de menu (desligáveis)</li>
+      <li>Alto contraste, texto até 175% e reduzir animações</li>
+      <li>Fonte de leitura fácil pra baixa visão</li>
+      <li>Tela cheia, minimizar e fechar pelo controle</li>
+      <li>Scripts seus ao abrir e fechar jogos</li>
+    </ul>
   </section>
 
   <section id="baixar" class="downloads" aria-labelledby="baixar-titulo">
-    <h2 id="baixar-titulo">PRESS START</h2>
+    <h2 id="baixar-titulo" class="neon-title">PRESS START</h2>
     <p class="muted center" id="release-line">Última versão: <a href="https://github.com/stanleygomes/arkflix-games/releases/latest">página de releases</a></p>
+    <p class="mobile-only center notice">O arkflix games é pra computador ligado na TV. <button class="btn small" type="button" id="share-link">Mandar o link pro computador</button></p>
     <ul class="os">
       <li class="os-card" data-os="windows">
         <h3>Windows</h3>
@@ -108,7 +219,15 @@
         <a class="btn" data-asset="linux-x86_64.tar.gz" href="https://github.com/stanleygomes/arkflix-games/releases/latest/download/arkflix-games-linux-x86_64.tar.gz">Só o app (.tar.gz)</a>
       </li>
     </ul>
-    <p class="muted small center">Os jogos e as BIOS são seus: o arkflix games não vem com nenhum.</p>
+  </section>
+
+  <section class="faq" aria-labelledby="faq-titulo">
+    <h2 id="faq-titulo" class="neon-title">PERGUNTAS</h2>
+    <details><summary>Vem com jogos?</summary><p>Não. O arkflix games organiza e abre os jogos que você já tem (os seus cartuchos e discos copiados) e as BIOS que você mesmo coloca.</p></details>
+    <details><summary>É grátis mesmo?</summary><p>Sim, e de código aberto. Os emuladores que ele usa (RetroArch, PPSSPP e PCSX2) também são gratuitos.</p></details>
+    <details><summary>Precisa de internet?</summary><p>Só pra baixar capas e descrições e pra conversar com o seu RomM. Os jogos abrem offline.</p></details>
+    <details><summary>Que controle eu uso?</summary><p>Qualquer controle de Xbox, PlayStation ou 8BitDo, por fio ou Bluetooth, e o teclado. O app mostra os símbolos certos do seu.</p></details>
+    <details><summary>O que é o RomM?</summary><p>Um servidor de jogos que você instala em casa ou na nuvem pra guardar a coleção e os saves. É opcional: o arkflix games funciona sem ele.</p></details>
   </section>
 </main>
 

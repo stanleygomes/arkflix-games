@@ -58,5 +58,20 @@ document.getElementById('copy-cmd')?.addEventListener('click', async (ev) => {
   }
 })
 
+// celular: o app é de computador; manda o link pra lá (compartilhar ou copiar)
+document.getElementById('share-link')?.addEventListener('click', async (ev) => {
+  const btn = ev.currentTarget
+  const url = location.origin + '/'
+  try {
+    if (navigator.share) await navigator.share({ title: 'arkflix games', text: 'Baixar no computador:', url })
+    else {
+      await navigator.clipboard.writeText(url)
+      btn.textContent = 'Link copiado!'
+    }
+  } catch {
+    btn.textContent = url
+  }
+})
+
 highlight(detectOS())
 latest().then(showVersion).catch(() => {})
