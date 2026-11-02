@@ -256,7 +256,6 @@
 
       <div class="row">
         <button class="btn primary" data-nav disabled={!name} onclick={save}><Icon name="check" /> {setup ? 'Começar' : existing ? 'Salvar' : 'Criar perfil'}</button>
-        {#if !setup}<button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>{/if}
         {#if existing && !existing.main && existing.id !== app.profile?.current}
           <button class="btn danger" data-nav onclick={remove}><Icon name="trash" /> Apagar perfil</button>
         {/if}

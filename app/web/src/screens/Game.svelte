@@ -227,7 +227,6 @@
           <button class="btn" data-nav aria-haspopup="dialog" bind:this={optionsBtn} onclick={() => (menu = true)}>
             <Icon name="sliders" /> Opções
           </button>
-          <button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>
         </div>
         {#if blocked}<p class="blocked" id="kids-blocked" role="status">{blocked}</p>{/if}
 
