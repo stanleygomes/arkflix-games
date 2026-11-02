@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stanleygomes/arkflix-games/app/internal/bios"
 	"github.com/stanleygomes/arkflix-games/app/internal/bt"
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
 	"github.com/stanleygomes/arkflix-games/app/internal/emucfg"
@@ -193,8 +194,9 @@ type Service struct {
 	tasks   map[string]context.CancelFunc
 	game    *gameRun // jogo aberto (fechar pelo guia)
 
-	bts btState // busca de Bluetooth
-	upd *updateState
+	bts  btState // busca de Bluetooth
+	upd  *updateState
+	bios *bios.Checker
 }
 
 // New prepara o serviço: gera a config de entrada do RetroArch, liga os
@@ -228,7 +230,7 @@ func New(opt Options) (*Service, error) {
 		}
 		opt.Hooks = runner
 	}
-	s := &Service{opt: opt, ready: make(chan struct{}), thumbs: covers, tasks: map[string]context.CancelFunc{}}
+	s := &Service{opt: opt, ready: make(chan struct{}), thumbs: covers, tasks: map[string]context.CancelFunc{}, bios: bios.NewChecker()}
 	if s.opt.Saves == nil {
 		s.opt.Saves = saves.Local{Dirs: s.saveDirs}
 	}
@@ -491,6 +493,9 @@ func (s *Service) Play(id, stateID string) error {
 		if sys.Emulator != catalog.RetroArch {
 			resume.Slot = 0
 		}
+	}
+	if err := s.biosError(sys.Slug); err != nil {
+		return err
 	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()

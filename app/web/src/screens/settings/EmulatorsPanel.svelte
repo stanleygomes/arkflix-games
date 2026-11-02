@@ -7,10 +7,40 @@
   import { api, on } from '../../lib/api'
   import { play } from '../../lib/sound'
   import { system, toast } from '../../lib/state.svelte'
-  import type { EmulatorsInfo } from '../../lib/types'
+  import type { BiosInfo, EmulatorsInfo } from '../../lib/types'
 
   let info = $state<EmulatorsInfo | null>(null)
   let error = $state('')
+  let bios = $state<BiosInfo[]>([])
+
+  async function loadBios(announce = false) {
+    try {
+      bios = await api.biosStatus()
+      if (announce) {
+        const missing = bios.filter((b) => b.required && !b.ok).length
+        toast(missing ? `Falta BIOS de ${missing} console${missing === 1 ? '' : 's'}` : 'BIOS conferidas', missing ? 'info' : 'ok', 2500, 'bios')
+      }
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  async function openFolder(b: BiosInfo) {
+    try {
+      await api.openBiosFolder(b.system)
+      play('accept')
+    } catch (err) {
+      play('error')
+      toast(`${(err as Error).message}. Pasta: ${b.dir}`, 'error')
+    }
+  }
+
+  const biosText = (b: BiosInfo) => {
+    if (b.ok) return `ok: ${b.found.join(', ')}`
+    const files = b.missing.map((m) => (m.note ? `${m.file} (${m.note})` : m.file))
+    const list = b.required && files.length > 1 ? `${files.slice(0, -1).join(', ')} ou ${files[files.length - 1]}` : files.join(', ')
+    return `${b.required ? 'falta' : 'opcional, não tem'} ${list}`
+  }
 
   async function load() {
     try {
@@ -23,6 +53,7 @@
 
   $effect(() => {
     load()
+    loadBios()
     return on<EmulatorsInfo>('emulators', (i) => (info = i))
   })
 
@@ -104,6 +135,29 @@
       Configurações e saves ficam onde estão.
     </p>
   {/if}
+
+  {#if bios.length}
+    <section class="bios" aria-labelledby="bios-title">
+      <header class="head">
+        <h3 id="bios-title">BIOS</h3>
+        <button class="btn small" data-nav onclick={() => loadBios(true)}><Icon name="resume" /> Conferir de novo</button>
+      </header>
+      <ul class="bios-list">
+        {#each bios as b (b.system)}
+          <li class:ok={b.ok} class:optional={!b.required && !b.ok} data-bios={b.system}>
+            <Icon name={b.ok ? 'check' : b.required ? 'warn' : 'info'} />
+            <span class="text">
+              <span class="label">{b.name} <span class:missing={b.required && !b.ok} class:muted={b.ok || !b.required}>· {biosText(b)}</span></span>
+              {#each b.warnings as w (w)}<span class="small warn">{w}</span>{/each}
+              <span class="muted small path">{b.dir}</span>
+            </span>
+            <button class="btn small" data-nav aria-label={`Abrir pasta da BIOS do ${b.name}`} onclick={() => openFolder(b)}><Icon name="folder" /> Abrir pasta</button>
+          </li>
+        {/each}
+      </ul>
+      <p class="muted small">A BIOS vem do seu console: o app não baixa. Ponha o arquivo na pasta e confira de novo.</p>
+    </section>
+  {/if}
 </div>
 
 <style>
@@ -121,14 +175,16 @@
   h2 {
     font-size: 1.5rem;
   }
-  .emus {
+  .emus,
+  .bios-list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
     gap: 0.6rem;
   }
-  .emus li {
+  .emus li,
+  .bios-list li {
     display: grid;
     grid-template-columns: auto 1fr auto;
     gap: 0.9rem;
@@ -136,13 +192,16 @@
     padding: 0.8rem 1rem;
     border: 2px solid color-mix(in srgb, #ff6b6b 60%, transparent);
   }
-  .emus li.ok {
+  .emus li.ok,
+  .bios-list li.ok {
     border-color: color-mix(in srgb, var(--accent-2) 45%, transparent);
   }
-  .emus li :global(svg) {
+  .emus li :global(svg),
+  .bios-list li :global(svg) {
     color: #ff6b6b;
   }
-  .emus li.ok :global(svg) {
+  .emus li.ok :global(svg),
+  .bios-list li.ok :global(svg) {
     color: #5dc44f;
   }
   .text {
@@ -162,6 +221,22 @@
   }
   .missing {
     color: #ff9b9b;
+  }
+  .warn {
+    color: var(--focus);
+  }
+  .bios {
+    display: grid;
+    gap: 0.8rem;
+  }
+  h3 {
+    font-size: 1.2rem;
+  }
+  .bios-list li.optional {
+    border-color: color-mix(in srgb, var(--muted, #b8bbc8) 35%, transparent);
+  }
+  .bios-list li.optional :global(svg) {
+    color: inherit;
   }
   .progress {
     display: grid;

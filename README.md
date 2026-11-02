@@ -161,7 +161,8 @@ sai da tela cheia ou fecha o app (com confirmação), também pelo controle.
 
 O app procura jogos em `~/Games/roms/<console>/` (`snes/`, `psx/`, `ps2/`...) e
 traz ROMs de qualquer outra pasta pela tela de importação. As BIOS ficam nas
-pastas dos Flatpaks (veja [Emuladores](#emuladores)).
+pastas dos Flatpaks (veja [Emuladores](#emuladores)); Configurações ›
+Emuladores › BIOS mostra o que falta de cada console e abre a pasta certa.
 
 ## O app
 

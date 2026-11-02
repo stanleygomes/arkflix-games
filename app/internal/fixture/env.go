@@ -168,6 +168,10 @@ func NewEnv(root string) Env {
 	put(filepath.Join(s.PPSSPPSaveData, "ULUS10084DATA00", "DATA.BIN"), []byte("savedata"))
 	put(filepath.Join(s.PCSX2States, "SLUS-21431 (1A2B3C4D).01.p2s"), P2S())
 	put(filepath.Join(s.PCSX2Memcards, "Mcd001.ps2"), make([]byte, 1024))
+	// BIOS falsas (tamanho certo, conteúdo não): PS1 e PS2 jogam; os testes
+	// apagam pra ver o aviso de que falta
+	put(PS1BiosPath(e.Settings), make([]byte, 512<<10))
+	put(PS2BiosPath(e.Settings), PS2Bios())
 
 	must(os.MkdirAll(e.Bin, 0o755))
 	for _, name := range []string{"retroarch", "ppsspp", "pcsx2"} {
@@ -185,6 +189,24 @@ func NewEnv(root string) Env {
 	must(os.Chmod(hook, 0o755))
 	must(os.MkdirAll(e.Data, 0o700))
 	return e
+}
+
+// PS1BiosPath: a BIOS americana do PS1 na pasta system do RetroArch.
+func PS1BiosPath(s settings.Settings) string {
+	return filepath.Join(filepath.Dir(s.Saves.RetroArchSaves), "system", "scph5501.bin")
+}
+
+// PS2BiosPath: a BIOS do PS2 na pasta bios do PCSX2.
+func PS2BiosPath(s settings.Settings) string {
+	return filepath.Join(filepath.Dir(s.Saves.PCSX2Memcards), "bios", "SCPH-39001.bin")
+}
+
+// PS2Bios é uma BIOS de PS2 de mentira: 4 MB com a entrada RESET do ROMDIR.
+func PS2Bios() []byte {
+	b := make([]byte, 4<<20)
+	copy(b[0x2700:], "RESET")
+	copy(b[0x2710:], "ROMDIR")
+	return b
 }
 
 // Calls lê o registro dos lançadores falsos.
