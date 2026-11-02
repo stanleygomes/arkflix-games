@@ -29,7 +29,6 @@
   import Library from './screens/Library.svelte'
   import MetaEditor from './screens/MetaEditor.svelte'
   import StatsScreen from './screens/Stats.svelte'
-  import Settings from './screens/Settings.svelte'
   import Profiles from './screens/Profiles.svelte'
   import ProfileEditor from './screens/ProfileEditor.svelte'
   import Welcome from './screens/Welcome.svelte'
@@ -155,7 +154,7 @@
     {:else if current.name === 'stats'}
       <StatsScreen />
     {:else if current.name === 'settings'}
-      <Settings tab={current.tab} />
+      <You item={current.tab} />
     {:else if current.name === 'profiles'}
       <Profiles />
     {:else if current.name === 'profile'}
@@ -163,7 +162,7 @@
     {:else if current.name === 'welcome'}
       <Welcome />
     {:else if current.name === 'you'}
-      <You />
+      <You item={current.item} />
     {:else if current.name === 'activity'}
       <Activity />
     {/if}

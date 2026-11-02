@@ -1,10 +1,12 @@
-import { axe, expect, open, test, settings } from './fixtures'
+import { axe, expect, open, test, settings, pickItem } from './fixtures'
 
 async function openControls(page: import('@playwright/test').Page, app: import('./fixtures').App) {
   await open(page, app)
   await settings(page)
-  await page.getByRole('button', { name: 'Controles', exact: true }).click()
+  await pickItem(page, 'Controles')
   await expect(page.getByRole('heading', { name: 'Controles' })).toBeVisible()
+  // foco de volta na lista: o ✕ apertado no teste não aciona botão do painel
+  await page.keyboard.press('Escape')
 }
 
 test('prévia acende o botão apertado e troca pro desenho do controle em uso', async ({ page, app }) => {

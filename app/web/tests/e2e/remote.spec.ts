@@ -1,9 +1,9 @@
-import { axe, expect, open, test, settings } from './fixtures'
+import { axe, expect, open, test, settings, pickItem } from './fixtures'
 
 test('servidor RomM: entra, lista, baixa um jogo e sai', async ({ page, app }) => {
   await open(page, app)
   await settings(page)
-  await page.getByRole('button', { name: 'Servidor', exact: true }).click()
+  await pickItem(page, 'Servidor RomM')
   await expect(page.getByRole('heading', { name: 'Servidor RomM' })).toBeVisible()
   await axe(page, 'servidor desconectado')
 
@@ -49,7 +49,7 @@ test('servidor RomM: entra, lista, baixa um jogo e sai', async ({ page, app }) =
   // sair do servidor tira os remotos (o baixado fica)
   await page.keyboard.press('Escape')
   await settings(page)
-  await page.getByRole('button', { name: 'Servidor', exact: true }).click()
+  await pickItem(page, 'Servidor RomM')
   await page.getByRole('button', { name: 'Sair do servidor' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Sair do servidor' }).click()
   await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible()

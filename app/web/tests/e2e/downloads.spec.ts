@@ -1,4 +1,4 @@
-import { axe, expect, open, openItem, settings, test, type App } from './fixtures'
+import { axe, expect, open, openItem, settings, test, type App, pickItem } from './fixtures'
 import type { Page } from '@playwright/test'
 
 // RomM falso lento: o DKC (~130 bytes) leva uns 13 s, dá pra pausar no meio
@@ -6,7 +6,7 @@ test.use({ rommSlow: '1500' })
 
 async function connect(page: Page, app: App) {
   await settings(page)
-  await page.getByRole('button', { name: 'Servidor', exact: true }).click()
+  await pickItem(page, 'Servidor RomM')
   await page.getByRole('button', { name: /^Endereço/ }).click()
   await page.getByRole('dialog', { name: 'Endereço do servidor' }).getByLabel('Endereço do servidor').fill(`${app.url}/fake-romm`)
   await page.keyboard.press('Enter')

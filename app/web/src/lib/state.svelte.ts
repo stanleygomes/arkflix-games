@@ -14,7 +14,7 @@ export type Screen =
   | { name: 'profiles' }
   | { name: 'profile'; id?: string; setup?: boolean; suggest?: string }
   | { name: 'welcome' }
-  | { name: 'you' }
+  | { name: 'you'; item?: string }
   | { name: 'activity' }
 
 export type SettingsTab = 'library' | 'server' | 'storage' | 'emulators' | 'bluetooth' | 'updates' | 'cheevos' | 'controls' | 'a11y' | 'about'
@@ -80,6 +80,7 @@ export const app = $state({
   update: null as UpdateInfo | null,
   restarting: '', // versão pra qual o app está reiniciando
   guide: false,
+  youItem: 'overview', // último item visto na tela Você (volta nele)
   confirm: null as Confirm | null,
   prompt: null as Prompt | null,
   pin: null as PinAsk | null,

@@ -1,9 +1,9 @@
-import { axe, expect, open, test, settings } from './fixtures'
+import { axe, expect, open, test, settings, pickItem } from './fixtures'
 
 test('armazenamento: disco, jogos por console e saves', async ({ page, app }) => {
   await open(page, app)
   await settings(page)
-  await page.getByRole('button', { name: 'Armazenamento', exact: true }).click()
+  await pickItem(page, 'Armazenamento')
   await expect(page.getByRole('heading', { name: /livres de/ })).toBeVisible()
   const bar = page.getByRole('img', { name: /livres de .*Jogos: .*Saves: / })
   await expect(bar).toBeVisible()
@@ -29,7 +29,7 @@ test('armazenamento: mover os jogos de um console pra outra pasta', async ({ pag
 
   await open(page, app)
   await settings(page)
-  await page.getByRole('button', { name: 'Armazenamento', exact: true }).click()
+  await pickItem(page, 'Armazenamento')
   await page.getByRole('button', { name: 'Mover jogos de Super Nintendo' }).click()
   const dialog = page.getByRole('dialog', { name: 'Mover jogos de Super Nintendo' })
   await expect(dialog).toBeVisible()
@@ -55,7 +55,7 @@ test('armazenamento: com uma pasta só, nada de mover', async ({ page, app }) =>
   await call('SaveSettings', cfg)
   await open(page, app)
   await settings(page)
-  await page.getByRole('button', { name: 'Armazenamento', exact: true }).click()
+  await pickItem(page, 'Armazenamento')
   await expect(page.locator('.rows').first()).toContainText('Super Nintendo')
   await expect(page.getByRole('button', { name: /^Mover jogos/ })).toHaveCount(0)
 })

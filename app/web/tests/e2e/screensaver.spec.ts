@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { axe, expect, open, test, type App, settings } from './fixtures'
+import { axe, expect, open, test, type App, settings, pickItem } from './fixtures'
 
 async function patchSettings(page: Page, app: App, fn: (s: Record<string, any>) => Record<string, any>) {
   const call = (m: string, args: unknown[] = []) =>
@@ -78,7 +78,7 @@ test('vitrine com reduzir animações: capa parada, INSERT COIN e clique só aco
 test('configuração do protetor: minutos, estilo, desligar e ver agora', async ({ page, app }) => {
   await open(page, app)
   await settings(page)
-  await page.getByRole('button', { name: 'Acessibilidade', exact: true }).click()
+  await pickItem(page, 'Acessibilidade e som')
   await page.getByRole('group', { name: 'Minutos parado' }).getByRole('button', { name: '10 min' }).click()
   await page.getByRole('group', { name: 'Estilo do protetor' }).getByRole('button', { name: 'Vitrine' }).click()
   const file = `${app.data}/settings.json`

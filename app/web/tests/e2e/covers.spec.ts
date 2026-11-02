@@ -6,7 +6,7 @@ test('capas do libretro: liga, baixa com progresso e aparece na biblioteca', asy
   await expect(page.locator('.shelf [data-game][aria-label^="Mega Man X"] img')).toHaveCount(0)
 
   await settings(page)
-  await expect(page.getByRole('button', { name: 'Biblioteca', exact: true })).toBeFocused()
+  await expect(page.getByRole('heading', { name: 'Biblioteca', level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Atualizar capas agora' })).toBeDisabled()
   await page.getByRole('switch', { name: /Baixar capas automaticamente/ }).click()
   await expect(page.locator('.toasts')).toContainText('Baixando capas:', { timeout: 15000 })

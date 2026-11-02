@@ -124,9 +124,14 @@ export async function openItem(page: Page, label: string) {
 }
 
 /** Abre as configurações (pela tela "Você"); depois, as abas são as de sempre. */
+/** Já na tela Você: escolhe o item da lista (Enter = abre/entra no painel). */
+export async function pickItem(page: Page, label: string) {
+  await page.locator('main.you [data-item]').filter({ has: page.getByText(label, { exact: true }) }).focus()
+  await page.keyboard.press('Enter')
+}
 export async function settings(page: Page) {
   await openItem(page, 'Biblioteca')
-  await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Biblioteca', level: 1 })).toBeVisible()
 }
 
 /** Vai pra "Quem vai jogar?" (avatar › Você › Trocar perfil). */
