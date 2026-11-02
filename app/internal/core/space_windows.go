@@ -1,7 +1,9 @@
 package core
 
 import (
+	"errors"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -26,3 +28,12 @@ func diskUsage(dir string) (total, free int64) {
 }
 
 func freeSpace(dir string) int64 { _, free := diskUsage(dir); return free }
+
+// sameDisk: mesma letra de unidade (ou mesmo compartilhamento).
+func sameDisk(a, b string) bool {
+	va, vb := filepath.VolumeName(a), filepath.VolumeName(b)
+	return va != "" && strings.EqualFold(va, vb)
+}
+
+// crossDevice: ERROR_NOT_SAME_DEVICE (o MoveFile não atravessa unidades).
+func crossDevice(err error) bool { return errors.Is(err, syscall.Errno(17)) }

@@ -121,10 +121,21 @@ export interface StorageInfo {
   saves: number
   app: number
   cache: number
-  byConsole: { system: string; name: string; bytes: number; count: number }[]
+  byConsole: { system: string; name: string; bytes: number; count: number; roots: string[] }[]
   saveDirs: { label: string; path: string; bytes: number }[]
   remote: number
   remoteCount: number
+}
+
+/** Pasta da biblioteca pra onde dá pra mover os jogos de um console. */
+export interface MoveTarget {
+  path: string
+  label: string
+  free: number
+  size: number
+  count: number
+  sameDisk: boolean
+  fits: boolean
 }
 
 export interface RemoteInfo {

@@ -3,6 +3,7 @@
 package core
 
 import (
+	"errors"
 	"path/filepath"
 	"syscall"
 )
@@ -22,3 +23,26 @@ func diskUsage(dir string) (total, free int64) {
 }
 
 func freeSpace(dir string) int64 { _, free := diskUsage(dir); return free }
+
+// sameDisk: as duas pastas (ou a primeira que existe acima delas) estão no
+// mesmo sistema de arquivos? Na dúvida, não.
+func sameDisk(a, b string) bool {
+	da, oka := device(a)
+	db, okb := device(b)
+	return oka && okb && da == db
+}
+
+func device(dir string) (uint64, bool) {
+	for d := dir; ; d = filepath.Dir(d) {
+		var st syscall.Stat_t
+		if syscall.Stat(d, &st) == nil {
+			return uint64(st.Dev), true
+		}
+		if d == filepath.Dir(d) {
+			return 0, false
+		}
+	}
+}
+
+// crossDevice: o rename falhou porque origem e destino estão em discos diferentes.
+func crossDevice(err error) bool { return errors.Is(err, syscall.EXDEV) }

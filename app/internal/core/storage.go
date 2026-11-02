@@ -4,10 +4,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
 	"github.com/stanleygomes/arkflix-games/app/internal/profiles"
+	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
 
 // StorageInfo é a tela de armazenamento: o disco dos jogos e quanto cada coisa
@@ -33,6 +35,8 @@ type ConsoleUsage struct {
 	Name   string `json:"name"`
 	Bytes  int64  `json:"bytes"`
 	Count  int    `json:"count"`
+	// Roots: as pastas da biblioteca onde estão (na ordem das configurações).
+	Roots []string `json:"roots"`
 }
 
 // PathUsage: espaço de uma pasta (saves de um emulador...).
@@ -65,6 +69,15 @@ func dirSize(dir string, skip ...string) int64 {
 	return total
 }
 
+func rootOrder(dirs []settings.LibraryDir, root string) int {
+	for i, d := range dirs {
+		if d.Path == root {
+			return i
+		}
+	}
+	return len(dirs)
+}
+
 // Storage mede o disco e o espaço de jogos, saves, dados do app e cache.
 func (s *Service) Storage() StorageInfo {
 	cfg := s.opt.Store.Settings()
@@ -92,11 +105,17 @@ func (s *Service) Storage() StorageInfo {
 		}
 		c.Bytes += e.game.Size
 		c.Count++
+		if !slices.Contains(c.Roots, e.game.Root) {
+			c.Roots = append(c.Roots, e.game.Root)
+		}
 		out.Games += e.game.Size
 		out.GameCount++
 	}
 	s.mu.Unlock()
 	for _, c := range byConsole {
+		sort.SliceStable(c.Roots, func(i, j int) bool {
+			return rootOrder(cfg.LibraryDirs, c.Roots[i]) < rootOrder(cfg.LibraryDirs, c.Roots[j])
+		})
 		out.ByConsole = append(out.ByConsole, *c)
 	}
 	sort.Slice(out.ByConsole, func(i, j int) bool { return out.ByConsole[i].Bytes > out.ByConsole[j].Bytes })
