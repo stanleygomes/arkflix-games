@@ -328,6 +328,16 @@ export interface MetaInfo {
   edit: MetaEdit
 }
 
+/** O que a busca no Wikidata/Wikipedia achou (vazio = a fonte não tinha). */
+export interface WikiResult {
+  entity: string
+  title: string
+  summary: string
+  year: number
+  genres: string[]
+  source: string
+}
+
 export interface Stats {
   period: string
   totalSeconds: number
@@ -347,6 +357,14 @@ export interface GameList {
   name: string
   games: string[]
   created: number
+  /** Lista automática: o conteúdo sai da regra (games fica vazio). */
+  rule?: ListRule | null
+}
+
+export interface ListRule {
+  source: string
+  filters: string[]
+  sort: string
 }
 
 export interface Boot {

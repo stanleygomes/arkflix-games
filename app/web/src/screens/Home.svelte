@@ -29,7 +29,7 @@
       .map((s) => ({ slug: s.slug, short: s.short, name: s.name, kind: 'system' as const })),
   ])
 
-  type Row = { id: string; title: string; games: Game[]; source?: string }
+  type Row = { id: string; title: string; games: Game[]; source?: string; smart?: boolean }
   const rows = $derived.by((): Row[] => {
     if (app.homeTab.startsWith('collection:') || app.homeTab.startsWith('list:')) {
       const games = sortGames(sourceGames(app.homeTab), sortOf(app.homeTab))
@@ -50,7 +50,7 @@
     if (favs.length) out.push({ id: 'favorites', title: 'Favoritos', games: favs, source: 'collection:favorites' })
     for (const l of app.lists) {
       const games = sourceGames(`list:${l.id}`)
-      if (games.length) out.push({ id: `list-${l.id}`, title: l.name, games, source: `list:${l.id}` })
+      if (games.length) out.push({ id: `list-${l.id}`, title: l.name, games, source: `list:${l.id}`, smart: !!l.rule })
     }
     const remote = app.games.filter((g) => g.remote)
     if (remote.length) out.push({ id: 'server', title: `No servidor · ${remote.length}`, games: remote.slice(0, 20), source: 'collection:server' })
@@ -319,7 +319,9 @@
       <div class="shelves">
         {#each rows as row (row.id)}
           <section class="shelf" aria-label={row.title}>
-            <h2 class="row-title">{row.title}</h2>
+            <h2 class="row-title">
+              {row.title}{#if row.smart}<span class="smart" title="Lista automática"><Icon name="auto" size="0.8em" /><span class="sr-only">(lista automática)</span></span>{/if}
+            </h2>
             <ul class="row" data-nav-group={`row-${row.id}`}>
               {#each row.games as g (g.id)}
                 {@const sys = system(g.system)}
@@ -594,6 +596,10 @@
     flex-direction: column;
     gap: 1rem;
     padding-bottom: 0.5rem;
+  }
+  .row-title .smart {
+    margin-left: 0.5rem;
+    opacity: 0.7;
   }
   .row-title {
     font-size: 1rem;

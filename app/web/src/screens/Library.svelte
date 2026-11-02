@@ -10,7 +10,7 @@
   import { SORTS, filterGames, filterGroups, pickRandom, sortGames } from '../lib/library'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
-  import { filtersOf, sortOf, sourceGames, sourceTitle } from '../lib/sources'
+  import { filtersOf, isSmart, sortOf, sourceGames, sourceTitle } from '../lib/sources'
   import { focusEl } from '../lib/nav'
   import { api } from '../lib/api'
   import { app, back, confirm, prompt, putList, system, toast } from '../lib/state.svelte'
@@ -45,14 +45,38 @@
   const clearFilters = () => saveUI(sort, [])
 
   const listId = $derived(source.startsWith('list:') ? source.slice(5) : '')
+  const smart = $derived(isSmart(app.lists.find((l) => l.id === listId)))
   const extra = $derived(
     listId
       ? [
           { label: 'Renomear lista', onclick: renameList },
           { label: 'Apagar lista', danger: true, onclick: deleteList },
         ]
-      : [],
+      : filters.length
+        ? [{ label: 'Salvar como lista automática', onclick: saveSmart }]
+        : [],
   )
+
+  // nome sugerido: a fonte e os filtros ("Super Nintendo: RPG, Nunca jogados")
+  function suggestName(): string {
+    const labels = filters.map((f) => groups.flatMap((g) => g.options).find((o) => o.id === f)?.label ?? f.split(':').pop())
+    const name = `${title}: ${labels.join(', ')}`
+    return name.length > 40 ? name.slice(0, 39).trimEnd() + '…' : name
+  }
+
+  async function saveSmart() {
+    options = false
+    await prompt('Nome da lista automática', suggestName(), 'Criar lista', async (name) => {
+      try {
+        const l = await api.createSmartList(name, { source, filters: [...filters], sort })
+        putList(l)
+        toast(`Lista automática "${l.name}" criada: está no Início e se atualiza sozinha`, 'ok', 4000)
+        return null
+      } catch (err) {
+        return (err as Error).message
+      }
+    }, { max: 40 })
+  }
 
   async function renameList() {
     options = false
@@ -112,6 +136,9 @@
   <main class="body">
     <header class="head">
       <h1 class="pixel">{title}</h1>
+      {#if smart}
+        <span class="smart muted"><Icon name="auto" /> Lista automática</span>
+      {/if}
       <span class="count muted">
         {games.length} jogo{games.length === 1 ? '' : 's'}{filters.length ? ` de ${all.length}` : ''}
       </span>
@@ -166,5 +193,11 @@
   }
   h1 {
     font-size: 2.2rem;
+  }
+  .smart {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
   }
 </style>

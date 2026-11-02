@@ -9,19 +9,89 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
 )
 
-// List é uma lista pessoal.
+// List é uma lista pessoal. Com Rule, é automática: o conteúdo é calculado
+// pela interface (fonte + filtros + ordem) e Games fica vazio.
 type List struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
 	Games   []string `json:"games"`
 	Created int64    `json:"created"`
+	Rule    *Rule    `json:"rule,omitempty"`
+}
+
+// Rule é a regra de uma lista automática: os mesmos filtros e a mesma ordem
+// da tela da biblioteca, aplicados a uma fonte (console ou coleção).
+type Rule struct {
+	Source  string   `json:"source"`  // system:snes, collection:all...
+	Filters []string `json:"filters"` // fav, never, genre:RPG, decade:1990...
+	Sort    string   `json:"sort"`    // name, yearAsc, plays...
+}
+
+// ErrSmart: lista automática não aceita jogo posto na mão.
+var ErrSmart = errors.New("lista automática: os jogos entram pela regra, não na mão")
+
+var (
+	sourceRe = regexp.MustCompile(`^(system|collection):[a-z0-9_-]{1,30}$`)
+	sorts    = []string{"name", "yearAsc", "yearDesc", "plays", "recent", "playTime", "rating", "added"}
+	quick    = []string{"fav", "never", "saves", "completed"}
+)
+
+// Validate limpa e confere a regra.
+func (r *Rule) Validate() error {
+	if !sourceRe.MatchString(r.Source) {
+		return errors.New("fonte da lista automática inválida")
+	}
+	if r.Sort == "" {
+		r.Sort = "name"
+	}
+	if !slices.Contains(sorts, r.Sort) {
+		return errors.New("ordem da lista automática inválida")
+	}
+	var clean []string
+	for _, f := range r.Filters {
+		f = strings.TrimSpace(f)
+		if f == "" || slices.Contains(clean, f) {
+			continue
+		}
+		if !validFilter(f) {
+			return errors.New("filtro inválido: " + f)
+		}
+		clean = append(clean, f)
+	}
+	if len(clean) == 0 {
+		return errors.New("lista automática precisa de pelo menos um filtro")
+	}
+	if len(clean) > 30 {
+		return errors.New("filtros demais (máximo 30)")
+	}
+	r.Filters = clean
+	return nil
+}
+
+func validFilter(f string) bool {
+	kind, value, ok := strings.Cut(f, ":")
+	if !ok {
+		return slices.Contains(quick, f)
+	}
+	switch kind {
+	case "players":
+		return value == "1" || value == "2"
+	case "genre":
+		return value != "" && utf8.RuneCountInString(value) <= 40
+	case "decade":
+		n, err := strconv.Atoi(value)
+		return err == nil && n >= 1950 && n <= 2100 && n%10 == 0
+	}
+	return false
 }
 
 // Store lê e grava as listas.
@@ -117,6 +187,21 @@ func (s *Store) Create(name string) (List, error) {
 	})
 }
 
+// CreateSmart cria uma lista automática a partir da regra.
+func (s *Store) CreateSmart(name string, rule Rule) (List, error) {
+	if err := rule.Validate(); err != nil {
+		return List{}, err
+	}
+	return s.update(func(all []List) ([]List, List, error) {
+		clean, err := cleanName(name, all, "")
+		if err != nil {
+			return nil, List{}, err
+		}
+		l := List{ID: newID(), Name: clean, Games: []string{}, Created: time.Now().Unix(), Rule: &rule}
+		return append(all, l), l, nil
+	})
+}
+
 func find(all []List, id string) int {
 	return slices.IndexFunc(all, func(l List) bool { return l.ID == id })
 }
@@ -155,6 +240,9 @@ func (s *Store) Set(id, game string, in bool) (List, error) {
 		i := find(all, id)
 		if i < 0 {
 			return nil, List{}, ErrNotFound
+		}
+		if all[i].Rule != nil {
+			return nil, List{}, ErrSmart
 		}
 		has := slices.Contains(all[i].Games, game)
 		switch {

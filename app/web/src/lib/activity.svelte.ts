@@ -16,9 +16,17 @@ export function running(): Task[] {
   return activity.tasks.filter((t) => t.state === 'running')
 }
 
-/** O que dá pra cancelar: downloads, instalações e jogos sendo movidos. */
+// uma tarefa por linha: menos conflito quando aparece outra
+const CANCELLABLE = [
+  'download',
+  'emulators',
+  'move',
+  'meta',
+]
+
+/** O que dá pra cancelar: downloads, instalações, jogos sendo movidos e a busca de informações. */
 export function cancellable(t: TaskEvent): boolean {
-  return t.state === 'running' && /^(download|emulators|move):/.test(t.id + ':')
+  return t.state === 'running' && CANCELLABLE.includes(t.id.split(':')[0])
 }
 
 let started = false

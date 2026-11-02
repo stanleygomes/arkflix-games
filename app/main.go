@@ -169,6 +169,9 @@ func main() {
 			ra.Prefix = "/fake-ra"
 			mux.Handle("/fake-ra/", http.StripPrefix("/fake-ra", ra))
 			os.Setenv("ARKFLIX_RA_BASE", "http://"+ln.Addr().String()+"/fake-ra")
+			// Wikidata/Wikipedia falsos: Sonic 2 e Crash Bandicoot
+			mux.Handle("/fake-wiki/", http.StripPrefix("/fake-wiki", fixture.NewFakeWiki()))
+			os.Setenv("ARKFLIX_WIKI_BASE", "http://"+ln.Addr().String()+"/fake-wiki")
 			mux.Handle("/", handler)
 			handler = mux
 		}

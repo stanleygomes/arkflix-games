@@ -181,6 +181,7 @@ type Service struct {
 	profiles *profiles.Store
 	remote   *remoteState
 	cheevos  *cheevosState
+	wiki     *wikiState
 
 	umu    sync.RWMutex
 	u      *user // perfil em uso
@@ -245,6 +246,7 @@ func New(opt Options) (*Service, error) {
 	s.remote = &remoteState{file: filepath.Join(store.Dir(), "romm.json"), dir: filepath.Join(opt.Cache, "romm")}
 	s.remote.load()
 	s.cheevos = newCheevos(opt.Cache, opt.Version)
+	s.wiki = newWikiState(opt.Cache, opt.Version)
 	if opt.Pads != nil {
 		opt.Pads.Subscribe(func(e gamepad.Event) { s.opt.Emitter.Emit("pad", e) })
 		opt.Pads.OnPadsChanged(func(p []gamepad.Pad) { s.opt.Emitter.Emit("pads", p) })
@@ -985,6 +987,12 @@ func (s *Service) Lists() ([]lists.List, error) { return s.cur().lists.All() }
 
 // CreateList cria uma lista vazia.
 func (s *Service) CreateList(name string) (lists.List, error) { return s.cur().lists.Create(name) }
+
+// CreateSmartList cria uma lista automática (fonte + filtros + ordem da
+// biblioteca). O conteúdo é calculado na interface; não guarda jogos.
+func (s *Service) CreateSmartList(name string, rule lists.Rule) (lists.List, error) {
+	return s.cur().lists.CreateSmart(name, rule)
+}
 
 // RenameList troca o nome da lista.
 func (s *Service) RenameList(id, name string) (lists.List, error) {
