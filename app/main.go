@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/stanleygomes/arkflix-games/app/internal/bt"
 	"github.com/stanleygomes/arkflix-games/app/internal/core"
 	"github.com/stanleygomes/arkflix-games/app/internal/fixture"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
@@ -149,7 +150,7 @@ func main() {
 	if f.web != "" {
 		broker := httpapi.NewBroker()
 		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f), Emulators: emu,
-			BrowserPads: f.fixture != "" && os.Getenv("ARKFLIX_FIXTURE_BROWSER_PADS") == "1"})
+			BrowserPads: f.fixture != "" && os.Getenv("ARKFLIX_FIXTURE_BROWSER_PADS") == "1", Bluetooth: bluetooth(f)})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -168,7 +169,16 @@ func main() {
 		}
 		log.Fatal(http.Serve(ln, handler))
 	}
-	os.Exit(runDesktop(store, pads, ui, f.smoke, f.windowed, emu))
+	os.Exit(runDesktop(store, pads, ui, f.smoke, f.windowed, emu, bluetooth(f)))
+}
+
+// bluetooth: no ambiente falso, rádio de mentira (testes nunca pareiam nada
+// de verdade); fora dele, o do sistema.
+func bluetooth(f flags) bt.Backend {
+	if f.fixture != "" {
+		return bt.NewFake()
+	}
+	return bt.New()
 }
 
 // cacheDir: capas baixadas e bancos do libretro (~/.cache/arkflix-games no

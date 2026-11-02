@@ -11,6 +11,7 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/stanleygomes/arkflix-games/app/internal/bt"
 	"github.com/stanleygomes/arkflix-games/app/internal/core"
 	"github.com/stanleygomes/arkflix-games/app/internal/fixture"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
@@ -24,7 +25,7 @@ func server(t *testing.T) *httptest.Server {
 	store, _ := settings.Open(env.Data, env.Settings)
 	b := httpapi.NewBroker()
 	pads := gamepad.New(t.TempDir())
-	svc, err := core.New(core.Options{Version: "t", Mode: "web", Store: store, Emitter: b, Pads: pads})
+	svc, err := core.New(core.Options{Version: "t", Mode: "web", Store: store, Emitter: b, Pads: pads, Bluetooth: bt.NewFake()})
 	if err != nil {
 		t.Fatal(err)
 	}

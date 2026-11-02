@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stanleygomes/arkflix-games/app/internal/bt"
 	"github.com/stanleygomes/arkflix-games/app/internal/core"
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/profiles"
@@ -148,6 +149,10 @@ func TestKidsProfile(t *testing.T) {
 	_, blocked["SetProfileKids"] = h.svc.SetProfileKids(kid.ID, false)
 	blocked["DeleteProfile"] = h.svc.DeleteProfile(kid.ID, "")
 	blocked["UpdateCovers"] = h.svc.UpdateCovers(false)
+	blocked["BluetoothPair"] = h.svc.BluetoothPair(bt.FakeXbox)
+	blocked["BluetoothForget"] = h.svc.BluetoothForget(bt.FakeEightBitDo)
+	blocked["BluetoothPower"] = h.svc.BluetoothPower(false)
+	blocked["OpenBluetoothSettings"] = h.svc.OpenBluetoothSettings()
 	for name, err := range blocked {
 		if err != core.ErrKids {
 			t.Errorf("%s devia ser bloqueado no perfil infantil: %v", name, err)
