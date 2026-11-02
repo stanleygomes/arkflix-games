@@ -8,7 +8,9 @@ Leia o [README](README.md) antes. Resumo do que importa:
 - Build em `build/`, fora do git.
 - Não mexa nas pastas dos Flatpaks (`~/.var/app/...`) nem no `~/ES-DE`: são os
   saves e a config reais do dono (o app só lê o `~/ES-DE`). Exceções: o
-  `make emulators` instala cores que faltam na pasta de cores do RetroArch, e o
+  `make emulators` e o `internal/emuinstall` (botão "Instalar emuladores")
+  instalam emuladores e cores na pasta de cores do RetroArch (no `--fixture`,
+  só nas pastas de teste), e o
   `internal/emucfg` ajusta só os atalhos de menu/saída do PPSSPP e do PCSX2
   (com backup). No RetroArch, nada vai no arquivo dele: tudo por `--appendconfig`,
   com `config_save_on_exit = "false"` (senão ele grava o acrescentado por cima).
