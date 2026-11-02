@@ -2,9 +2,10 @@
   import type { Snippet } from 'svelte'
   import { unread } from '../lib/activity.svelte'
   import { versionArrow } from '../lib/update'
-  import { isKids } from '../lib/state.svelte'
-  import { app, currentProfile, go } from '../lib/state.svelte'
+  import { app, back, currentProfile, glyphFamily, go, isKids } from '../lib/state.svelte'
+  import { play } from '../lib/sound'
   import Avatar from './Avatar.svelte'
+  import Glyph from './Glyph.svelte'
   import Icon from './Icon.svelte'
 
   let { children, actions = true }: { children?: Snippet; actions?: boolean } = $props()
@@ -16,12 +17,30 @@
   const me = $derived(currentProfile())
   const news = $derived(unread())
   const clock = $derived(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
+  // "Seg, 02 de nov" (só a primeira letra maiúscula)
+  const date = $derived.by(() => {
+    const d = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }).replace(/\./g, '')
+    return d.charAt(0).toUpperCase() + d.slice(1)
+  })
+  const canBack = $derived(app.stack.length > 1)
+  function goBack() {
+    play('back')
+    back()
+  }
   const padLabel = $derived(
     app.pads.length === 0 ? 'Nenhum controle conectado' : `${app.pads.length} controle(s): ${app.pads.map((p) => p.name).join(', ')}`,
   )
 </script>
 
 <header class="top">
+  {#if canBack}
+    <!-- voltar sempre no mesmo lugar, em toda tela que veio de outra -->
+    <button class="back-btn" data-nav onclick={goBack}>
+      <Icon name="back" size="1.2em" />
+      <span class="sub">Voltar</span>
+      <span aria-hidden="true"><Glyph button="east" family={glyphFamily()} /></span>
+    </button>
+  {/if}
   <div class="brand pixel" aria-hidden="true">ARK<span>FLIX</span></div>
   <div class="middle">{@render children?.()}</div>
   <div class="right">
@@ -32,22 +51,31 @@
       </button>
     {/if}
     {#if actions}
-      <button class="icon-btn" data-nav aria-label="Buscar jogos" onclick={() => go({ name: 'search' })}>
-        <Icon name="search" />
+      <!-- como o canto do PS5: busca e avisos em blocos iguais, perfil com nome -->
+      <button class="icon-btn" data-nav aria-label="Buscar jogos" title="Buscar" onclick={() => go({ name: 'search' })}>
+        <Icon name="search" size="1.35em" />
+      </button>
+      <button class="icon-btn" data-nav aria-label={news ? `Central: ${news} aviso${news === 1 ? '' : 's'} novo${news === 1 ? '' : 's'}` : 'Central de downloads e avisos'} title="Central" onclick={() => go({ name: 'activity' })}>
+        <Icon name="bell" size="1.35em" />
+        {#if news}<span class="dot" aria-hidden="true"></span>{/if}
       </button>
       {#if me}
-        <!-- o avatar abre "Você": perfil, configurações, estatísticas, energia -->
-        <button class="profile-btn" data-nav aria-label={`Você: ${me.name} (perfil e configurações)${news ? `, ${news} aviso${news === 1 ? '' : 's'} novo${news === 1 ? '' : 's'}` : ''}`} onclick={() => go({ name: 'you' })}>
-          <Avatar avatar={me.avatar} color={me.color} size="2.1rem" />
-          {#if news}<span class="dot" aria-hidden="true"></span>{/if}
+        <!-- o perfil abre "Você": perfil, configurações, estatísticas, energia -->
+        <button class="profile-btn" data-nav aria-label={`Você: ${me.name} (perfil e configurações)`} style:--profile={me.color} onclick={() => go({ name: 'you' })}>
+          <Avatar avatar={me.avatar} color={me.color} size="2.4rem" />
+          <span class="who sub">{me.name}</span>
         </button>
       {/if}
+      <span class="sep" aria-hidden="true"></span>
     {/if}
-    <span class="status" role="img" aria-label={padLabel} title={padLabel}>
-      <Icon name="pad" />
-      <span class="count">{app.pads.length}</span>
+    <span class="status" class:on={app.pads.length > 0} role="img" aria-label={padLabel} title={padLabel}>
+      <Icon name="pad" size="1.3em" />
+      {#if app.pads.length}<span class="count hud">{app.pads.length}</span>{/if}
     </span>
-    <time class="clock pixel" datetime={now.toISOString()}>{clock}</time>
+    <span class="when">
+      <time class="clock sub" datetime={now.toISOString()}>{clock}</time>
+      <span class="date">{date}</span>
+    </span>
   </div>
 </header>
 
@@ -80,24 +108,52 @@
   }
   .dot {
     position: absolute;
-    top: -0.35rem;
-    right: -0.35rem;
-    width: 0.8rem;
-    height: 0.8rem;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 0.6rem;
+    height: 0.6rem;
     background: var(--focus);
-    box-shadow: 0 0 8px var(--focus);
+  }
+  /* blocos iguais, como as caixas dos consoles */
+  .icon-btn {
+    position: relative;
+    width: 3rem;
+    height: 3rem;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
+    cursor: pointer;
+  }
+  .icon-btn:hover,
+  .profile-btn:hover {
+    border-color: var(--accent);
   }
   .profile-btn {
     position: relative;
-    padding: 0;
-    background: none;
-    border: 3px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    height: 3rem;
+    padding: 0 1rem 0 0.25rem;
+    font: inherit;
+    color: #fff;
+    background: color-mix(in srgb, var(--profile) 22%, var(--surface));
+    border: 2px solid color-mix(in srgb, var(--profile) 70%, transparent);
     cursor: pointer;
-    display: grid;
   }
-  .profile-btn:focus-visible,
-  .profile-btn:hover {
-    border-color: var(--accent);
+  .who {
+    font-size: 1.05rem;
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sep {
+    width: 2px;
+    height: 2rem;
+    background: color-mix(in srgb, var(--text) 18%, transparent);
   }
   .top {
     display: flex;
@@ -124,35 +180,49 @@
   .right {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
-  }
-  .icon-btn {
-    font-size: 1.3rem;
-    width: 2.75rem;
-    height: 2.75rem;
-    display: grid;
-    place-items: center;
-    color: var(--text);
-    background: transparent;
-    border: 3px solid transparent;
-    cursor: pointer;
-  }
-  .icon-btn:hover {
-    border-color: color-mix(in srgb, var(--text) 30%, transparent);
+    gap: 0.8rem;
   }
   .status {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    font-size: 1.2rem;
-    color: var(--muted);
+    gap: 0.35rem;
+    color: color-mix(in srgb, var(--text) 45%, transparent);
+  }
+  /* controle conectado acende */
+  .status.on {
+    color: #5dc44f;
   }
   .count {
-    font-size: 0.85rem;
+    font-size: 1.2rem;
+  }
+  .when {
+    display: grid;
+    justify-items: end;
+    line-height: 1;
+    gap: 0.25rem;
   }
   .clock {
-    font-size: 1.2rem;
-    min-width: 3.5em;
-    text-align: right;
+    font-size: 1.55rem;
+    color: #fff;
+  }
+  .date {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    height: 3rem;
+    padding: 0 0.9rem;
+    font: inherit;
+    font-size: 1.05rem;
+    color: #fff;
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
+    cursor: pointer;
+  }
+  .back-btn:hover {
+    border-color: var(--accent);
   }
 </style>
