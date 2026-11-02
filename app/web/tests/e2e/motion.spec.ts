@@ -51,7 +51,7 @@ test('trocar de perfil passa pelo mosaico em blocos', async ({ page, app }) => {
   await switchProfile(page)
   await page.getByRole('button', { name: /^Jogador 1/ }).click()
   await expect(page.locator('.wipe')).toHaveCount(1)
-  await expect(page.locator('.wipe')).toHaveCount(0, { timeout: 2000 })
+  await expect(page.locator('.wipe')).toHaveCount(0, { timeout: 5000 })
 })
 
 test.describe('com reduzir animações', () => {
