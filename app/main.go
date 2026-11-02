@@ -150,7 +150,7 @@ func main() {
 	if f.web != "" {
 		broker := httpapi.NewBroker()
 		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f), Emulators: emu,
-			BrowserPads: f.fixture != "" && os.Getenv("ARKFLIX_FIXTURE_BROWSER_PADS") == "1", Bluetooth: bluetooth(f)})
+			BrowserPads: f.fixture != "" && os.Getenv("ARKFLIX_FIXTURE_BROWSER_PADS") == "1", Bluetooth: bluetooth(f), Update: fixtureUpdate(f)})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -199,6 +199,24 @@ func cacheDir(f flags) string {
 		dir = filepath.Join(home, ".cache")
 	}
 	return filepath.Join(dir, "arkflix-games")
+}
+
+// fixtureUpdate: no navegador só o ambiente falso olha atualização, e só com
+// ARKFLIX_FIXTURE_RELEASES (URL de um GitHub falso, ou "fake" pro embutido).
+// Baixa e confere, nunca instala.
+func fixtureUpdate(f flags) core.UpdateOptions {
+	api := os.Getenv("ARKFLIX_FIXTURE_RELEASES")
+	if f.fixture == "" || api == "" {
+		return core.UpdateOptions{}
+	}
+	if api == "fake" {
+		api = httptest.NewServer(&fixture.FakeReleases{}).URL
+	}
+	current := version
+	if current == "dev" {
+		current = "v1.0.0" // "dev" nunca atualiza
+	}
+	return core.UpdateOptions{Check: true, API: api, DryRun: true, Current: current}
 }
 
 // O desktop nunca roda com o ambiente falso: partida mínima padrão (10 s).

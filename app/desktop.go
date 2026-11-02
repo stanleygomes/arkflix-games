@@ -116,7 +116,8 @@ func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke, w
 		start = options.Maximised
 	}
 	win := &window{}
-	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop, Cache: cacheDirDesktop(), Emulators: emu, Bluetooth: blue})
+	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop, Cache: cacheDirDesktop(), Emulators: emu, Bluetooth: blue,
+		Update: core.UpdateOptions{Check: !smoke}})
 	if err != nil {
 		log.Print(err)
 		return 1
@@ -134,6 +135,8 @@ func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke, w
 		AssetServer:      &assetserver.Options{Assets: ui, Handler: core.Media(svc)},
 		Bind:             []any{svc},
 		Linux:            &linux.Options{ProgramName: "arkflix-games"},
+		// atualização baixada instala ao fechar (nunca com o app aberto)
+		OnShutdown: func(context.Context) { core.ApplyUpdateOnQuit(svc) },
 		OnStartup: func(ctx context.Context) {
 			win.mu.Lock()
 			win.ctx = ctx
