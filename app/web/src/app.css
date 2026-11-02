@@ -15,6 +15,11 @@
   font-display: swap;
 }
 @font-face {
+  font-family: 'Bungee';
+  src: url('/fonts/Bungee-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+@font-face {
   font-family: 'VT323';
   src: url('/fonts/VT323-Regular.ttf') format('truetype');
   font-display: swap;
@@ -46,6 +51,9 @@
   --px: 4px;
   --font-body: 'Atkinson Hyperlegible', system-ui, sans-serif;
   --font-title: 'Press Start 2P', 'Pixelify Sans', monospace;
+  /* títulos principais: letreiro de fliperama; subtítulos e rótulos: pixel legível */
+  --font-display: 'Bungee', 'Pixelify Sans', sans-serif;
+  --font-sub: 'Pixelify Sans', 'Press Start 2P', sans-serif;
   --font-hud: 'VT323', 'Press Start 2P', monospace;
   --glow: 0 0 6px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
   --glow-2: 0 0 6px color-mix(in srgb, var(--accent-2) 70%, transparent);
@@ -106,7 +114,26 @@ h3,
   letter-spacing: 0.04em;
   margin: 0;
 }
-body.no-pixel :is(h1, h2, h3, .pixel) {
+/* mix: Bungee nos títulos (h1), Pixelify nos subtítulos e rótulos; a Press
+   Start 2P fica no logo, no placar e nos detalhes pequenos de fliperama */
+h1,
+h1.pixel {
+  font-family: var(--font-display);
+  font-size-adjust: none;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+h2,
+h3,
+:is(h2, h3).pixel,
+.sub {
+  font-family: var(--font-sub);
+  font-weight: 700;
+  font-size-adjust: none;
+  letter-spacing: 0.03em;
+}
+body.no-pixel :is(h1, h2, h3, .pixel, .sub) {
+  font-family: var(--font-body);
   font-size-adjust: none;
   font-weight: 700;
 }

@@ -249,8 +249,8 @@
   <TopBar>
     {#if !isKids()}
       <nav class="views" aria-label="Visão">
-        <button class="view pixel" data-nav data-view="games" aria-current={!store ? 'page' : undefined} onclick={() => setView('games')}>Biblioteca</button>
-        <button class="view pixel" data-nav data-view="store" aria-current={store ? 'page' : undefined} onclick={() => setView('store')}>
+        <button class="view sub" data-nav data-view="games" aria-current={!store ? 'page' : undefined} onclick={() => setView('games')}>Biblioteca</button>
+        <button class="view sub" data-nav data-view="store" aria-current={store ? 'page' : undefined} onclick={() => setView('store')}>
           Loja{#if remoteCount}<span class="count">{remoteCount}</span>{/if}
         </button>
       </nav>
@@ -446,7 +446,7 @@
     gap: 0.4rem;
   }
   .view {
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     color: var(--muted);
     background: none;
     border: 3px solid transparent;
@@ -545,6 +545,8 @@
     margin-left: 0.8rem;
   }
   .caption {
+    font-family: var(--font-sub);
+    font-weight: 700;
     position: absolute;
     top: calc(100% + 0.5rem);
     left: 0;
@@ -713,10 +715,9 @@
     opacity: 0.7;
   }
   .row-title {
-    font-size: 1rem;
-    color: var(--muted);
+    font-size: 1.15rem;
+    color: var(--text);
     margin-bottom: 0.5rem;
-    font-family: var(--font-body);
   }
   .row {
     list-style: none;

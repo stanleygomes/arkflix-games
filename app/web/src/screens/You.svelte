@@ -204,13 +204,13 @@
       <header class="who">
         {#if me}<Avatar avatar={me.avatar} color={me.color} size="3.2rem" />{/if}
         <div>
-          <p class="name pixel">{me?.name ?? 'Você'}</p>
+          <p class="name sub">{me?.name ?? 'Você'}</p>
           {#if kids}<p class="tag">Perfil infantil</p>{/if}
         </div>
       </header>
       {#each [{ title: '', items: [overview] }, { title: 'Só pra você', items: mine }, { title: 'Deste console', items: house }] as group (group.title)}
         {#if group.items.length}
-          {#if group.title}<p class="group pixel">{group.title}</p>{/if}
+          {#if group.title}<p class="group sub">{group.title}</p>{/if}
           <ul>
             {#each group.items as it (it.id)}
               <li>
@@ -327,7 +327,7 @@
     font-size: 1.1rem;
   }
   .group {
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     color: var(--accent-2);
     text-transform: uppercase;
     margin: 1.1rem 0 0.4rem;
