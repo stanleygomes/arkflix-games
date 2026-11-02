@@ -15,13 +15,15 @@
   import { current, focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
-  import { app, back, confirm, game, go, isKids, putGame, system, toast } from '../lib/state.svelte'
-  import type { GameEvent, Listing, MediaItem, SaveState } from '../lib/types'
+  import { app, back, confirm, game, go, isKids, prompt, putGame, system, toast } from '../lib/state.svelte'
+  import type { GameEvent, Listing, MediaFile, MediaItem, SaveState } from '../lib/types'
 
   let { id }: { id: string } = $props()
   const g = $derived(game(id))
   const sys = $derived(g ? system(g.system) : undefined)
   let listing = $state<Listing | null>(null)
+  let shots = $state<MediaFile[]>([])
+  let note = $state('')
   let loadError = $state('')
   let stamp = $state(Date.now())
   let picking = $state(false)
@@ -35,6 +37,9 @@
     for (const st of listing?.states ?? []) {
       if (st.thumb) out.push({ src: `/media/thumb/${st.id}?v=${stamp}`, caption: `Ponto salvo: ${st.label}`, kind: 'image' })
     }
+    for (const m of shots) {
+      out.push({ src: `/media/shot/${m.id}`, caption: `${m.kind === 'video' ? 'Gravação' : 'Captura'} de ${dateTime(m.at)}`, kind: m.kind })
+    }
     if (g.manual) out.push({ src: g.manual, caption: 'Manual', kind: 'pdf' })
     return out
   })
@@ -43,6 +48,8 @@
   async function load() {
     try {
       listing = await api.saves(id)
+      shots = await api.gameMedia(id).catch(() => [])
+      note = await api.gameNote(id).catch(() => '')
       loadError = ''
       stamp = Date.now()
     } catch (err) {
@@ -75,6 +82,18 @@
       play('error')
       toast((err as Error).message, 'error')
     }
+  }
+
+  async function editNote() {
+    await prompt('Anotação deste jogo', note, 'Salvar', async (v) => {
+      try {
+        await api.setGameNote(id, v)
+        note = v.trim()
+        return null
+      } catch (err) {
+        return (err as Error).message
+      }
+    }, { max: 2000, multiline: true })
   }
 
   async function toggleFav() {
@@ -184,6 +203,8 @@
                   <button class="thumb" data-nav aria-haspopup="dialog" onclick={() => (viewing = i)}>
                     {#if m.kind === 'pdf'}
                       <span class="nothumb pixel" aria-hidden="true">PDF</span>
+                    {:else if m.kind === 'video'}
+                      <span class="nothumb pixel" aria-hidden="true">VÍDEO</span>
                     {:else}
                       <img src={m.src} alt="" loading="lazy" />
                     {/if}
@@ -196,6 +217,14 @@
         {/if}
 
         {#if !g.remote}<Cheevos {id} />{/if}
+
+        {#if note}
+          <section class="note-box" aria-labelledby="note-title">
+            <h2 id="note-title">Sua anotação</h2>
+            <p class="note-text">{note}</p>
+            <button class="btn small" data-nav onclick={editNote}><Icon name="pencil" /> Editar anotação</button>
+          </section>
+        {/if}
 
         <section class="saves" aria-labelledby="saves-title">
           <h2 id="saves-title">Pontos salvos</h2>
@@ -274,6 +303,18 @@
 {/if}
 
 <style>
+  .note-box {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
+  }
+  .note-text {
+    margin: 0;
+    white-space: pre-line;
+    padding: 0.7rem 0.9rem;
+    border-left: 4px solid var(--focus);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+  }
   .page {
     height: 100vh;
     display: flex;

@@ -20,7 +20,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-    z-index: 50;
+    z-index: 97; /* acima do guia */
     max-width: min(30rem, 90vw);
   }
   .toast {

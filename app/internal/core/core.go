@@ -553,7 +553,7 @@ func (s *Service) Play(id, stateID string) error {
 	}()
 	gctx, stop := context.WithCancel(context.Background())
 	s.mu.Lock()
-	s.game = &gameRun{id: id, emulator: sys.Emulator, stop: stop}
+	s.game = &gameRun{id: id, emulator: sys.Emulator, stop: stop, started: started}
 	s.mu.Unlock()
 	go func() {
 		defer stop()
@@ -572,6 +572,10 @@ func (s *Service) Play(id, stateID string) error {
 		}
 		u.hist.Append(session)
 		s.mu.Lock()
+		next := ""
+		if s.game != nil {
+			next = s.game.next
+		}
 		s.running, s.game = "", nil
 		if u.hist.Counts(session) {
 			u.plays[id]++
@@ -601,6 +605,11 @@ func (s *Service) Play(id, stateID string) error {
 			})
 		}
 		s.opt.Emitter.Emit("game", ev)
+		if next != "" {
+			if err := s.Play(next, s.resumeState(next)); err != nil {
+				s.opt.Emitter.Emit("task", TaskEvent{ID: "switch:" + next, Label: "Retomada rápida", State: "error", Message: err.Error()})
+			}
+		}
 	}()
 	return nil
 }
@@ -837,7 +846,10 @@ func (s *Service) serveMedia(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", ctype)
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Write(data)
+	case "shot":
+		s.serveShot(w, r, parts[1])
 	case "cover", "snap", "title", "manual", "video":
+
 		e, _, err := s.find(parts[1])
 		path := map[string]string{"cover": e.info.Cover, "snap": e.info.Snap, "title": e.info.TitleShot, "manual": e.info.Manual, "video": e.info.Video}[parts[0]]
 		if err != nil || path == "" {

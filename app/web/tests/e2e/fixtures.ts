@@ -2,8 +2,8 @@
 import AxeBuilder from '@axe-core/playwright'
 import { test as base, expect, type Page } from '@playwright/test'
 import { spawn } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { BIN, DIST } from './paths'
 
 export interface App {
@@ -16,6 +16,7 @@ export interface App {
   /** Lê um arquivo do ambiente falso (caminho relativo à raiz). */
   read: (rel: string) => string
   exists: (rel: string) => boolean
+  write: (rel: string, body: string) => void
   data: string
 }
 
@@ -60,6 +61,10 @@ export const test = base.extend<Options & { app: App }>({
       calls: () => (existsSync(join(root, 'bin/calls.log')) ? readFileSync(join(root, 'bin/calls.log'), 'utf8') : ''),
       read: (rel) => readFileSync(join(root, rel), 'utf8'),
       exists: (rel) => existsSync(join(root, rel)),
+      write: (rel, body) => {
+        mkdirSync(dirname(join(root, rel)), { recursive: true })
+        writeFileSync(join(root, rel), body)
+      },
     }
     await use(app)
     proc.kill()

@@ -9,13 +9,13 @@
   import { pushHandler } from '../lib/input'
   import { focusDefault } from '../lib/nav'
   import { play } from '../lib/sound'
-  import { app, confirm, currentProfile, game, go, isKids, resetTo, screen, toast } from '../lib/state.svelte'
+  import { app, confirm, currentProfile, game, go, isKids, prompt, resetTo, screen, toast } from '../lib/state.svelte'
   import type { GuideInfo } from '../lib/types'
   import { saveSoon } from '../screens/settings/save.svelte'
   import Avatar from './Avatar.svelte'
   import Icon, { type IconName } from './Icon.svelte'
 
-  let info = $state<GuideInfo>({ game: '', commands: false })
+  let info = $state<GuideInfo>({ game: '', commands: false, started: 0, recording: false, note: '' })
   let previous: HTMLElement | null = null
   const me = $derived(currentProfile())
   const playing = $derived(app.playing?.state === 'running' ? app.playing : null)
@@ -31,7 +31,7 @@
     api.guide().then((g) => (info = g)).catch(() => {})
     tick().then(focusDefault)
     return pushHandler((a) => {
-      if (app.confirm) return false
+      if (app.confirm || app.prompt) return false
       if (a === 'back' || a === 'guide') {
         play('back')
         close()
@@ -52,17 +52,58 @@
     fn()
   }
 
-  async function command(cmd: 'save' | 'load' | 'quit') {
+  type Cmd = 'save' | 'load' | 'quit' | 'fps' | 'screenshot' | 'record'
+  const done: Partial<Record<Cmd, string>> = { save: 'Estado salvo', load: 'Estado carregado', screenshot: 'Captura salva: aparece na página do jogo' }
+
+  async function command(cmd: Cmd) {
     if (cmd === 'quit' && !(await confirm(`Fechar ${playing?.name || 'o jogo'}? O que não foi salvo se perde.`, 'Fechar jogo', true))) return
     try {
       await api.gameCommand(cmd)
-      app.guide = false
-      if (cmd !== 'quit') toast(cmd === 'save' ? 'Estado salvo' : 'Estado carregado', 'ok', 2500)
+      if (done[cmd]) toast(done[cmd]!, 'ok', 2500)
+      if (cmd === 'record') toast(info.recording ? 'Gravação parada: aparece na página do jogo' : 'Gravando… pare pelo guia', 'ok', 3000)
+      if (cmd === 'screenshot') info = await api.guide()
+      else app.guide = false // o resto devolve a tela pro jogo
     } catch (err) {
       play('error')
       toast((err as Error).message, 'error')
     }
   }
+
+  async function editNote() {
+    if (!info.game) return
+    await prompt('Anotação deste jogo', info.note, 'Salvar', async (v) => {
+      try {
+        await api.setGameNote(info.game, v)
+        info.note = v.trim()
+        return null
+      } catch (err) {
+        return (err as Error).message
+      }
+    }, { max: 2000, multiline: true })
+  }
+
+  // retomada rápida: outros jogos recentes, cada um de onde parou
+  const recent = $derived(
+    playing
+      ? app.games
+          .filter((g) => g.lastPlayed > 0 && !g.remote && g.id !== playing.id)
+          .sort((a, b) => b.lastPlayed - a.lastPlayed)
+          .slice(0, 3)
+      : [],
+  )
+
+  async function switchTo(id: string) {
+    try {
+      await api.switchGame(id)
+      app.guide = false
+      toast(`Trocando pra ${game(id)?.name ?? 'outro jogo'}…`, 'info', 2500)
+    } catch (err) {
+      play('error')
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  const minutes = $derived(info.started ? Math.max(0, Math.floor((now.getTime() / 1000 - info.started) / 60)) : 0)
 
   function toggle(key: 'music' | 'sounds') {
     if (!app.settings) return
@@ -86,7 +127,7 @@
 
 {#if app.guide}
   <div class="backdrop" role="presentation" onclick={(e) => e.target === e.currentTarget && close()}>
-    <div class="guide" role="dialog" aria-modal="true" aria-labelledby="guide-title" data-nav-scope={app.confirm ? undefined : ''}>
+    <div class="guide" role="dialog" aria-modal="true" aria-labelledby="guide-title" data-nav-scope={app.confirm || app.prompt ? undefined : ''}>
       <header>
         {#if me}<Avatar avatar={me.avatar} color={me.color} size="3rem" />{/if}
         <div>
@@ -100,15 +141,36 @@
           {#if current?.cover}<img src={current.cover} alt="" />{/if}
           <p class="now pixel">Jogando</p>
           <p class="name">{playing.name || current?.name}</p>
+          {#if info.started}<p class="muted session">Jogando há {minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`}{info.recording ? ' · ● gravando' : ''}</p>{/if}
           <div class="actions">
             <button class="btn primary" data-nav data-nav-default onclick={close}><Icon name="play" /> Voltar ao jogo</button>
             {#if info.commands}
-              <button class="btn" data-nav onclick={() => command('save')}><Icon name="save" /> Salvar estado</button>
-              <button class="btn" data-nav onclick={() => command('load')}><Icon name="resume" /> Carregar estado</button>
+              <div class="tools">
+                <button class="btn small" data-nav onclick={() => command('save')}><Icon name="save" /> Salvar estado</button>
+                <button class="btn small" data-nav onclick={() => command('load')}><Icon name="resume" /> Carregar estado</button>
+                <button class="btn small" data-nav onclick={() => command('screenshot')}><Icon name="star" /> Capturar tela</button>
+                <button class="btn small" data-nav aria-pressed={info.recording} onclick={() => command('record')}><Icon name="disc" /> {info.recording ? 'Parar gravação' : 'Gravar vídeo'}</button>
+                <button class="btn small" data-nav onclick={() => command('fps')}><Icon name="chart" /> Mostrar FPS</button>
+                <button class="btn small" data-nav onclick={editNote}><Icon name="pencil" /> Anotação</button>
+              </div>
+            {:else}
+              <button class="btn small" data-nav onclick={editNote}><Icon name="pencil" /> Anotação</button>
             {/if}
+            {#if info.note}<p class="note">{info.note}</p>{/if}
             <button class="btn danger" data-nav onclick={() => command('quit')}><Icon name="close" /> Fechar jogo</button>
           </div>
         </section>
+        {#if recent.length}
+          <section aria-labelledby="switch-title" class="switch">
+            <h3 id="switch-title" class="pixel">Trocar de jogo</h3>
+            {#each recent as g (g.id)}
+              <button class="tile row" data-nav onclick={() => switchTo(g.id)}>
+                {#if g.cover}<img src={g.cover} alt="" />{/if}
+                <span>{g.name}</span>
+              </button>
+            {/each}
+          </section>
+        {/if}
       {:else}
         <nav aria-label="Atalhos" class="tiles">
           {#each tiles as t, i (t.id)}
@@ -238,6 +300,44 @@
   .busy p {
     margin: 0.4rem 0 0.2rem;
     font-size: 0.85rem;
+  }
+  .session {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+  .tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .tools .btn {
+    justify-content: flex-start;
+  }
+  .note {
+    margin: 0;
+    font-size: 0.85rem;
+    white-space: pre-line;
+    padding: 0.5rem 0.7rem;
+    border-left: 3px solid var(--focus);
+  }
+  .switch {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .switch h3 {
+    font-size: 0.75rem;
+    color: var(--accent-2);
+  }
+  .tile.row {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    padding: 0.4rem 0.6rem;
+  }
+  .tile.row img {
+    width: 2.6rem;
+    height: 2.6rem;
+    object-fit: cover;
+    image-rendering: pixelated;
   }
   .quick {
     display: flex;

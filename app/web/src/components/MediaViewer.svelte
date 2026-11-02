@@ -72,6 +72,9 @@
         <iframe src={item.src} title={item.caption}></iframe>
         <button class="sr-only" data-nav data-nav-default onclick={() => window.open(item.src, '_blank')}>Abrir manual em outra aba</button>
       {/if}
+    {:else if item.kind === 'video'}
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <video class="clip" src={item.src} controls data-nav data-nav-default></video>
     {:else}
       <button class="shot" class:zoom data-nav data-nav-default aria-pressed={zoom} onclick={() => (zoom = !zoom)}>
         <img src={item.src} alt={item.caption} />
@@ -88,6 +91,11 @@
 </div>
 
 <style>
+  .clip {
+    max-width: 100%;
+    max-height: 100%;
+    background: #000;
+  }
   .viewer {
     position: fixed;
     inset: 0;

@@ -12,6 +12,7 @@ import type {
   GameCheevos,
   UpdateInfo,
   GuideInfo,
+  MediaFile,
   ImportItem,
   ImportResult,
   InputResult,
@@ -169,5 +170,9 @@ export const api = {
   guide: () => call<GuideInfo>('Guide'),
   showGuide: () => call<void>('ShowGuide'),
   resumeGame: () => call<void>('ResumeGame'),
-  gameCommand: (cmd: 'save' | 'load' | 'quit') => call<void>('GameCommand', cmd),
+  gameCommand: (cmd: 'save' | 'load' | 'quit' | 'fps' | 'screenshot' | 'record') => call<void>('GameCommand', cmd),
+  switchGame: (id: string) => call<void>('SwitchGame', id),
+  gameMedia: (id: string) => call<MediaFile[]>('GameMedia', id),
+  gameNote: (id: string) => call<string>('GameNote', id),
+  setGameNote: (id: string, text: string) => call<void>('SetGameNote', id, text),
 }

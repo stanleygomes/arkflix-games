@@ -31,3 +31,6 @@ var Conflict = conflict
 
 // SetRestartDelay encurta a espera antes de reiniciar.
 func SetRestartDelay(d time.Duration) { restartDelay = d }
+
+// EncodeToken expõe o token de caminho da mídia.
+var EncodeToken = encodeToken

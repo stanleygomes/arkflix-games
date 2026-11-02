@@ -67,7 +67,7 @@ export interface ScreensaverSettings {
 export interface MediaItem {
   src: string
   caption: string
-  kind: 'image' | 'pdf'
+  kind: 'image' | 'pdf' | 'video'
 }
 
 export interface LibraryDir {
@@ -226,7 +226,17 @@ export interface UpdateInfo {
 
 export interface GuideInfo {
   game: string // jogo aberto ('' = nenhum)
-  commands: boolean // salvar/carregar estado pelo guia
+  commands: boolean // salvar/carregar/capturar pelo guia
+  started: number // quando abriu (unix)
+  recording: boolean
+  note: string
+}
+
+export interface MediaFile {
+  id: string
+  kind: 'image' | 'video'
+  at: number
+  name: string
 }
 
 export interface TaskEvent {
