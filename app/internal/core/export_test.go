@@ -1,6 +1,8 @@
 package core
 
 import (
+	"os"
+	"syscall"
 	"time"
 
 	"github.com/stanleygomes/arkflix-games/app/internal/updater"
@@ -34,3 +36,30 @@ func SetRestartDelay(d time.Duration) { restartDelay = d }
 
 // EncodeToken expõe o token de caminho da mídia.
 var EncodeToken = encodeToken
+
+// SetMoveOtherDisk faz o mover tratar origem e destino como discos
+// diferentes: o rename falha com EXDEV e a cópia entra.
+func SetMoveOtherDisk(on bool) {
+	if !on {
+		moveRename, moveSameDisk = os.Rename, sameDisk
+		return
+	}
+	moveRename = func(a, b string) error { return &os.LinkError{Op: "rename", Old: a, New: b, Err: syscall.EXDEV} }
+	moveSameDisk = func(string, string) bool { return false }
+}
+
+// SetMoveFree troca a medida de espaço livre do destino (nil = a de verdade).
+func SetMoveFree(fn func(string) int64) {
+	if fn == nil {
+		fn = freeSpace
+	}
+	moveFree = fn
+}
+
+// SetMoveChunk roda fn a cada pedaço copiado (cancelar no meio da cópia).
+func SetMoveChunk(fn func(dst string)) {
+	if fn == nil {
+		fn = func(string) {}
+	}
+	moveChunk = fn
+}

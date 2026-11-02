@@ -149,6 +149,8 @@ func TestKidsProfile(t *testing.T) {
 	_, blocked["SetProfileKids"] = h.svc.SetProfileKids(kid.ID, false)
 	blocked["DeleteProfile"] = h.svc.DeleteProfile(kid.ID, "")
 	blocked["UpdateCovers"] = h.svc.UpdateCovers(false)
+	blocked["MoveGames"] = h.svc.MoveGames("snes", h.env.Local, h.env.Extra)
+	_, blocked["MovePlan"] = h.svc.MovePlan("snes", h.env.Local)
 	blocked["BluetoothPair"] = h.svc.BluetoothPair(bt.FakeXbox)
 	blocked["BluetoothForget"] = h.svc.BluetoothForget(bt.FakeEightBitDo)
 	blocked["BluetoothPower"] = h.svc.BluetoothPower(false)

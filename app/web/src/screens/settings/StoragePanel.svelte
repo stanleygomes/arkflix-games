@@ -1,17 +1,38 @@
 <script lang="ts">
   // Armazenamento, como nos consoles: o disco dos jogos dividido em jogos,
   // saves, app e capas, outros e livre; depois jogos por console e saves.
+  import { tick, untrack } from 'svelte'
   import Icon from '../../components/Icon.svelte'
+  import { activity } from '../../lib/activity.svelte'
   import { api } from '../../lib/api'
   import { bytes } from '../../lib/format'
-  import { system } from '../../lib/state.svelte'
+  import { focusEl } from '../../lib/nav'
+  import { app, system } from '../../lib/state.svelte'
   import type { StorageInfo } from '../../lib/types'
+  import MoveDialog from './MoveDialog.svelte'
 
   let info = $state<StorageInfo | null>(null)
   let error = $state('')
   let busy = $state(false)
+  let loadedAt = 0
+  // mover jogos entre pastas só faz sentido com 2+ pastas na biblioteca
+  const canMove = $derived((app.settings?.libraryDirs.length ?? 0) >= 2)
+  let moving = $state<StorageInfo['byConsole'][number] | null>(null)
+
+  function closeMove() {
+    const id = moving ? `move-${moving.system}` : ''
+    moving = null
+    tick().then(() => focusEl(document.getElementById(id)))
+  }
+
+  // terminou de mover (ou cancelou): mede de novo
+  $effect(() => {
+    const done = activity.tasks.find((t) => t.id.startsWith('move:') && t.state !== 'running')
+    if (done && done.at > untrack(() => loadedAt)) untrack(load)
+  })
 
   async function load() {
+    loadedAt = Date.now()
     busy = true
     try {
       info = await api.storage()
@@ -88,13 +109,16 @@
     <section aria-labelledby="consoles-title">
       <h3 id="consoles-title">Jogos por console · {info.gameCount} jogo{info.gameCount === 1 ? '' : 's'}, {bytes(info.games)}</h3>
       {#if info.byConsole.length}
-        <ul class="rows">
+        <ul class="rows" class:movable={canMove}>
           {#each info.byConsole as c (c.system)}
             <li>
               <span class="label">{c.name}</span>
               <span class="track" aria-hidden="true"><span class="fill" style:width={`${(c.bytes / maxConsole) * 100}%`} style:background={system(c.system)?.palette.accent ?? 'var(--accent)'}></span></span>
               <span class="value hud">{bytes(c.bytes)}</span>
               <span class="pct muted">{c.count} jogo{c.count === 1 ? '' : 's'}</span>
+              {#if canMove}
+                <button id={`move-${c.system}`} class="btn small" data-nav aria-label={`Mover jogos de ${c.name}`} onclick={() => (moving = c)}>Mover</button>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -127,6 +151,10 @@
     </section>
   {/if}
 </div>
+
+{#if moving}
+  <MoveDialog system={moving.system} name={moving.name} roots={moving.roots} onclose={closeMove} />
+{/if}
 
 <style>
   .panel-body {
@@ -226,6 +254,9 @@
   }
   .rows li {
     grid-template-columns: minmax(9rem, 14rem) 1fr auto auto;
+  }
+  .rows.movable li {
+    grid-template-columns: minmax(9rem, 14rem) 1fr auto auto auto;
   }
   .rows.plain li {
     grid-template-columns: 1fr auto;
