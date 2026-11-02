@@ -498,10 +498,18 @@ func (s *Service) Play(id, stateID string) error {
 	if s.syncs(e, sys, u) {
 		// saves mais novos de outro aparelho; sem servidor, joga com o daqui
 		ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
-		if n, err := s.pullSaves(ctx, e, sys, s.saveDirs()); err != nil {
+		n, conflicts, err := s.pullSaves(ctx, e, sys, s.saveDirs(), u.lastSync(id))
+		switch {
+		case err != nil:
 			s.opt.Emitter.Emit("task", TaskEvent{ID: "pull:" + id, Label: "Saves do servidor", State: "error", Message: err.Error()})
-		} else if n > 0 {
+		case len(conflicts) > 0:
+			s.opt.Emitter.Emit("task", TaskEvent{ID: "pull:" + id, Label: "Conflito de save", State: "error",
+				Message: fmt.Sprintf("o save daqui e o do servidor mudaram. Fiquei com o daqui; o do servidor foi guardado como %s.servidor", conflicts[0])})
+		case n > 0:
 			s.opt.Emitter.Emit("task", TaskEvent{ID: "pull:" + id, Label: "Saves do servidor", State: "done", Progress: 1, Message: fmt.Sprintf("%d save(s) mais novo(s) baixado(s)", n)})
+		}
+		if err == nil && len(conflicts) == 0 {
+			u.setSync(id, time.Now().Unix())
 		}
 		cancel()
 	}
@@ -568,6 +576,9 @@ func (s *Service) Play(id, stateID string) error {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 				defer cancel()
 				n, err := s.pushSaves(ctx, e, sys, listing, started.Unix()-2)
+				if err == nil {
+					u.setSync(id, time.Now().Unix())
+				}
 				return fmt.Sprintf("%d save(s) enviado(s)", n), err
 			})
 		}

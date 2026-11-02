@@ -373,17 +373,20 @@ func localTarget(dir, core, name string) (string, int64) {
 
 // pullSaves baixa os saves/states do servidor que estejam mais novos que os
 // daqui (ou que faltem). Nunca troca um arquivo daqui por um mais velho.
-func (s *Service) pullSaves(ctx context.Context, e entry, sys catalog.System, dirs settings.SaveDirs) (int, error) {
+// Conflito (os dois mudaram desde a última sincronização, last): fica o
+// daqui e o do servidor vai pro lado, com ".servidor" no fim.
+func (s *Service) pullSaves(ctx context.Context, e entry, sys catalog.System, dirs settings.SaveDirs, last int64) (int, []string, error) {
 	c, _ := s.remote.client()
 	if c == nil {
-		return 0, nil
+		return 0, nil, nil
 	}
+	var conflicts []string
 	stem := stemOf(e.game.Launch)
 	n := 0
 	for _, kind := range []romm.Kind{romm.Saves, romm.States} {
 		list, err := c.Assets(ctx, kind, e.romID)
 		if err != nil {
-			return n, err
+			return n, conflicts, err
 		}
 		dir, re := dirs.RetroArchSaves, syncSave
 		if kind == romm.States {
@@ -398,13 +401,26 @@ func (s *Service) pullSaves(ctx context.Context, e entry, sys catalog.System, di
 			if local >= a.Updated.Unix()-1 {
 				continue
 			}
+			if conflict(local, a.Updated.Unix(), last) {
+				if err := c.Fetch(ctx, kind, a, target+".servidor"); err != nil {
+					return n, conflicts, err
+				}
+				conflicts = append(conflicts, a.FileName)
+				continue
+			}
 			if err := c.Fetch(ctx, kind, a, target); err != nil {
-				return n, err
+				return n, conflicts, err
 			}
 			n++
 		}
 	}
-	return n, nil
+	return n, conflicts, nil
+}
+
+// conflict: o arquivo daqui e o do servidor mudaram depois da última
+// sincronização (jogou nos dois aparelhos sem sincronizar no meio).
+func conflict(local, remote, last int64) bool {
+	return last > 0 && local > last+2 && remote > last+2
 }
 
 // pushSaves envia o que mudou desde since (saves do jogo e states, com a

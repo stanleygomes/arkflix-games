@@ -38,6 +38,23 @@ func TestGuideQuitsGame(t *testing.T) {
 	}
 }
 
+func TestSaveConflict(t *testing.T) {
+	cases := []struct {
+		local, remote, last int64
+		want                bool
+	}{
+		{100, 200, 0, false},   // nunca sincronizou: o mais novo ganha
+		{150, 200, 100, true},  // os dois mudaram depois da última
+		{100, 200, 100, false}, // só o servidor mudou
+		{-1, 200, 100, false},  // não tem save aqui
+	}
+	for _, c := range cases {
+		if got := core.Conflict(c.local, c.remote, c.last); got != c.want {
+			t.Errorf("conflict(%d, %d, %d) = %v", c.local, c.remote, c.last, got)
+		}
+	}
+}
+
 func TestCancelTask(t *testing.T) {
 	h := setup(t)
 	if err := h.svc.CancelTask("nada"); err == nil {
