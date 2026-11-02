@@ -48,8 +48,8 @@
   <div class="right">
     {#if app.update?.available && !isKids()}
       <!-- aviso de versão nova: leva pra aba Atualizações -->
-      <button class="upd-btn" data-nav aria-label={`Atualização disponível: ${versionArrow(app.update)}`} onclick={() => go({ name: 'settings', tab: 'updates' })}>
-        <Icon name="download" /> <span class="pixel">{versionArrow(app.update)}</span>
+      <button class="upd-btn" data-nav title="Atualização disponível" onclick={() => go({ name: 'settings', tab: 'updates' })}>
+        <Icon name="download" size="1.2em" /> <span>Atualizar</span> <span class="ver">{versionArrow(app.update)}</span>
       </button>
     {/if}
     {#if actions}
@@ -88,19 +88,25 @@
 </header>
 
 <style>
+  /* fonte de texto: versão é número pequeno, em pixel não dava pra ler */
   .upd-btn {
     display: inline-flex;
-    gap: 0.5rem;
+    gap: 0.6rem;
     align-items: center;
-    padding: 0.35rem 0.7rem;
+    height: 3rem;
+    padding: 0 1rem;
     font: inherit;
-    font-size: 0.75rem;
+    font-weight: 700;
+    font-size: 1rem;
     color: #000;
     background: var(--focus);
     border: 3px solid var(--focus);
     box-shadow: 0 0 12px var(--focus);
     cursor: pointer;
     animation: upd-pulse 2s steps(2) infinite;
+  }
+  .upd-btn .ver {
+    font-weight: 400;
   }
   .upd-btn:focus-visible,
   .upd-btn:hover {

@@ -58,7 +58,7 @@ test.describe('com versão nova', () => {
     await page.getByRole('button', { name: 'Procurar atualizações' }).click()
     await expect(page.locator('.versions')).toHaveText(/v1\.0\.0\s*→\s*v99\.0\.0/)
     // aviso no topo, em qualquer tela com a barra
-    await expect(page.getByRole('button', { name: 'Atualização disponível: v1.0.0 → v99.0.0' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Atualizar v1.0.0 → v99.0.0' })).toBeVisible()
     await expect(page.locator('.toasts')).toContainText('Atualização disponível: v1.0.0 → v99.0.0')
     await axe(page, 'atualizações')
     await page.getByRole('button', { name: /e (reiniciar|atualizar)$/ }).click()
