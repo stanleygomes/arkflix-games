@@ -15,7 +15,7 @@ test('teclado: troca console, desce pra fileira e o destaque acompanha', async (
   await goTab(page, 'snes')
   await expect(page.locator('nav.tabs [aria-current="page"]')).toHaveText(/^SNES/)
   const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())
-  expect(accent).toBe('#b896ff') // paleta do SNES (neon)
+  expect(accent).toBe('rgb(184, 150, 255)') // paleta do SNES (neon)
 
   await page.keyboard.press('ArrowDown')
   expect((await focused(page)).label).toContain('Mega Man X')

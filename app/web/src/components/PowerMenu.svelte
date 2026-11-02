@@ -1,5 +1,6 @@
 <script lang="ts">
   // Menu de energia (só no app desktop): minimizar, tela cheia/janela, fechar.
+  import { panelIn, panelOut, shade } from '../lib/motion'
   import { tick } from 'svelte'
   import { api } from '../lib/api'
   import { pushHandler } from '../lib/input'
@@ -58,8 +59,8 @@
 </script>
 
 {#if app.power}
-  <div class="backdrop">
-    <div class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="power-title" data-nav-scope={app.confirm ? undefined : ''}>
+  <div class="backdrop" in:shade out:shade={{ out: true }}>
+    <div class="dialog panel" in:panelIn out:panelOut role="dialog" aria-modal="true" aria-labelledby="power-title" data-nav-scope={app.confirm ? undefined : ''}>
       <h2 id="power-title">Energia</h2>
       <div class="options">
         <button class="btn" data-nav data-nav-default onclick={minimize}><Icon name="back" /> Minimizar</button>

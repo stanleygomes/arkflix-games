@@ -1,5 +1,6 @@
 <script lang="ts">
   // Diálogo de texto: campo + teclado na tela. Voltar cancela.
+  import { panelIn, panelOut, shade } from '../lib/motion'
   import { tick } from 'svelte'
   import { pushHandler } from '../lib/input'
   import { focusDefault } from '../lib/nav'
@@ -49,8 +50,8 @@
 </script>
 
 {#if p}
-  <div class="backdrop">
-    <div class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="prompt-title" data-nav-scope>
+  <div class="backdrop" in:shade out:shade={{ out: true }}>
+    <div class="dialog panel" in:panelIn out:panelOut role="dialog" aria-modal="true" aria-labelledby="prompt-title" data-nav-scope>
       <h2 id="prompt-title">{p.title}</h2>
       <label class="sr-only" for="prompt-input">{p.title}</label>
       {#if p.multiline}

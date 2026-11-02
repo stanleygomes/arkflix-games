@@ -12,6 +12,8 @@
   import { play } from '../lib/sound'
   import { toggleFavorite } from '../lib/actions'
   import { downloadGame, downloads } from '../lib/downloads.svelte'
+  import { indicator } from '../lib/indicator'
+  import { shade } from '../lib/motion'
   import { pickRandom, sortGames } from '../lib/library'
   import { activeCollections, sortOf, sourceGames, sourceTitle } from '../lib/sources'
   import { app, currentProfile, go, isKids, system, toast } from '../lib/state.svelte'
@@ -185,10 +187,12 @@
 </script>
 
 <div class="home">
-  <div class="backdrop" style:background-image={hero ? `url("${hero}")` : 'none'} aria-hidden="true"></div>
+  {#key hero}
+    <div class="backdrop" in:shade style:background-image={hero ? `url("${hero}")` : 'none'} aria-hidden="true"></div>
+  {/key}
   <HeroVideo game={selected} />
   <TopBar>
-    <nav class="tabs" aria-label="Consoles">
+    <nav class="tabs" aria-label="Consoles" use:indicator={app.homeTab}>
       {#each tabs as t (t.slug)}
         <button
           class="tab pixel"
@@ -229,7 +233,10 @@
       <div class="stage">
       <section class="hero">
         <p class="system-pill pixel">{selSystem?.name ?? selected.system}</p>
-        <h1 class="pixel title" id="hero-title">{selected.name}</h1>
+        {#key selected.id}
+          <!-- título digitado letra por letra (um degrau por letra) -->
+          <h1 class="pixel title typing" id="hero-title" style:--letters={selected.name.length} style:animation-timing-function={`steps(${Math.max(1, selected.name.length)})`}>{selected.name}</h1>
+        {/key}
         <p class="meta">
           {#if selected.year}<span>{selected.year}</span>{/if}
           {#if selected.players}<span>{selected.players} jogador{selected.players === '1' ? '' : 'es'}</span>{/if}
@@ -342,11 +349,40 @@
     mask-image: linear-gradient(to bottom, #000 30%, transparent 85%);
   }
   .tabs {
+    position: relative;
     display: flex;
     gap: 0.4rem;
     overflow-x: auto;
     scrollbar-width: none;
     padding: 0.5rem;
+  }
+  /* luz da aba ativa: desliza entre os consoles (lib/indicator.ts) */
+  .tabs :global(.tab-light) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: var(--accent);
+    box-shadow: var(--glow);
+    transition:
+      transform 200ms steps(5),
+      width 200ms steps(5),
+      background 300ms;
+    pointer-events: none;
+  }
+  .tab {
+    position: relative;
+    z-index: 1;
+  }
+  .typing {
+    animation: typing calc(var(--letters) * 28ms + 60ms) both;
+  }
+  @keyframes typing {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 -1em 0 0);
+    }
   }
   .tab {
     font-size: 1.05rem;
@@ -368,9 +404,7 @@
   }
   .tab[aria-current='page'] {
     color: var(--on-accent);
-    background: var(--accent);
-    border-color: var(--accent);
-    box-shadow: var(--glow);
+    border-color: transparent;
   }
   .hud {
     display: flex;
@@ -517,6 +551,44 @@
   .card.selected,
   .card:focus {
     transform: translateY(-0.5rem) scale(1.06);
+  }
+  /* foco: a borda acende piscando como letreiro e depois "respira" */
+  .card:focus {
+    animation:
+      neon-on 0.24s steps(1) both,
+      breathe 1.6s ease-in-out 0.24s infinite;
+  }
+  /* sombra de luz no "chão" debaixo da capa em foco */
+  .card:focus::after {
+    content: '';
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: -1.1rem;
+    height: 0.6rem;
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--focus) 45%, transparent), transparent 70%);
+    pointer-events: none;
+  }
+  @keyframes neon-on {
+    0%,
+    50% {
+      outline-color: transparent;
+      box-shadow: none;
+    }
+    25%,
+    75% {
+      outline-color: var(--focus);
+      box-shadow: var(--glow-focus);
+    }
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      box-shadow: 0 0 8px var(--focus), 0 0 20px color-mix(in srgb, var(--focus) 40%, transparent);
+    }
+    50% {
+      box-shadow: 0 0 14px var(--focus), 0 0 40px color-mix(in srgb, var(--focus) 65%, transparent);
+    }
   }
   .badge {
     position: absolute;

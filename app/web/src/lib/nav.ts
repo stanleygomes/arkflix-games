@@ -66,12 +66,13 @@ const SELECTOR = '[data-nav]:not([disabled]):not([aria-hidden="true"])'
 const memory = new Map<string, HTMLElement>()
 
 function visible(el: HTMLElement): boolean {
+  if (el.closest('[inert]')) return false // tela ou diálogo saindo
   const r = el.getBoundingClientRect()
   return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'
 }
 
 function scope(): ParentNode {
-  const dialogs = document.querySelectorAll<HTMLElement>('[data-nav-scope]')
+  const dialogs = [...document.querySelectorAll<HTMLElement>('[data-nav-scope]')].filter((d) => !d.closest('[inert]'))
   return dialogs.length ? dialogs[dialogs.length - 1] : document
 }
 
@@ -100,8 +101,8 @@ export function focusEl(el: HTMLElement | null | undefined): boolean {
 /** Foca o padrão da tela ([data-nav-default]) ou o primeiro focável. */
 export function focusDefault(): boolean {
   const s = scope()
-  const def = s.querySelector<HTMLElement>('[data-nav-default]')
-  if (def && visible(def)) return focusEl(def)
+  const def = [...s.querySelectorAll<HTMLElement>('[data-nav-default]')].find(visible)
+  if (def) return focusEl(def)
   return focusEl(focusables()[0])
 }
 

@@ -11,7 +11,7 @@ test('acessibilidade: fonte, alto contraste e animações aplicam na hora e pers
 
   await page.getByRole('switch', { name: 'Alto contraste' }).click()
   await expect(page.locator('body')).toHaveClass(/high-contrast/)
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim())).toBe('#000000')
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim())).toBe('rgb(0, 0, 0)')
   await axe(page, 'alto contraste')
 
   await page.getByRole('switch', { name: 'Reduzir animações' }).click()

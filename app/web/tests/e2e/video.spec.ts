@@ -12,6 +12,10 @@ async function setA11y(page: Page, app: App, patch: Record<string, boolean>) {
 
 const sonic = (page: Page) => page.locator('.shelf [data-game][aria-label^="Sonic"]').first()
 
+
+// estes efeitos só existem com animação ligada
+test.use({ reducedMotion: 'no-preference' })
+
 test('vídeo do jogo toca mudo no destaque depois de 2 s e some ao trocar de jogo', async ({ page, app }) => {
   await open(page, app)
   await sonic(page).focus()

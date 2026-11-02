@@ -25,8 +25,8 @@
     {#each tasks as t (t.id)}
       <div class="task">
         <span class="label">{t.label}…</span>
-        <div class="bar" role="progressbar" aria-label={t.label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(t.progress * 100)}>
-          <span style:width={`${Math.round(t.progress * 100)}%`}></span>
+        <div class="energy" role="progressbar" aria-label={t.label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(t.progress * 100)}>
+          <span style:width={`${Math.floor(t.progress * 20) * 5}%`}></span>
         </div>
         <span class="pct pixel">{Math.round(t.progress * 100)}%</span>
       </div>
@@ -52,16 +52,7 @@
     box-shadow: var(--glow-2);
     padding: 0.6rem 0.9rem;
   }
-  .bar {
+  .energy {
     width: 12rem;
-    height: 0.9rem;
-    border: 2px solid var(--text);
-    background: #000;
-  }
-  .bar span {
-    display: block;
-    height: 100%;
-    background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 8px);
-    transition: width var(--t) var(--ease);
   }
 </style>

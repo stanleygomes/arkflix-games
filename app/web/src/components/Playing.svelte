@@ -1,16 +1,20 @@
 <script lang="ts">
-  // Tela enquanto o emulador roda (no desktop a janela some; no navegador fica aqui).
-  import { app, glyphFamily } from '../lib/state.svelte'
+  // Jogo abrindo/aberto: "PLAYER 1 START" piscando sobre a capa enquanto o
+  // emulador sobe (no desktop a janela some logo depois; no navegador fica).
+  import { panelIn } from '../lib/motion'
+  import { app, game, glyphFamily } from '../lib/state.svelte'
   import Glyph from './Glyph.svelte'
 
   const p = $derived(app.playing)
   const family = $derived(glyphFamily())
+  const cover = $derived(p ? game(p.id)?.cover : '')
 </script>
 
 {#if p?.state === 'running'}
   <div class="playing" role="dialog" aria-modal="true" aria-labelledby="playing-title">
-    <div class="box">
-      <div class="loader" aria-hidden="true"><span></span><span></span><span></span></div>
+    {#if cover}<div class="cover" style:background-image={`url("${cover}")`} aria-hidden="true"></div>{/if}
+    <div class="box" in:panelIn>
+      <p class="start pixel" aria-hidden="true">PLAYER 1 START</p>
       <h2 id="playing-title" class="pixel">Jogando {p.name}</h2>
       <p class="muted">Feche o jogo pra voltar. Atalhos dentro do jogo:</p>
       <ul class="tips">
@@ -27,11 +31,34 @@
     position: fixed;
     inset: 0;
     z-index: 90;
-    background: color-mix(in srgb, var(--bg) 94%, #000);
+    background: #000;
     display: grid;
     place-items: center;
+    overflow: hidden;
+  }
+  .cover {
+    position: absolute;
+    inset: -2rem;
+    background-size: cover;
+    background-position: center;
+    image-rendering: pixelated;
+    filter: blur(6px) saturate(1.3);
+    opacity: 0.28;
+  }
+  .start {
+    font-size: clamp(1.8rem, 5vw, 3.6rem);
+    color: var(--focus);
+    text-shadow: 0 0 10px var(--focus), 0 0 30px var(--focus);
+    letter-spacing: 0.1em;
+    animation: start-blink 0.5s steps(1) 4 both;
+  }
+  @keyframes start-blink {
+    50% {
+      opacity: 0;
+    }
   }
   .box {
+    position: relative;
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -53,26 +80,5 @@
     gap: 0.4rem;
     align-items: center;
     justify-content: center;
-  }
-  .loader {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .loader span {
-    width: 1rem;
-    height: 1rem;
-    background: var(--accent);
-    animation: hop 0.9s steps(3) infinite;
-  }
-  .loader span:nth-child(2) {
-    animation-delay: 0.15s;
-  }
-  .loader span:nth-child(3) {
-    animation-delay: 0.3s;
-  }
-  @keyframes hop {
-    50% {
-      transform: translateY(-0.8rem);
-    }
   }
 </style>

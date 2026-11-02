@@ -66,6 +66,8 @@ export const app = $state({
   prompt: null as Prompt | null,
   pin: null as PinAsk | null,
   power: false,
+  // direção da última navegação (as telas animam de acordo)
+  nav: { dir: 'fwd' as 'fwd' | 'back' | 'reset', seq: 0 },
   profile: null as ProfileState | null,
   platform: 'linux',
   lists: [] as GameList[],
@@ -86,6 +88,7 @@ export function go(s: Screen) {
     toast('Bloqueado no perfil infantil', 'info', 2500)
     return
   }
+  app.nav = { dir: 'fwd', seq: app.nav.seq + 1 }
   app.stack.push(s)
 }
 
@@ -96,6 +99,7 @@ export function isKids(): boolean {
 
 export function back(): boolean {
   if (app.stack.length > 1) {
+    app.nav = { dir: 'back', seq: app.nav.seq + 1 }
     app.stack.pop()
     return true
   }
@@ -180,6 +184,7 @@ export function currentProfile() {
 
 /** Recomeça a navegação numa tela (troca de perfil). */
 export function resetTo(s: Screen) {
+  app.nav = { dir: 'reset', seq: app.nav.seq + 1 }
   app.stack = [s]
   app.homeTab = 'home'
   app.selected = ''

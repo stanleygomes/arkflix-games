@@ -1,5 +1,6 @@
 <script lang="ts">
   // Em quais listas o jogo está: marcar/desmarcar e criar lista nova.
+  import { panelIn, panelOut, shade } from '../lib/motion'
   import { tick } from 'svelte'
   import { api } from '../lib/api'
   import { pushHandler } from '../lib/input'
@@ -47,8 +48,8 @@
   }
 </script>
 
-<div class="backdrop">
-  <div class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="lists-title" data-nav-scope={app.prompt ? undefined : ''}>
+<div class="backdrop" in:shade out:shade={{ out: true }}>
+  <div class="dialog panel" in:panelIn out:panelOut role="dialog" aria-modal="true" aria-labelledby="lists-title" data-nav-scope={app.prompt ? undefined : ''}>
     <h2 id="lists-title">Listas</h2>
     {#if app.lists.length}
       <div class="checks" role="group" aria-label="Listas do jogo">

@@ -1,5 +1,6 @@
 // Ações de jogo usadas em várias telas.
 import { api } from './api'
+import { burst } from './motion'
 import { current } from './nav'
 import { play } from './sound'
 import { game, putGame, toast } from './state.svelte'
@@ -9,9 +10,11 @@ export async function toggleFavorite(id: string | undefined) {
   const g = id ? game(id) : undefined
   if (!g) return
   try {
+    const from = current()
     const updated = await api.setFavorite(g.id, !g.favorite)
     putGame(updated)
     play('toggle')
+    if (updated.favorite) burst(from)
     toast(updated.favorite ? `${updated.name} nos favoritos` : `${updated.name} saiu dos favoritos`, 'ok', 2500)
   } catch (err) {
     toast((err as Error).message, 'error')

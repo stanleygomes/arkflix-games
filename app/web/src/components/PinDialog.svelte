@@ -1,6 +1,7 @@
 <script lang="ts">
   // Teclado de PIN (4 números): controle navega no teclado da tela, teclado
   // físico digita direto. Com 4 números confere; errou, limpa e avisa.
+  import { panelIn, panelOut, shade } from '../lib/motion'
   import { tick } from 'svelte'
   import { pushHandler } from '../lib/input'
   import { focusDefault } from '../lib/nav'
@@ -76,8 +77,8 @@
 </script>
 
 {#if ask}
-  <div class="backdrop">
-    <div class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="pin-title" data-nav-scope>
+  <div class="backdrop" in:shade out:shade={{ out: true }}>
+    <div class="dialog panel" in:panelIn out:panelOut role="dialog" aria-modal="true" aria-labelledby="pin-title" data-nav-scope>
       <h2 id="pin-title">{ask.title}</h2>
       <p class="dots" aria-live="polite">
         <span class="sr-only">{digits.length} de 4 números</span>

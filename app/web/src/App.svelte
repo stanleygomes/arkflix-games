@@ -4,6 +4,8 @@
   import Playing from './components/Playing.svelte'
   import PromptDialog from './components/PromptDialog.svelte'
   import PinDialog from './components/PinDialog.svelte'
+  import PixelWipe from './components/PixelWipe.svelte'
+  import { screenIn, screenOut, type ScreenMotion } from './lib/motion'
   import PowerMenu from './components/PowerMenu.svelte'
   import Screensaver from './components/Screensaver.svelte'
   import Tasks from './components/Tasks.svelte'
@@ -28,6 +30,15 @@
   import Welcome from './screens/Welcome.svelte'
 
   const current = $derived(screen())
+
+  // telas "especiais" ligam como uma TV; o resto desliza na direção da navegação
+  const CRT = new Set(['settings', 'profiles', 'welcome'])
+  function motionFor(name: string): ScreenMotion {
+    const { dir } = app.nav
+    if (dir === 'reset') return { kind: 'none', dir: 1 } // o mosaico em blocos cobre
+    if (dir === 'fwd' && CRT.has(name)) return { kind: 'crt', dir: 1 }
+    return { kind: 'slide', dir: dir === 'back' ? -1 : 1 }
+  }
 
   onMount(async () => {
     let native = true
@@ -83,6 +94,7 @@
     const body = document.body.classList
     body.toggle('high-contrast', a.highContrast)
     body.toggle('reduce-motion', a.reduceMotion)
+    document.documentElement.classList.toggle('reduce-motion', a.reduceMotion)
     body.toggle('scanlines', a.scanlines && !a.highContrast)
     body.toggle('no-pixel', !a.pixelTitles)
     // perfil infantil: tudo um pouco maior
@@ -110,6 +122,7 @@
   <main class="loading" aria-busy="true"><p class="pixel">Carregando…</p></main>
 {:else}
   {#key app.stack.length + current.name + (current.name === 'game' ? current.id : current.name === 'library' ? current.source : '') + (app.profile?.current ?? '')}
+    <div class="layer" in:screenIn={motionFor(current.name)} out:screenOut={motionFor(current.name)}>
     {#if current.name === 'home'}
       <Home />
     {:else if current.name === 'game'}
@@ -133,6 +146,7 @@
     {:else if current.name === 'welcome'}
       <Welcome />
     {/if}
+    </div>
   {/key}
 {/if}
 
@@ -142,10 +156,16 @@
 <ConfirmDialog />
 <PromptDialog />
 <PinDialog />
+<PixelWipe />
 <PowerMenu />
 <Screensaver />
 
 <style>
+  .layer {
+    position: fixed;
+    inset: 0;
+    transform-origin: center;
+  }
   .fatal,
   .loading {
     height: 100vh;

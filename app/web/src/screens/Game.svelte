@@ -10,6 +10,7 @@
   import { ago, bytes, dateTime, playTime } from '../lib/format'
   import { downloadGame, downloads } from '../lib/downloads.svelte'
   import { pushHandler } from '../lib/input'
+  import { burst } from '../lib/motion'
   import { current, focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
@@ -78,9 +79,11 @@
   async function toggleFav() {
     if (!g) return
     try {
+      const from = current()
       const updated = await api.setFavorite(g.id, !g.favorite)
       putGame(updated)
       play('toggle')
+      if (updated.favorite) burst(from)
     } catch (err) {
       toast((err as Error).message, 'error')
     }
@@ -142,7 +145,10 @@
         <div class="actions">
           {#if g.remote}
             {#if downloads[g.id] !== undefined}
-              <p class="downloading" role="status"><Icon name="download" /> Baixando… {Math.round(downloads[g.id] * 100)}%</p>
+              <div class="downloading" role="status">
+                <span><Icon name="download" /> Baixando… {Math.round(downloads[g.id] * 100)}%</span>
+                <span class="energy" aria-hidden="true"><span style:width={`${Math.floor(downloads[g.id] * 20) * 5}%`}></span></span>
+              </div>
             {:else if isKids()}
               <p class="muted">Este jogo está no servidor. Peça pra um adulto baixar.</p>
             {:else}
@@ -322,8 +328,8 @@
   }
   .downloading {
     display: flex;
+    flex-direction: column;
     gap: 0.5rem;
-    align-items: center;
     font-weight: 700;
     color: var(--accent);
   }

@@ -11,6 +11,10 @@ async function patchSettings(page: Page, app: App, fn: (s: Record<string, any>) 
 
 const saver = (page: Page) => page.getByRole('dialog', { name: 'Protetor de tela' })
 
+
+// estes efeitos só existem com animação ligada
+test.use({ reducedMotion: 'no-preference' })
+
 test('cobrinha liga depois de 5 min parado, joga sozinha e qualquer tecla só acorda', async ({ page, app }) => {
   await page.clock.install()
   await open(page, app)

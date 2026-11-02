@@ -1,6 +1,7 @@
 <script lang="ts">
   // Diálogo de confirmação. [data-nav-scope] prende a navegação aqui dentro;
   // "voltar" cancela.
+  import { panelIn, panelOut, shade } from '../lib/motion'
   import { tick } from 'svelte'
   import { pushHandler } from '../lib/input'
   import { focusDefault } from '../lib/nav'
@@ -31,8 +32,8 @@
 </script>
 
 {#if c}
-  <div class="backdrop">
-    <div class="dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="confirm-text" data-nav-scope>
+  <div class="backdrop" in:shade out:shade={{ out: true }}>
+    <div class="dialog panel" in:panelIn out:panelOut role="alertdialog" aria-modal="true" aria-labelledby="confirm-text" data-nav-scope>
       <p id="confirm-text" class="text">{c.text}</p>
       <div class="actions">
         <button class="btn" data-nav data-nav-default onclick={() => close(false)}>Cancelar</button>
