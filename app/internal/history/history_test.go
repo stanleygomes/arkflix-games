@@ -79,3 +79,15 @@ func TestConcurrentAppend(t *testing.T) {
 		t.Fatalf("escritas concorrentes perderam linha: %d", len(all))
 	}
 }
+
+func TestPlayedBetween(t *testing.T) {
+	day := time.Date(2026, 3, 10, 0, 0, 0, 0, time.Local)
+	sessions := []history.Session{
+		{Game: "a", Start: day.Add(-10 * time.Minute).Unix(), Seconds: 30 * 60}, // 20 min depois da meia-noite
+		{Game: "b", Start: day.Add(9 * time.Hour).Unix(), Seconds: 15 * 60},
+		{Game: "c", Start: day.Add(-48 * time.Hour).Unix(), Seconds: 3600}, // outro dia
+	}
+	if got := history.PlayedBetween(sessions, day, day.Add(24*time.Hour)); got != 35*time.Minute {
+		t.Fatalf("jogado no dia: %s", got)
+	}
+}

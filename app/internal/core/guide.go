@@ -17,6 +17,8 @@ type gameRun struct {
 	id       string
 	emulator string
 	stop     context.CancelFunc
+	started  time.Time
+	user     *user
 }
 
 // raCommandAddr: porta de comandos do RetroArch (network_cmd_port).
@@ -74,23 +76,7 @@ func (s *Service) GameCommand(cmd string) error {
 		return errors.New("nenhum jogo aberto")
 	}
 	if cmd == "quit" {
-		grace := quitGrace
-		if s.opt.Emulators.Bin != "" {
-			grace = 300 * time.Millisecond // emulador falso (testes) não ouve a porta
-		}
-		if g.emulator == catalog.RetroArch && guideCommands() && raCommand("QUIT") == nil {
-			// o RetroArch fecha sozinho e grava o save (matar perderia a bateria
-			// do cartucho). Duas vezes: "confirmar ao sair" pede apertar de novo.
-			go func() {
-				time.Sleep(300 * time.Millisecond)
-				raCommand("QUIT")
-				time.Sleep(grace)
-				time.Sleep(grace)
-				g.stop()
-			}()
-			return nil
-		}
-		g.stop()
+		s.quitGame(g)
 		return nil
 	}
 	if g.emulator != catalog.RetroArch || !guideCommands() {
@@ -105,6 +91,28 @@ func (s *Service) GameCommand(cmd string) error {
 	}
 	s.opt.Window.Hide() // volta pro jogo
 	return nil
+}
+
+// quitGame fecha o jogo: no RetroArch pede pra ele sair (grava o save);
+// nos outros, encerra o processo.
+func (s *Service) quitGame(g *gameRun) {
+	grace := quitGrace
+	if s.opt.Emulators.Bin != "" {
+		grace = 300 * time.Millisecond // emulador falso (testes) não ouve a porta
+	}
+	if g.emulator == catalog.RetroArch && guideCommands() && raCommand("QUIT") == nil {
+		// o RetroArch fecha sozinho e grava o save (matar perderia a bateria
+		// do cartucho). Duas vezes: "confirmar ao sair" pede apertar de novo.
+		go func() {
+			time.Sleep(300 * time.Millisecond)
+			raCommand("QUIT")
+			time.Sleep(grace)
+			time.Sleep(grace)
+			g.stop()
+		}()
+		return
+	}
+	g.stop()
 }
 
 func raCommand(cmd string) error {

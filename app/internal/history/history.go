@@ -98,3 +98,17 @@ func (l *Log) Plays(sessions []Session) map[string]int {
 	}
 	return out
 }
+
+// PlayedBetween soma quanto das sessões caiu entre from e to (uma sessão que
+// atravessa a meia-noite conta só a parte de dentro).
+func PlayedBetween(sessions []Session, from, to time.Time) time.Duration {
+	var total int64
+	a, b := from.Unix(), to.Unix()
+	for _, s := range sessions {
+		start, end := max(s.Start, a), min(s.Start+s.Seconds, b)
+		if end > start {
+			total += end - start
+		}
+	}
+	return time.Duration(total) * time.Second
+}

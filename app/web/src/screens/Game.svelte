@@ -16,7 +16,7 @@
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { app, back, confirm, game, go, isKids, putGame, system, toast } from '../lib/state.svelte'
-  import type { GameEvent, Listing, MediaItem, SaveState } from '../lib/types'
+  import type { GameEvent, KidsTimeInfo, Listing, MediaItem, SaveState } from '../lib/types'
 
   let { id }: { id: string } = $props()
   const g = $derived(game(id))
@@ -39,6 +39,19 @@
     return out
   })
   const inLists = $derived(app.lists.filter((l) => l.games.includes(id)).length)
+  // perfil infantil com limite: sem tempo, o Jogar fica desligado com o motivo
+  let kidsTime = $state<KidsTimeInfo | null>(null)
+  const blocked = $derived(kidsTime?.reason ?? '')
+  const loadKidsTime = () => {
+    if (!isKids()) return
+    api
+      .kidsTime()
+      .then((t) => {
+        kidsTime = t
+        if (t.reason) tick().then(focusDefault) // o Jogar desligou: foco vai pro próximo
+      })
+      .catch(() => {})
+  }
 
   async function load() {
     try {
@@ -52,10 +65,12 @@
 
   $effect(() => {
     load()
+    loadKidsTime()
     tick().then(focusDefault)
     // depois de jogar, recarrega (state novo, miniatura nova)
     return on<GameEvent>('game', (e) => {
       if (e.state === 'exited' && e.id === id) load()
+      if (e.state === 'exited') loadKidsTime()
     })
   })
 
@@ -158,12 +173,14 @@
               </button>
             {/if}
           {:else}
-            <button class="btn primary" data-nav data-nav-default onclick={() => launch()}><Icon name="play" /> Jogar do início</button>
+            <button class="btn primary" data-nav data-nav-default={!blocked || undefined} disabled={!!blocked} aria-describedby={blocked ? 'kids-blocked' : undefined} onclick={() => launch()}>
+              <Icon name="play" /> Jogar do início
+            </button>
           {/if}
           {#if auto}
-            <button class="btn" data-nav onclick={() => launch('auto')}><Icon name="resume" /> Continuar de onde parei</button>
+            <button class="btn" data-nav disabled={!!blocked} onclick={() => launch('auto')}><Icon name="resume" /> Continuar de onde parei</button>
           {/if}
-          <button class="btn" data-nav aria-pressed={g.favorite} onclick={toggleFav}>
+          <button class="btn" data-nav data-nav-default={blocked ? true : undefined} aria-pressed={g.favorite} onclick={toggleFav}>
             <Icon name="star" /> {g.favorite ? 'Favorito' : 'Favoritar'}
           </button>
           {#if !isKids()}
@@ -174,6 +191,7 @@
           </button>
           <button class="btn" data-nav onclick={() => back()}><Icon name="back" /> Voltar</button>
         </div>
+        {#if blocked}<p class="blocked" id="kids-blocked" role="status">{blocked}</p>{/if}
 
         {#if media.length}
           <section class="media" aria-labelledby="media-title">
@@ -274,6 +292,10 @@
 {/if}
 
 <style>
+  .blocked {
+    font-weight: 700;
+    color: var(--focus);
+  }
   .page {
     height: 100vh;
     display: flex;

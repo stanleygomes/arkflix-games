@@ -19,7 +19,7 @@
   import { focusDefault, setReducedMotion } from './lib/nav'
   import { configure, pauseMusic, play } from './lib/sound'
   import { app, applyBoot, isKids, resetTo, screen, toast } from './lib/state.svelte'
-  import type { Game, GameEvent, Pad } from './lib/types'
+  import type { Game, GameEvent, LimitEvent, Pad } from './lib/types'
   import { watchUpdate } from './lib/update'
   import Restarting from './components/Restarting.svelte'
   import Game_ from './screens/Game.svelte'
@@ -71,6 +71,8 @@
     on<Pad[]>('pads', padsChanged)
     on<Game[]>('library', (games) => (app.games = games ?? []))
     watchUpdate()
+    // limite do perfil infantil: aviso faltando pouco e no fim (o jogo fecha salvando)
+    on<LimitEvent>('limit', (e) => toast(e.minutesLeft > 0 ? e.message : `${e.message} O jogo foi salvo e fechado.`, 'info', 9000))
     on<GameEvent>('game', async (e) => {
       if (e.state === 'running') {
         app.playing = e

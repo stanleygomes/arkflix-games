@@ -31,3 +31,9 @@ var Conflict = conflict
 
 // SetRestartDelay encurta a espera antes de reiniciar.
 func SetRestartDelay(d time.Duration) { restartDelay = d }
+
+// SetClock troca o relógio do serviço (limite do perfil infantil).
+func SetClock(s *Service, now func() time.Time) { s.opt.Now = now }
+
+// SetKidsTimers encurta o vigia do perfil infantil.
+func SetKidsTimers(tick, warn time.Duration) { kidsTick, kidsWarn = tick, warn }

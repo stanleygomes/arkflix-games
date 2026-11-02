@@ -26,6 +26,16 @@
   let color = $state('')
   let hasPIN = $state(false)
   let kids = $state(false)
+  let daily = $state(0)
+  let bedtime = $state('')
+  const DAILY = [
+    { v: 0, label: 'Sem limite' },
+    { v: 30, label: '30 min' },
+    { v: 60, label: '1 h' },
+    { v: 120, label: '2 h' },
+    { v: 180, label: '3 h' },
+  ]
+  const BEDTIMES = ['', '20:00', '21:00', '22:00']
 
   $effect(() => {
     const p = existing
@@ -35,7 +45,22 @@
     color = p?.color ?? colors.find((c) => !used.has(c)) ?? colors[0] ?? '#3a86d8'
     hasPIN = !!p?.hasPIN
     kids = !!p?.kids
+    daily = p?.dailyMinutes ?? 0
+    bedtime = p?.bedtime ?? ''
   })
+
+  async function setLimits(minutes: number, bed: string) {
+    if (!existing) return
+    try {
+      const p = await api.setProfileLimits(existing.id, minutes, bed)
+      daily = p.dailyMinutes
+      bedtime = p.bedtime
+      await refresh()
+      play('toggle')
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
 
   async function toggleKids() {
     if (!existing) return
@@ -212,6 +237,20 @@
             Só jogos liberados (no editor de cada jogo), botões maiores e nada de configurações, importar, apagar saves
             ou editar. Pra sair, o PIN do perfil adulto (defina um).
           </p>
+          {#if kids}
+            <p class="limit-label" id="daily-label">Tempo por dia</p>
+            <div class="segmented" role="group" aria-labelledby="daily-label">
+              {#each DAILY as d (d.v)}
+                <button class="btn small" data-nav aria-pressed={daily === d.v} onclick={() => setLimits(d.v, bedtime)}>{d.label}</button>
+              {/each}
+            </div>
+            <p class="limit-label" id="bed-label">Hora de dormir</p>
+            <div class="segmented" role="group" aria-labelledby="bed-label">
+              {#each BEDTIMES as b (b)}
+                <button class="btn small" data-nav aria-pressed={bedtime === b} onclick={() => setLimits(daily, b)}>{b || 'Sem'}</button>
+              {/each}
+            </div>
+          {/if}
         </fieldset>
       {/if}
 
@@ -302,6 +341,15 @@
     width: 2.6rem;
     height: 2.6rem;
     border: 3px solid rgba(0, 0, 0, 0.35);
+  }
+  .limit-label {
+    font-weight: 700;
+    margin: 0.4rem 0 0;
+  }
+  .segmented {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
   }
   .row {
     display: flex;

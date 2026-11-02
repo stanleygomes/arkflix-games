@@ -158,6 +158,8 @@ type Options struct {
 	Bluetooth bt.Backend
 	// Update: atualização automática. Zero = não olha sozinho (testes).
 	Update UpdateOptions
+	// Now: relógio (testes do limite infantil). Vazio = time.Now.
+	Now func() time.Time
 }
 
 type entry struct {
@@ -492,6 +494,9 @@ func (s *Service) Play(id, stateID string) error {
 	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()
+	if _, reason, _ := s.kidsLeft(u); reason != nil {
+		return reason
+	}
 	spec := s.opt.Emulators
 	if spec.Bin == "" {
 		prepareEmulator(sys.Emulator, s.saveDirs())
@@ -553,8 +558,12 @@ func (s *Service) Play(id, stateID string) error {
 	}()
 	gctx, stop := context.WithCancel(context.Background())
 	s.mu.Lock()
-	s.game = &gameRun{id: id, emulator: sys.Emulator, stop: stop}
+	run := &gameRun{id: id, emulator: sys.Emulator, stop: stop, started: s.now(), user: u}
+	s.game = run
 	s.mu.Unlock()
+	if u.kids && u.limits.on() {
+		go s.watchKids(u, run, gctx.Done())
+	}
 	go func() {
 		defer stop()
 		res, err := launcher.Run(gctx, args, nil)

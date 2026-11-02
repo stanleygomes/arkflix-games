@@ -11,15 +11,19 @@
   import { activity, unread } from '../lib/activity.svelte'
   import { api } from '../lib/api'
   import { avatarName } from '../lib/avatars'
-  import { bytes } from '../lib/format'
+  import { bytes, playTime } from '../lib/format'
   import { focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { app, currentProfile, go, isKids, type Screen } from '../lib/state.svelte'
-  import type { BTInfo, CheevosInfo, EmulatorsInfo, RemoteInfo, StorageInfo } from '../lib/types'
+  import type { BTInfo, CheevosInfo, EmulatorsInfo, KidsTimeInfo, RemoteInfo, StorageInfo } from '../lib/types'
   import { versionArrow } from '../lib/update'
 
   const me = $derived(currentProfile())
   const kids = $derived(isKids())
+  let kidsTime = $state<KidsTimeInfo | null>(null)
+  $effect(() => {
+    if (kids) api.kidsTime().then((t) => (kidsTime = t)).catch(() => {})
+  })
   let remote = $state<RemoteInfo | null>(null)
   let storage = $state<StorageInfo | null>(null)
   let emus = $state<EmulatorsInfo | null>(null)
@@ -103,6 +107,9 @@
       {#if me}<Avatar avatar={me.avatar} color={me.color} size="9rem" />{/if}
       <h1 id="you-title" class="pixel">{me?.name ?? 'Você'}</h1>
       {#if kids}<p class="tag">Perfil infantil</p>{/if}
+      {#if kidsTime?.limited}
+        <p class="today">{kidsTime.reason || `Hoje: restam ${playTime(kidsTime.minutesLeft * 60)}`}</p>
+      {/if}
       <dl class="facts">
         <div><dt>horas</dt><dd class="hud">{hours}</dd></div>
         <div><dt>jogados</dt><dd class="hud">{played}</dd></div>
@@ -184,6 +191,9 @@
     border: 2px solid currentColor;
     padding: 0.1rem 0.6rem;
     font-size: 0.85rem;
+  }
+  .today {
+    font-weight: 700;
   }
   .facts {
     margin: 0.3rem 0 0.6rem;
