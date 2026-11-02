@@ -1,6 +1,8 @@
 <script lang="ts">
-  // Opções do jogo (página do jogo): listas, editar, configurar, ocultar, apagar. Tudo que mexe
-  // no console fica aqui dentro, longe dos botões principais.
+  // Opções do jogo: listas, editar, configurar, ocultar, apagar. Tudo que mexe
+  // no console fica aqui dentro, longe dos botões principais. Com quick (Start
+  // num jogo do Início), vem antes o básico: jogar/baixar, continuar,
+  // favoritar e detalhes.
   import { panelIn, panelOut, shade } from '../lib/motion'
   import { tick } from 'svelte'
   import { api } from '../lib/api'
@@ -10,9 +12,35 @@
   import { bytes } from '../lib/format'
   import { app, back, confirm, game, go, isKids, putGame, system, toast } from '../lib/state.svelte'
   import Icon from './Icon.svelte'
+  import { toggleFavorite } from '../lib/actions'
+  import { downloadGame } from '../lib/downloads.svelte'
 
-  let { gameId, onclose, onlists, onconfig }: { gameId: string; onclose: () => void; onlists: () => void; onconfig: () => void } = $props()
+  let {
+    gameId,
+    onclose,
+    onlists,
+    onconfig,
+    quick = false,
+  }: { gameId: string; onclose: () => void; onlists: () => void; onconfig: () => void; quick?: boolean } = $props()
+
+  async function launch(state = '') {
+    if (!g) return
+    onclose()
+    try {
+      play('start')
+      await api.play(g.id, state)
+    } catch (err) {
+      play('error')
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  function details() {
+    onclose()
+    go({ name: 'game', id: gameId })
+  }
   const g = $derived(game(gameId))
+  const canResume = $derived(!!g && !g.remote && g.lastPlayed > 0 && system(g.system)?.emulator === 'retroarch')
   const configurable = $derived(!!g && !g.remote && system(g.system)?.emulator === 'retroarch')
   const inLists = $derived(app.lists.filter((l) => l.games.includes(gameId)).length)
 
@@ -85,7 +113,18 @@
     <h2 id="options-title">Opções</h2>
     <p class="muted name">{g?.name}</p>
     <div class="options">
-      <button class="btn" data-nav data-nav-default aria-haspopup="dialog" onclick={onlists}>
+      {#if quick && g}
+        {#if g.remote}
+          {#if !isKids()}<button class="btn primary" data-nav data-nav-default onclick={() => (onclose(), downloadGame(g))}><Icon name="download" /> Baixar do servidor</button>{/if}
+        {:else}
+          <button class="btn primary" data-nav data-nav-default onclick={() => launch()}><Icon name="play" /> Jogar</button>
+          {#if canResume}<button class="btn" data-nav onclick={() => launch('auto')}><Icon name="resume" /> Continuar de onde parei</button>{/if}
+        {/if}
+        <button class="btn" data-nav onclick={() => (toggleFavorite(gameId), onclose())}><Icon name="star" /> {g.favorite ? 'Tirar dos favoritos' : 'Favoritar'}</button>
+        <button class="btn" data-nav onclick={details}><Icon name="disc" /> Informações do jogo</button>
+        <hr />
+      {/if}
+      <button class="btn" data-nav data-nav-default={quick ? undefined : ''} aria-haspopup="dialog" onclick={onlists}>
         <Icon name="plus" /> Listas{inLists ? ` (${inLists})` : ''}
       </button>
       {#if !isKids()}
@@ -132,5 +171,11 @@
   }
   .options .btn {
     justify-content: flex-start;
+  }
+  hr {
+    width: 100%;
+    border: none;
+    border-top: 2px solid color-mix(in srgb, var(--accent-2) 30%, transparent);
+    margin: 0.2rem 0;
   }
 </style>

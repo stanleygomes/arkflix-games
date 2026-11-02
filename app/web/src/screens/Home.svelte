@@ -5,6 +5,7 @@
   import HeroVideo from '../components/HeroVideo.svelte'
   import Icon from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
+  import GameMenu from '../components/GameMenu.svelte'
   import ConsoleIcon from '../components/ConsoleIcon.svelte'
   import { api } from '../lib/api'
   import { pushHandler } from '../lib/input'
@@ -205,9 +206,13 @@
           if (g) go({ name: 'game', id: g.id })
           return true
         }
-        case 'menu':
-          go({ name: 'you' })
+        case 'menu': {
+          // Start num jogo = menu do jogo (como o Options do PS5); fora dele, Você
+          const id = current()?.dataset.game
+          if (id) menuFor = id
+          else go({ name: 'you' })
           return true
+        }
         case 'random':
           surprise()
           return true
@@ -221,6 +226,9 @@
       return false
     }),
   )
+
+  // menu do jogo em foco (Start/Options)
+  let menuFor = $state('')
 
   const hero = $derived(selected?.cover ?? '')
   const me = $derived(currentProfile())
@@ -408,10 +416,11 @@
       { button: 'r1', label: 'Próximo console' },
       { button: 'select', label: 'Buscar' },
       { button: 'r3', label: 'Surpresa' },
-      { button: 'start', label: isKids() ? 'Você' : 'Você e configurações' },
+      { button: 'start', label: 'Opções do jogo · Você' },
     ]}
   />
 </div>
+{#if menuFor}<GameMenu gameId={menuFor} onclose={() => (menuFor = '')} />{/if}
 
 <style>
   .home {
