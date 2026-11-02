@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { axe, expect, open, test, openItem } from './fixtures'
+import { axe, expect, open, test, openItem, you } from './fixtures'
 
 test('estatísticas: totais, rankings e períodos a partir do histórico', async ({ page, app }) => {
   // histórico conhecido: 2 partidas de SMW (1 h + 30 min) hoje/ontem, 1 de Sonic há 10 dias, 1 antiga
@@ -43,4 +43,23 @@ test('sem partidas: explica em vez de gráfico vazio', async ({ page, app }) => 
   await open(page, app)
   await openItem(page, 'Estatísticas')
   await expect(page.locator('.empty')).toContainText('Nenhuma partida')
+})
+
+test('perfil mostra a semana, o mais jogado e o console preferido', async ({ page, app }) => {
+  const ids: Record<string, string> = await page.request
+    .post(`${app.url}/api/call/Bootstrap`, { headers: { 'X-Arkflix': '1' }, data: [] })
+    .then(async (r) => Object.fromEntries(((await r.json()).result.games as { id: string; name: string }[]).map((g) => [g.name, g.id])))
+  const now = Math.floor(Date.now() / 1000)
+  const session = (start: number, seconds: number) => JSON.stringify({ game: ids['Super Mario World'], system: 'snes', start, seconds, mode: 'start', code: 0 })
+  writeFileSync(join(app.root, app.data, 'sessions.jsonl'), [session(now - 3600, 3600), session(now - 86400, 1800)].join('\n') + '\n')
+  await open(page, app)
+  await you(page)
+  const week = page.locator('.week')
+  await expect(week).toContainText('Esta semana')
+  await expect(week.locator('.bars li')).toHaveCount(7)
+  await expect(week).toContainText('Mais jogado')
+  await expect(week).toContainText('Console preferido')
+  await expect(week).toContainText('Super Mario World')
+  await expect(week).toContainText('1 h 30 min')
+  await axe(page, 'perfil com estatísticas')
 })

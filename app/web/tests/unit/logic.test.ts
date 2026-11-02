@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ago, bytes, playTime } from '../../src/lib/format'
 import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
 import { filterGames, filterGroups, maxPlayers, normalize, pickRandom, search, sortGames } from '../../src/lib/library'
-import type { Game, GameList, System } from '../../src/lib/types'
+import type { Game, GameList, Stats, System } from '../../src/lib/types'
+import { summarize } from '../../src/lib/profilestats'
 import { shortcuts } from '../../src/lib/shortcuts'
 import { pickTarget, type Box } from '../../src/lib/nav'
 import { contrast, highContrastPalette, homePalette, onColor } from '../../src/lib/palette'
@@ -233,5 +234,30 @@ describe('busca global', () => {
     expect(shortcuts('nintendo', ctx).map((s) => s.id)).toEqual(['system:snes'])
     expect(shortcuts('plataf', ctx).map((s) => s.kind)).toEqual(['list'])
     expect(shortcuts('bluetooth', { ...ctx, kids: true })).toEqual([])
+  })
+})
+
+describe('estatísticas no perfil', () => {
+  const base = { period: 'all', totalSeconds: 0, plays: 0, sessions: 0, gamesPlayed: 0, libraryGames: 0, byWeekday: [], bestDay: { date: '', seconds: 0 } }
+  it('semana, sequência, mais jogado e console', () => {
+    const s = {
+      ...base,
+      byDay: [
+        { date: '2026-11-02', seconds: 600 },
+        { date: '2026-11-01', seconds: 1200 },
+        { date: '2026-10-31', seconds: 60 },
+        { date: '2026-10-29', seconds: 3600 },
+      ],
+      byGame: [{ id: 'a', name: 'Mega Man X', system: 'snes', seconds: 100, plays: 1, last: 0 }, { id: 'b', name: 'Super Mario World', system: 'snes', seconds: 900, plays: 2, last: 0 }],
+      bySystem: [{ system: 'nes', seconds: 0, plays: 0, games: 1, played: 0 }, { system: 'snes', seconds: 1000, plays: 3, games: 2, played: 2 }],
+    } as unknown as Stats
+    const r = summarize(s, new Date(2026, 10, 2, 15))
+    expect(r.week.map((d) => d.label).join('')).toBe('TQQSSDS') // 27/10 (ter) a 02/11 (seg)
+    expect(r.weekSeconds).toBe(5460)
+    expect(r.streak).toBe(3)
+    expect(r.topGame).toBe('Super Mario World')
+    expect(r.topSystem).toBe('snes')
+    // hoje sem jogar: a sequência conta até ontem
+    expect(summarize({ ...s, byDay: s.byDay.slice(1) } as Stats, new Date(2026, 10, 2)).streak).toBe(2)
   })
 })

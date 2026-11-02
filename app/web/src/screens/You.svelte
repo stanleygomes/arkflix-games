@@ -11,10 +11,12 @@
   import { activity, unread } from '../lib/activity.svelte'
   import { api } from '../lib/api'
   import { avatarName } from '../lib/avatars'
+  import { summarize, type ProfileSummary } from '../lib/profilestats'
+  import { playTime } from '../lib/format'
   import { bytes } from '../lib/format'
   import { focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
-  import { app, currentProfile, go, isKids, type Screen } from '../lib/state.svelte'
+  import { app, currentProfile, go, isKids, system, type Screen } from '../lib/state.svelte'
   import type { BTInfo, CheevosInfo, EmulatorsInfo, RemoteInfo, StorageInfo } from '../lib/types'
   import { versionArrow } from '../lib/update'
 
@@ -23,12 +25,14 @@
   let remote = $state<RemoteInfo | null>(null)
   let storage = $state<StorageInfo | null>(null)
   let emus = $state<EmulatorsInfo | null>(null)
+  let summary = $state<ProfileSummary | null>(null)
   let blue = $state<BTInfo | null>(null)
   let cheevos = $state<CheevosInfo | null>(null)
 
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
     tick().then(focusDefault)
+    api.stats('all').then((s) => (summary = summarize(s))).catch(() => {})
     if (isKids()) return
     api.remoteStatus().then((r) => (remote = r)).catch(() => {})
     api.storage().then((s) => (storage = s)).catch(() => {})
@@ -108,6 +112,27 @@
         <div><dt>jogados</dt><dd class="hud">{played}</dd></div>
         <div><dt>favoritos</dt><dd class="hud">{favs}</dd></div>
       </dl>
+      {#if summary && (summary.weekSeconds || summary.topGame)}
+        {@const max = Math.max(1, ...summary.week.map((d) => d.seconds))}
+        <section class="week" aria-labelledby="week-title">
+          <h2 id="week-title">Esta semana · {summary.weekSeconds ? playTime(summary.weekSeconds) : 'nada ainda'}</h2>
+          <ol class="bars" aria-label="Tempo jogado nos últimos 7 dias">
+            {#each summary.week as d (d.date)}
+              <li>
+                <span class="bar" style:height={`${Math.max(4, (d.seconds / max) * 100)}%`} class:zero={!d.seconds}></span>
+                <span class="day" aria-hidden="true">{d.label}</span>
+                <span class="sr-only">{d.date}: {d.seconds ? playTime(d.seconds) : 'nada'}</span>
+              </li>
+            {/each}
+          </ol>
+          <dl class="more">
+            {#if summary.topGame}<div><dt>Mais jogado</dt><dd>{summary.topGame}</dd></div>{/if}
+            {#if summary.topSystem}<div><dt>Console preferido</dt><dd>{system(summary.topSystem)?.name ?? summary.topSystem}</dd></div>{/if}
+            {#if summary.streak > 1}<div><dt>Sequência</dt><dd>{summary.streak} dias seguidos</dd></div>{/if}
+            {#if cheevos?.connected}<div><dt>Conquistas</dt><dd>RetroAchievements: {cheevos.user}</dd></div>{/if}
+          </dl>
+        </section>
+      {/if}
       <button class="btn primary" data-nav data-nav-default onclick={() => go({ name: 'profiles' })}><Icon name="resume" /> Trocar perfil</button>
     </aside>
 
@@ -206,6 +231,66 @@
     font-size: 2rem;
     color: #fff;
     line-height: 1;
+  }
+  .week {
+    width: 100%;
+    display: grid;
+    gap: 0.5rem;
+    text-align: left;
+  }
+  .week h2 {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-family: var(--font-body);
+  }
+  .bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    height: 4rem;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.3rem;
+    align-items: end;
+  }
+  .bars li {
+    height: 100%;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: end;
+    justify-items: center;
+  }
+  .bar {
+    width: 100%;
+    background: var(--profile);
+    box-shadow: 0 0 6px var(--profile);
+  }
+  .bar.zero {
+    opacity: 0.25;
+    box-shadow: none;
+  }
+  .day {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .more {
+    margin: 0;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .more div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+  }
+  .more dt {
+    color: var(--muted);
+  }
+  .more dd {
+    margin: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
   }
   .col h2 {
     font-size: 0.95rem;
