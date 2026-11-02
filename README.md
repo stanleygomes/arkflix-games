@@ -3,15 +3,17 @@
 [![release](https://img.shields.io/github/v/release/stanleygomes/arkflix-games?sort=semver)](https://github.com/stanleygomes/arkflix-games/releases)
 [![workflow](https://github.com/stanleygomes/arkflix-games/actions/workflows/release.yml/badge.svg)](https://github.com/stanleygomes/arkflix-games/actions/workflows/release.yml)
 
-App de biblioteca de jogos para Linux (Go + Svelte), feito para controle e TV.
-Os jogos abrem nos emuladores do [Flathub](https://flathub.org): o
-[RetroArch](https://www.retroarch.com) com oito cores, o
-[PPSSPP](https://www.ppsspp.org) e o [PCSX2](https://pcsx2.net). Este repositório
-é só o app; os emuladores vêm prontos.
+App de biblioteca de jogos para Linux, Windows e macOS (Go + Svelte), feito
+para controle e TV. Os jogos abrem no [RetroArch](https://www.retroarch.com)
+com oito cores, no [PPSSPP](https://www.ppsspp.org) e no
+[PCSX2](https://pcsx2.net): no Linux, os do [Flathub](https://flathub.org); no
+Windows e no macOS, os dos instaladores oficiais. Este repositório é só o app;
+os emuladores vêm prontos.
 
 ## Sumário
 
 - [Recursos](#recursos)
+- [Compatibilidade](#compatibilidade)
 - [Requisitos](#requisitos)
 - [Instalação](#instalação)
 - [Uso](#uso)
@@ -20,6 +22,7 @@ Os jogos abrem nos emuladores do [Flathub](https://flathub.org): o
 - [Emuladores](#emuladores)
 - [Testes](#testes)
 - [Versionamento e releases](#versionamento-e-releases)
+- [Página de download](#página-de-download)
 - [Estrutura do repositório](#estrutura-do-repositório)
 - [Solução de problemas](#solução-de-problemas)
 - [Contribuindo](#contribuindo)
@@ -39,7 +42,30 @@ Os jogos abrem nos emuladores do [Flathub](https://flathub.org): o
 - Versão semântica e changelog gerados a partir de Conventional Commits.
 - Instalação em um comando.
 
-## Requisitos
+## Compatibilidade
+
+| | Linux | Windows | macOS |
+| --- | --- | --- | --- |
+| Versões | Ubuntu 26.04 ou Debian equivalente | 10 e 11, 64 bits | 11 ou mais novo |
+| Processador | x86_64 | x86_64 | Intel e Apple Silicon (universal) |
+| Instalação | `install.sh` (um comando) ou `.tar.gz` | instalador `.exe` ou `.zip` portátil | `.dmg` |
+| Janela | WebKitGTK | WebView2 (já vem no Windows 10/11) | WebKit do sistema |
+| Controle | lido direto do kernel (evdev) | Gamepad API do WebView2 | Gamepad API do WebKit |
+| Emuladores | Flatpaks (`make emulators` instala) | instaladores oficiais | instaladores oficiais |
+| Cores do RetroArch | baixados pelo `make emulators` | pelo RetroArch (Online Updater) | pelo RetroArch (Online Updater) |
+| Biblioteca, perfis, modo infantil, RomM, estatísticas | sim | sim | sim |
+| Saves com miniatura e sincronização com o RomM | sim | sim | sim |
+| Atalhos iguais nos emuladores (Esc / F10) | sim | sim | sim |
+| Scripts de evento | executáveis (`.sh`...) | `.bat`, `.cmd`, `.ps1`, `.exe` | executáveis |
+| Testado em máquina real | sim | ainda não | ainda não |
+
+No Windows e no macOS o app é compilado e passa nos testes automatizados a cada
+release, mas ainda não foi testado com controle e jogo de verdade nesses
+sistemas. O macOS avisa que o app é de "desenvolvedor não identificado" (não é
+assinado pela Apple): na primeira vez, clique com o botão direito no app e
+escolha **Abrir**.
+
+## Requisitos (Linux)
 
 | Item | Detalhe |
 | --- | --- |
@@ -51,6 +77,26 @@ Os jogos abrem nos emuladores do [Flathub](https://flathub.org): o
 | Opcional | BIOS do PlayStation e do PlayStation 2, que não são distribuídas aqui |
 
 ## Instalação
+
+Os instaladores de cada sistema ficam na
+[página de releases](https://github.com/stanleygomes/arkflix-games/releases/latest).
+
+**Windows.** Baixe `arkflix-games-<versão>-windows-x86_64-setup.exe` e rode (não
+pede administrador; instala em `%LOCALAPPDATA%\Programs\arkflix-games`, com
+atalho no Menu Iniciar). Instale também o
+[RetroArch](https://www.retroarch.com/?page=platforms) (no lugar padrão,
+`C:\RetroArch-Win64`), o [PPSSPP](https://www.ppsspp.org/download/) e o
+[PCSX2](https://pcsx2.net/downloads/), e baixe os cores pelo RetroArch (menu
+Online Updater › Core Downloader: Snes9x, Genesis Plus GX, Mesen, Gambatte,
+Mupen64Plus-Next, Beetle PSX, FinalBurn Neo e melonDS DS). Emulador instalado em
+outro lugar: informe o caminho em Configurações › Biblioteca › Emuladores e saves.
+
+**macOS.** Baixe `arkflix-games-<versão>-macos-universal.dmg`, arraste o app para
+Aplicativos e, na primeira vez, abra com o botão direito › Abrir. Instale o
+RetroArch, o PPSSPP e o PCSX2 em Aplicativos e baixe os cores pelo RetroArch,
+como no Windows.
+
+**Linux.** Um comando instala tudo, emuladores incluídos:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/stanleygomes/arkflix-games/master/install.sh | bash
@@ -298,14 +344,29 @@ analisa os commits desde a última tag:
 | `fix` ou `perf` | patch |
 | apenas `docs`, `chore`, `test`, `ci`, `refactor`, `style` ou `build` | nenhum release |
 
-O release é criado com a tag `vX.Y.Z` e um changelog agrupado por tipo. O app
-compilado é anexado depois, porque a publicação exige que o `make check` passe:
+O release é criado com a tag `vX.Y.Z`, um changelog agrupado por tipo e uma
+tabela de downloads. Em seguida, o mesmo workflow gera e anexa os instaladores
+de cada sistema (`bin/package.sh`): o `.tar.gz` do Linux, o instalador `.exe` e
+o `.zip` do Windows (compilados no Linux, sem cgo) e o `.dmg` universal do macOS
+(compilado num Mac do GitHub). Cada arquivo vai com o seu `.sha256`.
 
 | Comando | Função |
 | --- | --- |
 | `make release-notes` | mostra a próxima versão e o changelog, sem publicar |
-| `make release-binaries` | executa os testes, empacota o app e anexa ao release da tag do HEAD |
+| `make package OS=linux\|windows\|macos` | gera o instalador de um sistema em `build/dist` |
+| `make release-binaries` | plano B: gera os pacotes de Linux e Windows daqui e anexa na tag do HEAD |
 | `make release-install` | baixa e verifica o app do release mais recente que o tenha (`RELEASE=vX.Y.Z` fixa um) |
+
+Pra gerar os instaladores de uma tag que já existe, rode o workflow `release`
+manualmente no GitHub (Actions › release › Run workflow) informando a tag.
+
+## Página de download
+
+`site/` é a página de download (HTML, CSS e JS puros, com as fontes e as cores do
+app). Na Vercel: importe o repositório e, em **Root Directory**, escolha `site`
+(sem build). Os botões apontam sozinhos pros arquivos da última release, pela API
+pública do GitHub, e destacam o sistema de quem visita. Pra ver localmente:
+`python3 -m http.server -d site 8080`.
 
 ## Estrutura do repositório
 
@@ -313,7 +374,9 @@ compilado é anexado depois, porque a publicação exige que o `make check` pass
 .
 ├── .github/workflows/  release automático
 ├── app/                o app: backend Go (app/internal) e interface (app/web)
-├── bin/                scripts: versão e download de release
+├── bin/                scripts: versão, empacotamento e download de release
+├── packaging/          instalador do Windows (NSIS) e Info.plist do macOS
+├── site/               página de download (Vercel)
 ├── install.sh          instalador em um comando
 └── Makefile            ponto de entrada de todas as tarefas
 ```
