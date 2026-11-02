@@ -1,9 +1,9 @@
-import { axe, expect, open, settings, test } from './fixtures'
+import { axe, expect, open, settings, test, gameOption } from './fixtures'
 
 test('editor: buscar na internet preenche só o vazio e mostra a fonte', async ({ page, app }) => {
   await open(page, app)
   await page.locator('.shelf [data-game][aria-label^="Sonic The Hedgehog 2"]').first().click()
-  await page.getByRole('button', { name: 'Editar' }).click()
+  await gameOption(page, 'Editar informações')
   await expect(page.getByRole('heading', { name: /^Editar: Sonic/ })).toBeVisible()
   const fetch = page.getByRole('button', { name: 'Buscar na internet' })
   await expect(fetch).toBeVisible()

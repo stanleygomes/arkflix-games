@@ -100,6 +100,6 @@ test('lista automática: salva os filtros, aparece no Início e não aceita jogo
 
   // o seletor de listas da página do jogo só mostra as manuais
   await page.locator('.grid [data-game]').first().click()
-  await page.getByRole('button', { name: /^Listas/ }).click()
+  await gameOption(page, /^Listas/)
   await expect(page.getByRole('dialog', { name: 'Listas' })).toContainText('Nenhuma lista ainda')
 })
