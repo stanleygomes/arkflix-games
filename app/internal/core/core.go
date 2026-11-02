@@ -181,6 +181,7 @@ type Service struct {
 	profiles *profiles.Store
 	remote   *remoteState
 	cheevos  *cheevosState
+	wiki     *wikiState
 
 	umu    sync.RWMutex
 	u      *user // perfil em uso
@@ -245,6 +246,7 @@ func New(opt Options) (*Service, error) {
 	s.remote = &remoteState{file: filepath.Join(store.Dir(), "romm.json"), dir: filepath.Join(opt.Cache, "romm")}
 	s.remote.load()
 	s.cheevos = newCheevos(opt.Cache, opt.Version)
+	s.wiki = newWikiState(opt.Cache, opt.Version)
 	if opt.Pads != nil {
 		opt.Pads.Subscribe(func(e gamepad.Event) { s.opt.Emitter.Emit("pad", e) })
 		opt.Pads.OnPadsChanged(func(p []gamepad.Pad) { s.opt.Emitter.Emit("pads", p) })

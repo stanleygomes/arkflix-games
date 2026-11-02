@@ -119,6 +119,36 @@
     if (err) toast(err, 'error')
   }
 
+  // busca na internet (Wikidata/Wikipedia): só preenche o que está vazio
+  let fetching = $state(false)
+  let source = $state('')
+  const canFetch = $derived(!!info && (!value('summary') || !value('year') || !value('genres')))
+
+  async function fetchWeb() {
+    if (!info || fetching) return
+    fetching = true
+    try {
+      const r = await api.fetchMeta(id)
+      const next = { ...info.edit }
+      const filled: string[] = []
+      if (!value('summary') && r.summary) (next.summary = r.summary), filled.push('descrição')
+      if (!value('year') && r.year) (next.year = r.year), filled.push('ano')
+      if (!value('genres') && r.genres.length) (next.genres = r.genres), filled.push('gêneros')
+      if (!filled.length) {
+        toast('A internet não tem nada novo pra este jogo', 'info', 3500)
+        return
+      }
+      const err = await save(next)
+      if (err) return toast(err, 'error')
+      source = r.source
+      toast(`Preenchido: ${filled.join(', ')}`, 'ok', 3500)
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    } finally {
+      fetching = false
+    }
+  }
+
   async function resetAll() {
     if (!(await confirm('Voltar todos os dados deste jogo pro automático?', 'Restaurar tudo'))) return
     try {
@@ -152,6 +182,20 @@
           </li>
         {/each}
       </ul>
+
+      {#if canFetch || source}
+        <div class="web">
+          {#if canFetch}
+            <button class="btn" data-nav disabled={fetching} aria-describedby="web-help" onclick={fetchWeb}>
+              <Icon name="globe" /> {fetching ? 'Buscando…' : 'Buscar na internet'}
+            </button>
+            <span id="web-help" class="muted">Descrição, ano e gêneros da Wikipedia, só nos campos vazios.</span>
+          {/if}
+          {#if source}
+            <p class="muted" role="status">Fonte: {source.replace(/^https?:\/\//, '')}</p>
+          {/if}
+        </div>
+      {/if}
 
       <fieldset>
         <legend>Nota</legend>
@@ -293,6 +337,17 @@
     display: flex;
     gap: 0.8rem;
     flex-wrap: wrap;
+  }
+  .web {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .web p {
+    flex-basis: 100%;
+    margin: 0;
+    overflow-wrap: anywhere;
   }
   .switches.end {
     justify-content: flex-end;

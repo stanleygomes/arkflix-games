@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '../../components/Icon.svelte'
+  import { activity } from '../../lib/activity.svelte'
   import { api } from '../../lib/api'
   import { play } from '../../lib/sound'
   import { app, confirm, toast } from '../../lib/state.svelte'
@@ -56,6 +57,24 @@
   async function updateCovers(all: boolean) {
     try {
       await api.updateCovers(all)
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  // jogos sem descrição/ano/gênero que dá pra procurar na internet
+  let missing = $state(0)
+  const metaTask = $derived(activity.tasks.find((t) => t.id === 'meta'))
+  $effect(() => {
+    void metaTask?.state // relê quando a tarefa termina
+    if (metaTask?.state === 'running') return
+    api.missingMeta().then((n) => (missing = n)).catch(() => {})
+  })
+
+  async function completeMeta() {
+    try {
+      await api.completeMeta()
+      play('accept')
     } catch (err) {
       toast((err as Error).message, 'error')
     }
@@ -142,6 +161,18 @@
       <button type="button" class="btn small" data-nav disabled={!draft.covers.enabled} onclick={() => updateCovers(false)}>Atualizar capas agora</button>
       <button type="button" class="btn small" data-nav disabled={!draft.covers.enabled} onclick={() => updateCovers(true)}>Tentar de novo as que faltam</button>
     </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Informações dos jogos</legend>
+    <p id="meta-help" class="muted">
+      Descrição, ano e gêneros que faltam vêm do Wikidata e da Wikipedia (abertos, sem conta). Só preenche campo vazio: o que você
+      editou fica. Acompanhe e cancele na Central.
+    </p>
+    <button type="button" class="btn small" data-nav aria-describedby="meta-help" disabled={!missing || metaTask?.state === 'running'} onclick={completeMeta}>
+      <Icon name="globe" />
+      {metaTask?.state === 'running' ? 'Completando informações…' : `Completar informações que faltam (${missing} jogo${missing === 1 ? '' : 's'})`}
+    </button>
   </fieldset>
 
   <button

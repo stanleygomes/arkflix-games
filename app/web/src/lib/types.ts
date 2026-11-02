@@ -307,6 +307,16 @@ export interface MetaInfo {
   edit: MetaEdit
 }
 
+/** O que a busca no Wikidata/Wikipedia achou (vazio = a fonte não tinha). */
+export interface WikiResult {
+  entity: string
+  title: string
+  summary: string
+  year: number
+  genres: string[]
+  source: string
+}
+
 export interface Stats {
   period: string
   totalSeconds: number

@@ -42,6 +42,8 @@ os emuladores vêm prontos.
   estado e fechar o jogo.
 - Central de downloads e avisos, com cancelar e histórico.
 - Conquistas do RetroAchievements por perfil, com troféus na página do jogo.
+- Descrição, ano e gêneros que faltam vindos do Wikidata e da Wikipedia
+  (abertos, sem conta), no editor do jogo ou em lote.
 - Pareamento de controle Bluetooth pela tela (Linux).
 - Emuladores instalados e atualizados pelo próprio app, nos três sistemas.
 - Atualização automática do app pela última release.
