@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"io/fs"
 	"log"
 	"os/exec"
@@ -23,6 +24,12 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
+
+// appIcon: ícone da janela (X11). No Wayland a doca usa o .desktop instalado
+// pelo make (desktop-entry), que aponta pro mesmo PNG.
+//
+//go:embed assets/arkflix-games.png
+var appIcon []byte
 
 // window liga o core à janela do Wails. Antes do OnStartup não há contexto:
 // eventos e chamadas de janela são ignorados.
@@ -134,7 +141,7 @@ func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke, w
 		BackgroundColour: &options.RGBA{R: 16, G: 14, B: 24, A: 255},
 		AssetServer:      &assetserver.Options{Assets: ui, Handler: core.Media(svc)},
 		Bind:             []any{svc},
-		Linux:            &linux.Options{ProgramName: "arkflix-games"},
+		Linux:            &linux.Options{ProgramName: "arkflix-games", Icon: appIcon},
 		// atualização baixada instala ao fechar (nunca com o app aberto)
 		OnShutdown: func(context.Context) { core.ApplyUpdateOnQuit(svc) },
 		OnStartup: func(ctx context.Context) {

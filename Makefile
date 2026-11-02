@@ -24,7 +24,7 @@ BUILDBOT  := https://buildbot.libretro.com/nightly/linux/x86_64/latest
 APT_DEPS := build-essential pkg-config curl unzip flatpak \
   libgtk-3-dev libwebkit2gtk-4.1-dev
 
-.PHONY: help deps emulators build app-deps app-web app run run-web \
+.PHONY: help deps emulators build app-deps app-web app desktop-entry run run-web \
         check check-app check-app-desktop check-emulators clean \
         release-notes release-binaries release-install package
 
@@ -73,6 +73,19 @@ app: app-web ## Compila o app desktop (Go + Wails) em build/prefix/bin/arkflix-g
 	@pkg-config --exists webkit2gtk-4.1 || { echo "❌ falta o WebKitGTK de desenvolvimento: make deps"; exit 1; }
 	cd $(APP) && CGO_ENABLED=1 go build -tags desktop,production,webkit2_41 -trimpath \
 	  -ldflags "-s -w -X main.version=$(VERSION)" -o $(APP_BIN) .
+	@$(MAKE) --no-print-directory desktop-entry
+
+DESKTOP_FILE := $(HOME)/.local/share/applications/arkflix-games.desktop
+ICON_FILE    := $(HOME)/.local/share/icons/hicolor/512x512/apps/arkflix-games.png
+
+desktop-entry: ## Põe o app no menu e o ícone na doca (Linux, só pro seu usuário)
+	@install -Dm644 $(APP)/assets/arkflix-games.png $(ICON_FILE)
+	@mkdir -p $(dir $(DESKTOP_FILE))
+	@printf '%s\n' '[Desktop Entry]' 'Type=Application' 'Name=arkflix games' \
+	  'Comment=Seus jogos clássicos, do jeito de um console' 'Exec=$(APP_BIN)' \
+	  'Icon=arkflix-games' 'StartupWMClass=arkflix-games' 'Categories=Game;' 'Terminal=false' >$(DESKTOP_FILE)
+	@command -v update-desktop-database >/dev/null && update-desktop-database -q $(dir $(DESKTOP_FILE)) || true
+	@command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q -t $(HOME)/.local/share/icons/hicolor || true
 
 ##@ Rodar
 
@@ -141,4 +154,5 @@ release-binaries: ## Plano B: gera os pacotes de Linux e Windows daqui e anexa n
 release-install: ## Baixa o app do último release que tiver (RELEASE=vX fixa)
 	@bin/release-download.sh "$(GH_REPO)" "$(RELEASE)" "$(DIST)/download"
 	tar -C $(BUILD) -xzf $(DIST)/download/*.tar.gz $(RELEASE_FILES)
+	@$(MAKE) --no-print-directory desktop-entry
 	@echo "✅ pronto: make run"
