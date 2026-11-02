@@ -1,11 +1,16 @@
 # Push no master -> tag semver + release com changelog, pelos Conventional Commits.
 # Só docs/chore/test/ci desde a última tag? Não cria nada. Lógica em bin/release.sh.
+# Com release nova, gera os instaladores de Linux, Windows e macOS e anexa nela.
 name: release
 
 on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Só gerar os instaladores de uma tag que já existe (ex.: v1.2.0)"
+        required: false
 
 permissions:
   contents: write
@@ -18,15 +23,61 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.publish.outputs.tag || inputs.tag }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           submodules: false
       - name: Tag e release
+        id: publish
+        if: ${{ !inputs.tag }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           bin/release.sh --publish
+
+  installers:
+    needs: release
+    if: ${{ needs.release.outputs.tag != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux
+            os: ubuntu-24.04
+          - target: windows
+            os: ubuntu-24.04
+          - target: macos
+            os: macos-14
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/web/package-lock.json
+      - name: Pacotes do sistema
+        if: matrix.os != 'macos-14'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends libgtk-3-dev libwebkit2gtk-4.1-dev nsis zip >/dev/null
+      - name: Interface
+        run: cd app/web && npm ci --no-fund --no-audit && npm run build
+      - name: Instalador
+        run: bin/package.sh ${{ matrix.target }} ${{ needs.release.outputs.tag }}
+      - name: Anexar na release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ needs.release.outputs.tag }}" build/dist/* --clobber

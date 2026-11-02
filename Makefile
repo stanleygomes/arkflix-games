@@ -26,7 +26,7 @@ APT_DEPS := build-essential pkg-config curl unzip flatpak \
 
 .PHONY: help deps emulators build app-deps app-web app run run-web \
         check check-app check-app-desktop check-emulators clean \
-        release-notes release-binaries release-install
+        release-notes release-binaries release-install package
 
 ##@ Começo
 
@@ -114,27 +114,29 @@ clean: ## Apaga o build
 
 ##@ Release
 
-# Pacote = só o app (os emuladores vêm do Flathub).
+# Instaladores: bin/package.sh (o CI gera Linux, Windows e macOS a cada release).
 DIST := $(BUILD)/dist
 GH_REPO ?= stanleygomes/arkflix-games
 RELEASE ?=
 RELEASE_FILES := prefix/bin/arkflix-games
 
+package: app-web ## Empacota o app pra um sistema em build/dist (OS=linux|windows|macos)
+	bin/package.sh $(or $(OS),linux) $(VERSION)
+
+
 release-notes: ## Mostra a próxima versão e o changelog (o CI publica no push)
 	@bin/release.sh
 
-release-binaries: ## Valida, empacota o app e anexa na release da tag do HEAD
+release-binaries: ## Plano B: gera os pacotes de Linux e Windows daqui e anexa na tag do HEAD (o CI já faz os 3 sistemas)
 	@test -z "$$(git status --porcelain)" || { echo "❌ commit/push antes"; exit 1; }
 	@git fetch -q --tags origin
 	@tag=$$(git describe --tags --exact-match HEAD 2>/dev/null) || { \
 	  echo "❌ HEAD sem tag: dê push e espere o CI (ou é só docs/chore)"; exit 1; }
 	$(MAKE) --no-print-directory app check
 	@set -e; tag=$$(git describe --tags --exact-match HEAD); \
-	file=arkflix-games-$$tag-linux-x86_64.tar.gz; mkdir -p $(DIST); \
-	tar -C $(BUILD) -czf $(DIST)/$$file $(RELEASE_FILES); \
-	( cd $(DIST) && sha256sum $$file > $$file.sha256 ); \
-	gh release upload $$tag $(DIST)/$$file $(DIST)/$$file.sha256 --clobber; \
-	echo "✅ binários anexados na $$tag"
+	bin/package.sh linux $$tag; bin/package.sh windows $$tag; \
+	gh release upload $$tag $(DIST)/arkflix-games-$$tag-* --clobber; \
+	echo "✅ pacotes anexados na $$tag"
 
 release-install: ## Baixa o app do último release que tiver (RELEASE=vX fixa)
 	@bin/release-download.sh "$(GH_REPO)" "$(RELEASE)" "$(DIST)/download"

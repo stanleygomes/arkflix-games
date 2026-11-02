@@ -62,7 +62,16 @@ trap 'rm -f "$notes"' EXIT
     esac
     printf '%s\n' "${section[$key]}"
   done
-  echo "Binários (opcional, do PC do dono): \`make release-binaries\` nesta tag."
+  echo "### Downloads"
+  echo
+  echo "| Sistema | Arquivo |"
+  echo "| --- | --- |"
+  echo "| Windows 10/11 (64 bits) | \`arkflix-games-$version-windows-x86_64-setup.exe\` (instalador) ou \`.zip\` (portátil) |"
+  echo "| macOS 11+ (Intel e Apple Silicon) | \`arkflix-games-$version-macos-universal.dmg\` |"
+  echo "| Linux x86_64 | \`arkflix-games-$version-linux-x86_64.tar.gz\`, ou o instalador de um comando do README |"
+  echo
+  echo "Os emuladores (RetroArch, PPSSPP, PCSX2) são instalados à parte; veja o README."
+  echo
   [[ -n $last ]] && echo "Desde ${last}."
 } >"$notes"
 
@@ -75,3 +84,5 @@ git tag -a "$version" -m "release $version"
 git push origin "$version"
 gh release create "$version" --title "$version" --notes-file "$notes" --verify-tag
 echo "✅ release $version publicado"
+# o CI usa a versão pra anexar os instaladores
+if [[ -n ${GITHUB_OUTPUT:-} ]]; then echo "tag=$version" >>"$GITHUB_OUTPUT"; fi
