@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stanleygomes/arkflix-games/app/internal/bt"
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
 	"github.com/stanleygomes/arkflix-games/app/internal/emucfg"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
@@ -152,6 +153,9 @@ type Options struct {
 	// BrowserPads: a interface lê os controles mesmo no Linux (testes do
 	// caminho do Windows/macOS).
 	BrowserPads bool
+	// Bluetooth: pareamento de controles. Vazio = o do sistema (testes passam
+	// o bt.Fake, que nunca toca no rádio de verdade).
+	Bluetooth bt.Backend
 }
 
 type entry struct {
@@ -184,6 +188,8 @@ type Service struct {
 	running string
 	tasks   map[string]context.CancelFunc
 	game    *gameRun // jogo aberto (fechar pelo guia)
+
+	bts btState // busca de Bluetooth
 }
 
 // New prepara o serviço: gera a config de entrada do RetroArch, liga os
@@ -194,6 +200,9 @@ func New(opt Options) (*Service, error) {
 	}
 	if opt.Emitter == nil {
 		opt.Emitter = nopEmitter{}
+	}
+	if opt.Bluetooth == nil {
+		opt.Bluetooth = bt.New()
 	}
 	store := opt.Store
 	if opt.Source == nil {

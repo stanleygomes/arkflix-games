@@ -17,6 +17,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
+	"github.com/stanleygomes/arkflix-games/app/internal/bt"
 	"github.com/stanleygomes/arkflix-games/app/internal/core"
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
 	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
@@ -108,14 +109,14 @@ func (w *window) PickFiles() ([]string, error) {
 	})
 }
 
-func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke, windowed bool, emu launcher.Spec) int {
+func runDesktop(store *settings.Store, pads *gamepad.Manager, ui fs.FS, smoke, windowed bool, emu launcher.Spec, blue bt.Backend) int {
 	// tela cheia por padrão (é um app de TV); F11 alterna, --windowed abre em janela
 	start := options.Fullscreen
 	if windowed {
 		start = options.Maximised
 	}
 	win := &window{}
-	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop, Cache: cacheDirDesktop(), Emulators: emu})
+	svc, err := core.New(core.Options{Version: version, Mode: "desktop", Store: store, Pads: pads, Emitter: win, Window: win, MinPlay: minPlayDesktop, Cache: cacheDirDesktop(), Emulators: emu, Bluetooth: blue})
 	if err != nil {
 		log.Print(err)
 		return 1
