@@ -95,3 +95,18 @@ test('configuração do protetor: minutos, estilo, desligar e ver agora', async 
   await expect(page.getByRole('button', { name: 'Ver agora' })).toHaveCount(0)
   await expect.poll(() => JSON.parse(app.read(file)).screensaver.enabled).toBe(false)
 })
+
+test('descanso: depois de 15 min de protetor a tela apaga, e um botão acorda', async ({ page, app }) => {
+  await page.clock.install()
+  await open(page, app)
+  await page.clock.fastForward('05:05')
+  await expect(saver(page)).toBeVisible()
+  await page.clock.fastForward('15:05')
+  const rest = page.getByRole('dialog', { name: 'Descanso' })
+  await expect(rest).toBeVisible()
+  await expect(saver(page)).toHaveCount(0)
+  await expect(page.locator('canvas')).toHaveCount(0) // nada animando
+  await page.keyboard.press('Enter')
+  await expect(rest).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: /Jogando/ })).toHaveCount(0) // só acordou
+})

@@ -101,6 +101,11 @@
           {/each}
           <button class="btn" data-nav onclick={() => sleep()}>Ver agora</button>
         </div>
+        <div class="segmented" role="group" aria-label="Descanso: tela preta depois de">
+          {#each [0, 15, 30, 60] as r (r)}
+            <button class="btn" data-nav aria-pressed={(saver.rest ?? 0) === r} onclick={() => setSaver('rest', r)}>{r ? `Descanso em ${r} min` : 'Sem descanso'}</button>
+          {/each}
+        </div>
       {/if}
     </div>
   </fieldset>

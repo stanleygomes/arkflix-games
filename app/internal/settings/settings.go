@@ -49,6 +49,7 @@ type Screensaver struct {
 	Enabled bool   `json:"enabled"`
 	Minutes int    `json:"minutes"`
 	Mode    string `json:"mode"` // "snake" (cobrinha) ou "showcase" (vitrine)
+	Rest    int    `json:"rest"` // minutos de protetor até o descanso (tela preta); 0 = nunca
 }
 
 // Covers liga o download de capas do acervo aberto do libretro.
@@ -133,7 +134,7 @@ func DefaultsFor(goos, home string) Settings {
 			Sounds: true, SoundVolume: 60, Music: true, MusicVolume: 25,
 			Videos: true,
 		},
-		Screensaver: Screensaver{Enabled: true, Minutes: 5, Mode: "snake"},
+		Screensaver: Screensaver{Enabled: true, Minutes: 5, Mode: "snake", Rest: 15},
 		Saves: SaveDirs{
 			RetroArchSaves:  filepath.Join(ra, "saves"),
 			RetroArchStates: filepath.Join(ra, "states"),
@@ -165,6 +166,7 @@ func (s *Settings) Validate() {
 	if s.Screensaver.Mode != "snake" && s.Screensaver.Mode != "showcase" {
 		s.Screensaver.Mode = "snake"
 	}
+	s.Screensaver.Rest = clamp(s.Screensaver.Rest, 0, 240)
 }
 
 func clamp(v, lo, hi int) int {

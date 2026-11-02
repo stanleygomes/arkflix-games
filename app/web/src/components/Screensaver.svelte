@@ -32,6 +32,16 @@
     if (app.playing) idle.active = false
   })
 
+  // descanso: depois de X min de protetor, tela preta e nada animando (poupa
+  // a CPU e a tela da TV). Qualquer entrada acorda do mesmo jeito.
+  let resting = $state(false)
+  $effect(() => {
+    resting = false
+    if (!idle.active || !cfg?.rest) return
+    const t = setTimeout(() => (resting = true), cfg.rest * 60_000)
+    return () => clearTimeout(t)
+  })
+
   // ---- cobrinha
   let canvas = $state<HTMLCanvasElement | null>(null)
   let snake = $state<Snake | null>(null)
@@ -63,7 +73,7 @@
   }
 
   $effect(() => {
-    if (!idle.active || cfg?.mode !== 'snake' || !canvas) return
+    if (!idle.active || resting || cfg?.mode !== 'snake' || !canvas) return
     const rnd = rng(Date.now())
     let s = newGame(W, H, rnd)
     if (reduce) {
@@ -96,7 +106,7 @@
   const covers = $derived(app.games.filter((g) => g.cover))
   let shown = $state<Game | null>(null)
   $effect(() => {
-    if (!idle.active || cfg?.mode !== 'showcase') return
+    if (!idle.active || resting || cfg?.mode !== 'showcase') return
     const pool = [...covers]
     if (!pool.length) return
     const pick = () => (shown = pool[Math.floor(Math.random() * pool.length)])
@@ -107,7 +117,11 @@
   })
 </script>
 
-{#if idle.active && cfg}
+{#if idle.active && cfg && resting}
+  <div class="saver rest" role="dialog" aria-modal="true" aria-label="Descanso" data-mode="rest">
+    <p class="sr-only">Descanso. Aperte qualquer botão ou tecla para voltar.</p>
+  </div>
+{:else if idle.active && cfg}
   <div class="saver" class:reduce role="dialog" aria-modal="true" aria-label="Protetor de tela" data-mode={cfg.mode}>
     {#if cfg.mode === 'snake'}
       <div class="crt">
@@ -145,6 +159,9 @@
     place-content: center;
     justify-items: center;
     gap: 1.2rem;
+    cursor: none;
+  }
+  .rest {
     cursor: none;
   }
   .saver[data-mode='showcase'] {
