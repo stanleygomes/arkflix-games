@@ -48,7 +48,7 @@ export function shortcuts(
     }
   }
   for (const l of ctx.lists) {
-    if (hit(l.name)) out.push({ id: `list:${l.id}`, label: l.name, hint: `lista · ${l.games.length} jogos`, kind: 'list', go: { name: 'library', source: `list:${l.id}` } })
+    if (hit(l.name)) out.push({ id: `list:${l.id}`, label: l.name, hint: l.rule ? 'lista automática' : `lista · ${l.games.length} jogos`, kind: 'list', go: { name: 'library', source: `list:${l.id}` } })
   }
   for (const e of SETTINGS) {
     if ((e.adult && ctx.kids) || (e.desktop && !ctx.desktop)) continue

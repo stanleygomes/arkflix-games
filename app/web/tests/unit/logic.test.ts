@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ago, bytes, playTime } from '../../src/lib/format'
 import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
-import { filterGames, filterGroups, maxPlayers, normalize, pickRandom, search, sortGames } from '../../src/lib/library'
+import { filterGames, filterGroups, maxPlayers, normalize, pickRandom, ruleGames, search, sortGames } from '../../src/lib/library'
 import type { Game, GameList, System } from '../../src/lib/types'
 import { shortcuts } from '../../src/lib/shortcuts'
 import { pickTarget, type Box } from '../../src/lib/nav'
@@ -200,6 +200,10 @@ describe('filtros', () => {
     expect(groups[2].options.map((o) => o.label)).toEqual(['Ação', 'Esporte', 'Plataforma'])
     expect(groups[3].options.map((o) => o.id)).toEqual(['decade:1990'])
     expect(filterGroups([fakeGame('X', { lastPlayed: 1 })])).toEqual([])
+  })
+  it('lista automática: filtros e ordem da regra', () => {
+    expect(ruleGames(games, { filters: ['genre:Plataforma'], sort: 'yearDesc' }).map((g) => g.name)).toEqual(['C', 'A'])
+    expect(ruleGames(games, { filters: ['never'], sort: 'name' }).map((g) => g.name)).toEqual(['B'])
   })
 })
 

@@ -1,7 +1,8 @@
 // Fontes de lista: console, coleção automática ou lista pessoal. A chave
 // ("system:snes", "collection:all") guarda a ordem e os filtros de cada uma.
+import { ruleGames } from './library'
 import { app, system } from './state.svelte'
-import type { Game } from './types'
+import type { Game, GameList } from './types'
 
 export interface Collection {
   id: string
@@ -46,11 +47,19 @@ export function sourceGames(source: string): Game[] {
     return c ? app.games.filter(c.pick) : []
   }
   if (kind === 'list') {
+    const l = app.lists.find((x) => x.id === id)
+    // automática: a regra é a mesma tela da biblioteca (fonte + filtros + ordem)
+    if (l?.rule) return l.rule.source.startsWith('list:') ? [] : ruleGames(sourceGames(l.rule.source), l.rule)
     // jogo apagado do disco some da lista sem erro
-    const ids = new Set(app.lists.find((l) => l.id === id)?.games ?? [])
+    const ids = new Set(l?.games ?? [])
     return app.games.filter((g) => ids.has(g.id))
   }
   return []
+}
+
+/** Lista automática (por regra), que não aceita jogo posto na mão. */
+export function isSmart(l: GameList | undefined): boolean {
+  return !!l?.rule
 }
 
 export function filtersOf(source: string): string[] {
@@ -61,5 +70,6 @@ export function sortOf(source: string): string {
   const saved = app.settings?.ui?.sort?.[source]
   if (saved) return saved
   const [kind, id] = source.split(':')
+  if (kind === 'list') return app.lists.find((l) => l.id === id)?.rule?.sort ?? 'name'
   return kind === 'collection' ? (collection(id)?.sort ?? 'name') : 'name'
 }

@@ -326,6 +326,14 @@ export interface GameList {
   name: string
   games: string[]
   created: number
+  /** Lista automática: o conteúdo sai da regra (games fica vazio). */
+  rule?: ListRule | null
+}
+
+export interface ListRule {
+  source: string
+  filters: string[]
+  sort: string
 }
 
 export interface Boot {

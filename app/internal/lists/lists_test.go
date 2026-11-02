@@ -60,3 +60,44 @@ func TestLifecycle(t *testing.T) {
 		t.Fatalf("depois de apagar: %+v", all)
 	}
 }
+
+func TestSmart(t *testing.T) {
+	s := &lists.Store{Path: filepath.Join(t.TempDir(), "lists.json")}
+	rpg, err := s.CreateSmart("RPG de SNES", lists.Rule{Source: "system:snes", Filters: []string{"genre:RPG", " never ", "genre:RPG"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rpg.Rule == nil || rpg.Rule.Sort != "name" || len(rpg.Rule.Filters) != 2 || rpg.Rule.Filters[1] != "never" {
+		t.Fatalf("regra limpa: %+v", rpg.Rule)
+	}
+	if _, err := s.Set(rpg.ID, "smw", true); err != lists.ErrSmart {
+		t.Fatalf("pôr jogo na mão devia falhar: %v", err)
+	}
+	if _, err := s.CreateSmart("rpg de snes", lists.Rule{Source: "system:snes", Filters: []string{"fav"}}); err == nil {
+		t.Fatal("nome repetido devia falhar")
+	}
+	bad := []lists.Rule{
+		{Source: "list:abc", Filters: []string{"fav"}},
+		{Source: "system:../x", Filters: []string{"fav"}},
+		{Source: "system:snes"},
+		{Source: "system:snes", Filters: []string{"hack"}},
+		{Source: "system:snes", Filters: []string{"decade:1995"}},
+		{Source: "system:snes", Filters: []string{"players:9"}},
+		{Source: "system:snes", Filters: []string{"fav"}, Sort: "random"},
+	}
+	for _, r := range bad {
+		if _, err := s.CreateSmart("Ruim", r); err == nil {
+			t.Errorf("regra inválida aceita: %+v", r)
+		}
+	}
+	if _, err := s.Rename(rpg.ID, "RPGs"); err != nil {
+		t.Fatal(err)
+	}
+	all, _ := (&lists.Store{Path: s.Path}).All()
+	if len(all) != 1 || all[0].Name != "RPGs" || all[0].Rule.Source != "system:snes" || len(all[0].Games) != 0 {
+		t.Fatalf("persistência: %+v", all)
+	}
+	if err := s.Delete(rpg.ID); err != nil {
+		t.Fatal(err)
+	}
+}

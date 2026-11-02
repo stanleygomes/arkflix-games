@@ -974,6 +974,12 @@ func (s *Service) Lists() ([]lists.List, error) { return s.cur().lists.All() }
 // CreateList cria uma lista vazia.
 func (s *Service) CreateList(name string) (lists.List, error) { return s.cur().lists.Create(name) }
 
+// CreateSmartList cria uma lista automática (fonte + filtros + ordem da
+// biblioteca). O conteúdo é calculado na interface; não guarda jogos.
+func (s *Service) CreateSmartList(name string, rule lists.Rule) (lists.List, error) {
+	return s.cur().lists.CreateSmart(name, rule)
+}
+
 // RenameList troca o nome da lista.
 func (s *Service) RenameList(id, name string) (lists.List, error) {
 	return s.cur().lists.Rename(id, name)

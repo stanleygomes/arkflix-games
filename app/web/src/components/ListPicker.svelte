@@ -10,6 +10,8 @@
   import Icon from './Icon.svelte'
 
   let { gameId, onclose }: { gameId: string; onclose: () => void } = $props()
+  // automáticas não aceitam jogo na mão: só as manuais aparecem aqui
+  const manual = $derived(app.lists.filter((l) => !l.rule))
 
   $effect(() => {
     tick().then(focusDefault)
@@ -51,9 +53,9 @@
 <div class="backdrop" in:shade out:shade={{ out: true }}>
   <div class="dialog panel" in:panelIn out:panelOut role="dialog" aria-modal="true" aria-labelledby="lists-title" data-nav-scope={app.prompt ? undefined : ''}>
     <h2 id="lists-title">Listas</h2>
-    {#if app.lists.length}
+    {#if manual.length}
       <div class="checks" role="group" aria-label="Listas do jogo">
-        {#each app.lists as l, i (l.id)}
+        {#each manual as l, i (l.id)}
           {@const inList = l.games.includes(gameId)}
           <button class="check" role="checkbox" aria-checked={inList} data-nav data-nav-default={i === 0 ? '' : undefined} onclick={() => toggle(l.id, !inList)}>
             <span class="box" aria-hidden="true"></span>{l.name}
@@ -65,7 +67,7 @@
       <p class="muted">Nenhuma lista ainda.</p>
     {/if}
     <div class="actions">
-      <button class="btn" data-nav data-nav-default={app.lists.length ? undefined : ''} onclick={create}><Icon name="plus" /> Nova lista</button>
+      <button class="btn" data-nav data-nav-default={manual.length ? undefined : ''} onclick={create}><Icon name="plus" /> Nova lista</button>
       <button class="btn primary" data-nav onclick={onclose}>Pronto</button>
     </div>
   </div>
