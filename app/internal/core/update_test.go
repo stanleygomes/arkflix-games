@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -238,4 +239,70 @@ func TestUpdateLinuxReadOnlyFailsEarly(t *testing.T) {
 	if st := h.svc.UpdateStatus(); st.State != "error" || st.Error == "" {
 		t.Fatalf("estado: %+v", st)
 	}
+}
+
+type startRec struct {
+	mu    sync.Mutex
+	start [][]string
+}
+
+func (r *startRec) Run(string, ...string) error { return nil }
+func (r *startRec) Start(name string, args ...string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.start = append(r.start, append([]string{name}, args...))
+	return nil
+}
+
+func (r *recorder) waitEvent(t *testing.T, name string) any {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		r.mu.Lock()
+		for i, e := range r.events {
+			if e == name {
+				d := r.data[i]
+				r.mu.Unlock()
+				return d
+			}
+		}
+		r.mu.Unlock()
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("evento %s não chegou", name)
+	return nil
+}
+
+func TestUpdateNowInstallsAndRestarts(t *testing.T) {
+	core.SetRestartDelay(0)
+	h := newUpd(t, fakeGitHub(t, &fixture.FakeReleases{Tag: "v2.0.0"}), core.UpdateOptions{}, "", "")
+	run := &startRec{}
+	core.SetUpdateInstaller(h.svc, func() (updater.Installer, error) {
+		return updater.Installer{GOOS: "linux", Exe: h.exe, Run: run}, nil
+	})
+	if err := h.svc.UpdateNow(); err == nil {
+		t.Fatal("sem versão nova devia recusar")
+	}
+	if _, err := h.svc.CheckUpdate(); err != nil {
+		t.Fatal(err)
+	}
+	// um clique: baixa, instala e reabre
+	if err := h.svc.UpdateNow(); err != nil {
+		t.Fatal(err)
+	}
+	if tag := h.rec.waitEvent(t, "restart"); tag != "v2.0.0" {
+		t.Fatalf("restart: %v", tag)
+	}
+	if got, _ := os.ReadFile(h.exe); !strings.Contains(string(got), "v2.0.0") {
+		t.Fatalf("binário não trocado: %q", got)
+	}
+	run.mu.Lock()
+	defer run.mu.Unlock()
+	if len(run.start) != 1 || run.start[0][0] != "sh" || run.start[0][3] != h.exe {
+		t.Fatalf("reabrir o app: %v", run.start)
+	}
+	if st := h.svc.UpdateStatus(); st.State != "restarting" || st.Checked == 0 {
+		t.Fatalf("estado: %+v", st)
+	}
+	core.ApplyUpdateOnQuit(h.svc) // já instalou: não faz de novo (nem quebra)
 }

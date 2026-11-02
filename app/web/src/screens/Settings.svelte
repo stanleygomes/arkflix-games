@@ -17,6 +17,7 @@
   import EmulatorsPanel from './settings/EmulatorsPanel.svelte'
   import BluetoothPanel from './settings/BluetoothPanel.svelte'
   import CheevosPanel from './settings/CheevosPanel.svelte'
+  import UpdatesPanel from './settings/UpdatesPanel.svelte'
 
   let { tab = 'controls' }: { tab?: SettingsTab } = $props()
   let active = $state<SettingsTab>('controls')
@@ -34,6 +35,7 @@
     { id: 'storage', label: 'Armazenamento', icon: 'disc', group: 'Deste console' },
     { id: 'emulators', label: 'Emuladores', icon: 'pad', group: 'Deste console' },
     { id: 'bluetooth', label: 'Bluetooth', icon: 'bluetooth', group: 'Deste console' },
+    { id: 'updates', label: 'Atualizações', icon: 'download', group: 'Deste console' },
     { id: 'about', label: 'Sobre', icon: 'info', group: 'Deste console' },
   ]
 
@@ -106,6 +108,8 @@
         <EmulatorsPanel />
       {:else if active === 'bluetooth'}
         <BluetoothPanel />
+      {:else if active === 'updates'}
+        <UpdatesPanel />
       {:else if active === 'cheevos'}
         <CheevosPanel />
       {:else if active === 'controls'}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { unread } from '../lib/activity.svelte'
+  import { versionArrow } from '../lib/update'
+  import { isKids } from '../lib/state.svelte'
   import { app, currentProfile, go } from '../lib/state.svelte'
   import Avatar from './Avatar.svelte'
   import Icon from './Icon.svelte'
@@ -23,6 +25,12 @@
   <div class="brand pixel" aria-hidden="true">ARK<span>FLIX</span></div>
   <div class="middle">{@render children?.()}</div>
   <div class="right">
+    {#if app.update?.available && !isKids()}
+      <!-- aviso de versão nova: leva pra aba Atualizações -->
+      <button class="upd-btn" data-nav aria-label={`Atualização disponível: ${versionArrow(app.update)}`} onclick={() => go({ name: 'settings', tab: 'updates' })}>
+        <Icon name="download" /> <span class="pixel">{versionArrow(app.update)}</span>
+      </button>
+    {/if}
     {#if actions}
       <button class="icon-btn" data-nav aria-label="Buscar jogos" onclick={() => go({ name: 'search' })}>
         <Icon name="search" />
@@ -44,6 +52,32 @@
 </header>
 
 <style>
+  .upd-btn {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.35rem 0.7rem;
+    font: inherit;
+    font-size: 0.75rem;
+    color: #000;
+    background: var(--focus);
+    border: 3px solid var(--focus);
+    box-shadow: 0 0 12px var(--focus);
+    cursor: pointer;
+    animation: upd-pulse 2s steps(2) infinite;
+  }
+  .upd-btn:focus-visible,
+  .upd-btn:hover {
+    border-color: #fff;
+  }
+  @keyframes upd-pulse {
+    50% {
+      box-shadow: 0 0 2px var(--focus);
+    }
+  }
+  :global(.reduce-motion) .upd-btn {
+    animation: none;
+  }
   .dot {
     position: absolute;
     top: -0.35rem;

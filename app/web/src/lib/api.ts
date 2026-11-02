@@ -165,6 +165,7 @@ export const api = {
   updateStatus: () => call<UpdateInfo>('UpdateStatus'),
   checkUpdate: () => call<UpdateInfo>('CheckUpdate'),
   downloadUpdate: () => call<void>('DownloadUpdate'),
+  updateNow: () => call<void>('UpdateNow'),
   guide: () => call<GuideInfo>('Guide'),
   showGuide: () => call<void>('ShowGuide'),
   resumeGame: () => call<void>('ResumeGame'),

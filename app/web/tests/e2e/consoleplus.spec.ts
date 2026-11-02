@@ -51,11 +51,20 @@ test('conquistas: entra no RetroAchievements e vê os troféus do jogo', async (
 
 test.describe('com versão nova', () => {
   test.use({ releases: 'fake' })
-  test('atualização: acha a versão nova e baixa', async ({ page, app }) => {
+  test('atualização: avisa atual → nova, atualiza num clique e reabre', async ({ page, app }) => {
     await open(page, app)
-    await openItem(page, 'Sobre')
-    await page.getByRole('button', { name: 'Procurar atualização' }).click()
-    await expect(page.getByText(/v99\.0\.0/).first()).toBeVisible({ timeout: 15000 })
-    await axe(page, 'atualização')
+    await openItem(page, 'Atualizações')
+    await expect(page.getByRole('heading', { name: 'Atualizações' })).toBeVisible()
+    await page.getByRole('button', { name: 'Procurar atualizações' }).click()
+    await expect(page.locator('.versions')).toHaveText(/v1\.0\.0\s*→\s*v99\.0\.0/)
+    // aviso no topo, em qualquer tela com a barra
+    await expect(page.getByRole('button', { name: 'Atualização disponível: v1.0.0 → v99.0.0' })).toBeVisible()
+    await expect(page.locator('.toasts')).toContainText('Atualização disponível: v1.0.0 → v99.0.0')
+    await axe(page, 'atualizações')
+    await page.getByRole('button', { name: /e (reiniciar|atualizar)$/ }).click()
+    await expect(page.getByRole('alertdialog', { name: 'Atualizando pra v99.0.0' })).toBeVisible({ timeout: 15000 })
+    // no navegador "reabrir" é recarregar: volta pra interface
+    await expect(page.getByRole('alertdialog', { name: /Atualizando/ })).toHaveCount(0, { timeout: 10000 })
+    await expect(page.locator('#hero-title')).toBeVisible()
   })
 })

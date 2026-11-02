@@ -91,6 +91,33 @@ func (in Installer) Apply(file string) error {
 	return fmt.Errorf("atualização automática não existe pra %s", in.GOOS)
 }
 
+// ApplyAndRestart instala agora e abre o app de novo depois que este fechar
+// (botão "Atualizar e reiniciar"). Quem chama fecha o app logo em seguida.
+func (in Installer) ApplyAndRestart(file string, args []string) error {
+	switch in.GOOS {
+	case "windows":
+		// o setup só roda depois que o app fecha; o mesmo script reabre
+		name, cmd := windowsCommand(file)
+		cmd[len(cmd)-1] += "; Start-Process -FilePath " + psQuote(in.Exe)
+		return in.Run.Start(name, cmd...)
+	case "linux":
+		if err := in.applyLinux(file); err != nil {
+			return err
+		}
+		// espera este fechar pra não ter duas janelas (e o controle disputado)
+		return in.Run.Start("sh", append([]string{"-c", `sleep 1; exec "$0" "$@"`, in.Exe}, args...)...)
+	case "darwin":
+		if err := in.applyDarwin(file); err != nil {
+			return err
+		}
+		app, _ := appBundle(in.Exe)
+		return in.Run.Start("sh", "-c", `sleep 1; open -n "$0"`, app)
+	}
+	return fmt.Errorf("atualização automática não existe pra %s", in.GOOS)
+}
+
+func psQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
+
 // linuxPrefix: o app mora em <prefix>/bin/arkflix-games (build/prefix do
 // install.sh), o mesmo layout do tarball (prefix/bin/arkflix-games).
 func linuxPrefix(exe string) (string, error) {
@@ -225,8 +252,7 @@ func stage(r io.Reader, target string, mode os.FileMode) (string, error) {
 // windowsCommand: o setup NSIS em modo silencioso (/S), 3 s depois, pra o
 // app já ter fechado e soltado o .exe.
 func windowsCommand(setup string) (string, []string) {
-	quoted := "'" + strings.ReplaceAll(setup, "'", "''") + "'"
-	script := "Start-Sleep -Seconds 3; Start-Process -FilePath " + quoted + " -ArgumentList '/S' -Wait"
+	script := "Start-Sleep -Seconds 3; Start-Process -FilePath " + psQuote(setup) + " -ArgumentList '/S' -Wait"
 	return "powershell", []string{"-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script}
 }
 

@@ -37,9 +37,11 @@ type UpdateInfo struct {
 	URL       string  `json:"url"`   // página da release
 	Asset     string  `json:"asset"` // instalador deste sistema ("" = não tem)
 	Size      int64   `json:"size"`
-	State     string  `json:"state"` // idle, downloading, ready, error
+	State     string  `json:"state"` // idle, downloading, ready, restarting, error
 	Progress  float64 `json:"progress"`
 	Error     string  `json:"error,omitempty"`
+	Checked   int64   `json:"checked"` // última consulta ao GitHub (unix; 0 = nunca)
+	Restart   bool    `json:"restart"` // reinicia sozinho quando terminar de baixar
 }
 
 // checkDelay: espera antes da checagem do início (não disputa com a abertura).
@@ -132,6 +134,7 @@ func (s *Service) CheckUpdate() (UpdateInfo, error) {
 	if err != nil {
 		return s.UpdateStatus(), fmt.Errorf("não deu pra ver se tem versão nova: %w", err)
 	}
+	s.upd.set(func(i *UpdateInfo) { i.Checked = time.Now().Unix() })
 	info := s.upd.applyRelease(rel)
 	if info.Available {
 		s.opt.Emitter.Emit("update", info)
@@ -230,8 +233,13 @@ func (s *Service) download(progress func(float64)) (string, error) {
 	u.mu.Lock()
 	u.file = file
 	u.info.State, u.info.Progress = "ready", 1
+	restart := u.info.Restart
 	u.mu.Unlock()
 	s.opt.Emitter.Emit("update", u.snapshot())
+	if restart {
+		go s.restartNow()
+		return fmt.Sprintf("versão %s baixada: reiniciando", tag), nil
+	}
 	return fmt.Sprintf("versão %s pronta: instala quando o app fechar", tag), nil
 }
 
@@ -255,20 +263,87 @@ func (u *updateState) fetch(asset, sum updater.Asset, tag string, progress func(
 	return file, nil
 }
 
-// checkLater: checagem única do início; com "Atualizar sozinho" ligado,
-// já baixa.
+// checkEvery: de quanto em quanto tempo o app aberto olha de novo.
+var checkEvery = 6 * time.Hour
+
+// checkLater: olha uns segundos depois de abrir e depois a cada checkEvery;
+// com "Atualizar sozinho" ligado, já baixa (instala ao fechar).
 func (s *Service) checkLater() {
 	time.Sleep(checkDelay)
-	info, err := s.CheckUpdate()
-	if err != nil {
-		log.Printf("atualização: %v", err)
+	for {
+		info, err := s.CheckUpdate()
+		if err != nil {
+			log.Printf("atualização: %v", err)
+		} else if info.Available && info.State == "idle" && s.opt.Store.Settings().AutoUpdate {
+			if err := s.startDownload(); err != nil {
+				log.Printf("atualização: %v", err)
+			}
+		}
+		time.Sleep(checkEvery)
+	}
+}
+
+// UpdateNow é o "Atualizar e reiniciar": baixa (se faltar), instala e abre o
+// app de novo. Com jogo aberto, espera: não fecha o jogo de ninguém.
+func (s *Service) UpdateNow() error {
+	if err := s.adult(); err != nil {
+		return err
+	}
+	if s.Running() != "" {
+		return errors.New("feche o jogo antes de atualizar")
+	}
+	info := s.UpdateStatus()
+	if !info.Available {
+		return errors.New("o app já está na versão mais nova")
+	}
+	s.opt.Emitter.Emit("update", s.upd.set(func(i *UpdateInfo) { i.Restart, i.Error = true, "" }))
+	if info.State == "ready" {
+		go s.restartNow()
+		return nil
+	}
+	if info.State == "downloading" {
+		return nil // reinicia quando terminar
+	}
+	if err := s.startDownload(); err != nil {
+		s.upd.set(func(i *UpdateInfo) { i.Restart = false })
+		return err
+	}
+	return nil
+}
+
+// restartDelay: tempo pra interface mostrar "reiniciando" antes de fechar.
+var restartDelay = 1200 * time.Millisecond
+
+// restartNow instala o download pronto e reabre o app. No ambiente falso só
+// avisa a interface (que recarrega a página).
+func (s *Service) restartNow() {
+	u := s.upd
+	u.mu.Lock()
+	file, tag := u.file, u.info.Latest
+	u.info.State = "restarting" // o ApplyUpdateOnQuit não instala de novo
+	u.mu.Unlock()
+	s.opt.Emitter.Emit("update", u.snapshot())
+	time.Sleep(restartDelay)
+	if s.opt.Update.DryRun {
+		log.Printf("atualização %s: reinício simulado (ambiente falso)", tag)
+		s.opt.Emitter.Emit("restart", tag)
 		return
 	}
-	if info.Available && info.State == "idle" && s.opt.Store.Settings().AutoUpdate {
-		if err := s.startDownload(); err != nil {
-			log.Printf("atualização: %v", err)
-		}
+	in, err := u.newInstaller()
+	if err == nil {
+		err = in.ApplyAndRestart(file, os.Args[1:])
 	}
+	if err != nil {
+		log.Printf("atualização %s não instalada: %v", tag, err)
+		s.opt.Emitter.Emit("update", u.set(func(i *UpdateInfo) { i.State, i.Error, i.Restart = "error", err.Error(), false }))
+		return
+	}
+	if in.GOOS != "windows" {
+		os.RemoveAll(u.dir)
+	}
+	log.Printf("atualização %s instalada: reiniciando", tag)
+	s.opt.Emitter.Emit("restart", tag)
+	s.opt.Window.Quit()
 }
 
 // ApplyUpdateOnQuit instala a atualização baixada; o desktop chama ao fechar.

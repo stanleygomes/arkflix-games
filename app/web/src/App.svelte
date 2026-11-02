@@ -19,7 +19,9 @@
   import { focusDefault, setReducedMotion } from './lib/nav'
   import { configure, pauseMusic, play } from './lib/sound'
   import { app, applyBoot, isKids, resetTo, screen, toast } from './lib/state.svelte'
-  import type { Game, GameEvent, Pad, UpdateInfo } from './lib/types'
+  import type { Game, GameEvent, Pad } from './lib/types'
+  import { watchUpdate } from './lib/update'
+  import Restarting from './components/Restarting.svelte'
   import Game_ from './screens/Game.svelte'
   import Home from './screens/Home.svelte'
   import Import from './screens/Import.svelte'
@@ -68,9 +70,7 @@
     }
     on<Pad[]>('pads', padsChanged)
     on<Game[]>('library', (games) => (app.games = games ?? []))
-    on<UpdateInfo>('update', (u) => {
-      if (u.available && u.state === 'idle') toast(`Versão ${u.latest} disponível: Você › Sobre`, 'info', 8000, 'update')
-    })
+    watchUpdate()
     on<GameEvent>('game', async (e) => {
       if (e.state === 'running') {
         app.playing = e
@@ -181,6 +181,7 @@
 <PowerMenu />
 <Guide />
 <Screensaver />
+<Restarting />
 {#if app.ready}<Boot />{/if}
 
 <style>

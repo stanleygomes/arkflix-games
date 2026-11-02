@@ -313,3 +313,15 @@ func TestApplyDarwinFallbackOpensDMG(t *testing.T) {
 		t.Fatalf("sem .app: %v %v", err, r2.calls)
 	}
 }
+
+func TestApplyAndRestartWindows(t *testing.T) {
+	r := &fakeRunner{}
+	in := Installer{GOOS: "windows", Exe: `C:\Users\o'neil\arkflix-games.exe`, Run: r}
+	if err := in.ApplyAndRestart(`C:\tmp\setup.exe`, nil); err != nil {
+		t.Fatal(err)
+	}
+	got := r.calls[0]
+	if !strings.Contains(got, "-ArgumentList '/S' -Wait; Start-Process -FilePath 'C:\\Users\\o''neil\\arkflix-games.exe'") {
+		t.Fatalf("script: %s", got)
+	}
+}

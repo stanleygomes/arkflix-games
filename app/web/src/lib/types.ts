@@ -217,9 +217,11 @@ export interface UpdateInfo {
   url: string
   asset: string
   size: number
-  state: 'idle' | 'downloading' | 'ready' | 'error'
+  state: 'idle' | 'downloading' | 'ready' | 'restarting' | 'error'
   progress: number
   error?: string
+  checked: number // última consulta (unix; 0 = nunca)
+  restart: boolean // reinicia sozinho quando terminar de baixar
 }
 
 export interface GuideInfo {

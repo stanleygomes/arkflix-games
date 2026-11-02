@@ -28,3 +28,6 @@ func SetQuitGrace(d time.Duration) { quitGrace = d }
 
 // Conflict expõe a regra de conflito de saves.
 var Conflict = conflict
+
+// SetRestartDelay encurta a espera antes de reiniciar.
+func SetRestartDelay(d time.Duration) { restartDelay = d }

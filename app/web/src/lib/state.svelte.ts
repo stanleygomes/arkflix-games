@@ -1,6 +1,6 @@
 // Estado global da interface (Svelte 5 runes).
 import { play } from './sound'
-import type { Boot, Family, Game, GameEvent, GameList, Mapping, Pad, ProfileState, Settings, System, RetroPadButton } from './types'
+import type { Boot, Family, Game, GameEvent, GameList, Mapping, Pad, ProfileState, Settings, System, RetroPadButton, UpdateInfo } from './types'
 
 export type Screen =
   | { name: 'home' }
@@ -17,7 +17,7 @@ export type Screen =
   | { name: 'you' }
   | { name: 'activity' }
 
-export type SettingsTab = 'library' | 'server' | 'storage' | 'emulators' | 'bluetooth' | 'cheevos' | 'controls' | 'a11y' | 'about'
+export type SettingsTab = 'library' | 'server' | 'storage' | 'emulators' | 'bluetooth' | 'updates' | 'cheevos' | 'controls' | 'a11y' | 'about'
 
 export interface Toast {
   id: number
@@ -77,6 +77,8 @@ export const app = $state({
   playing: null as GameEvent | null,
   toasts: [] as Toast[],
   notices: [] as Notice[],
+  update: null as UpdateInfo | null,
+  restarting: '', // versão pra qual o app está reiniciando
   guide: false,
   confirm: null as Confirm | null,
   prompt: null as Prompt | null,
