@@ -2,6 +2,7 @@
   import { tick } from 'svelte'
   import Cheevos from '../components/Cheevos.svelte'
   import GameArt from '../components/GameArt.svelte'
+  import GameConfig from '../components/GameConfig.svelte'
   import GameOptions from '../components/GameOptions.svelte'
   import ListPicker from '../components/ListPicker.svelte'
   import MediaViewer from '../components/MediaViewer.svelte'
@@ -27,6 +28,7 @@
   let stamp = $state(Date.now())
   let picking = $state(false)
   let menu = $state(false)
+  let configuring = $state(false)
   let optionsBtn = $state<HTMLButtonElement>()
   let viewing = $state<number | null>(null)
   const media = $derived.by(() => {
@@ -105,7 +107,7 @@
 
   $effect(() =>
     pushHandler((a) => {
-      if (menu || picking || viewing !== null) return false
+      if (menu || picking || configuring || viewing !== null) return false
       if (a === 'fav') {
         const stateId = current()?.dataset.state
         const st = isKids() ? undefined : listing?.states.find((s) => s.id === stateId)
@@ -261,6 +263,19 @@
       onlists={() => {
         menu = false
         picking = true
+      }}
+      onconfig={() => {
+        menu = false
+        configuring = true
+      }}
+    />
+  {/if}
+  {#if configuring}
+    <GameConfig
+      gameId={id}
+      onclose={() => {
+        configuring = false
+        tick().then(() => optionsBtn?.focus())
       }}
     />
   {/if}

@@ -518,15 +518,14 @@ func (s *Service) Play(id, stateID string) error {
 	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()
-	spec := s.opt.Emulators
+	spec := s.launchSpec()
 	if spec.Bin == "" {
 		prepareEmulator(sys.Emulator, s.saveDirs())
-		spec.Exe = map[string]string{catalog.RetroArch: cfg.Emulators.RetroArch, catalog.PPSSPP: cfg.Emulators.PPSSPP, catalog.PCSX2: cfg.Emulators.PCSX2}
-		if cfg.Emulators.Cores != "" {
-			spec.Cores = cfg.Emulators.Cores
-		}
 	}
 	spec.Fullscreen, spec.RAAppend, spec.Work = cfg.Fullscreen, append(u.raAppend(), s.guideCfg(u)...), u.dir
+	if sys.Emulator == catalog.RetroArch {
+		s.applyGameConfig(u, id, &spec)
+	}
 	args, err := launcher.Command(sys, g.Launch, spec, resume)
 	if err != nil {
 		return err

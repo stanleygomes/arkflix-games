@@ -64,6 +64,20 @@ export interface GameSizeInfo {
   server: boolean // está no servidor: volta como "no servidor"
 }
 
+/** Configuração de um jogo no RetroArch (vazio = padrão). */
+export interface GameSettings {
+  core: string
+  image: '' | 'sharp' | 'smooth' | 'crt'
+  aspect: '' | '4:3' | 'full'
+}
+
+export interface GameConfigInfo {
+  supported: boolean
+  settings: GameSettings
+  cores: { id: string; name: string; default: boolean }[]
+  crt: boolean
+}
+
 export interface ScreensaverSettings {
   enabled: boolean
   minutes: number

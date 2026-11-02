@@ -178,6 +178,9 @@ func NewEnv(root string) Env {
 			put(filepath.Join(e.Cores, sys.Core+"_libretro.so"), nil)
 		}
 	}
+	// um core alternativo (bsnes) e um shader de CRT pra configuração por jogo
+	put(filepath.Join(e.Cores, "bsnes_libretro.so"), nil)
+	put(filepath.Join(filepath.Dir(s.RetroArchSaves), "shaders", "shaders_slang", "crt", "crt-easymode.slangp"), []byte("shaders = 1\n"))
 	// script de fim de jogo (como o backup do solomon): registra os argumentos
 	hook := filepath.Join(e.Data, "scripts", "game-end", "10-registra.sh")
 	log := filepath.Join(root, "hook.log")

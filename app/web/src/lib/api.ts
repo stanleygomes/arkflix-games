@@ -5,7 +5,9 @@
 import type {
   Boot,
   Game,
+  GameConfigInfo,
   GameList,
+  GameSettings,
   GameSizeInfo,
   BTInfo,
   CheevosInfo,
@@ -122,6 +124,8 @@ export const api = {
   setHidden: (id: string, hidden: boolean) => call<Game>('SetHidden', id, hidden),
   gameSize: (id: string) => call<GameSizeInfo>('GameSize', id),
   deleteGame: (id: string) => call<void>('DeleteGame', id),
+  gameConfig: (id: string) => call<GameConfigInfo>('GameConfig', id),
+  setGameConfig: (id: string, c: GameSettings) => call<GameConfigInfo>('SetGameConfig', id, c),
   play: (id: string, state = '') => call<void>('Play', id, state),
   saves: (id: string) => call<Listing>('Saves', id),
   deleteState: (id: string, state: string) => call<Listing>('DeleteState', id, state),

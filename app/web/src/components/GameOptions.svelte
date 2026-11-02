@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Opções do jogo (página do jogo): listas, editar, ocultar, apagar. Tudo que mexe
+  // Opções do jogo (página do jogo): listas, editar, configurar, ocultar, apagar. Tudo que mexe
   // no console fica aqui dentro, longe dos botões principais.
   import { panelIn, panelOut, shade } from '../lib/motion'
   import { tick } from 'svelte'
@@ -8,11 +8,12 @@
   import { focusDefault } from '../lib/nav'
   import { play } from '../lib/sound'
   import { bytes } from '../lib/format'
-  import { app, back, confirm, game, go, isKids, putGame, toast } from '../lib/state.svelte'
+  import { app, back, confirm, game, go, isKids, putGame, system, toast } from '../lib/state.svelte'
   import Icon from './Icon.svelte'
 
-  let { gameId, onclose, onlists }: { gameId: string; onclose: () => void; onlists: () => void } = $props()
+  let { gameId, onclose, onlists, onconfig }: { gameId: string; onclose: () => void; onlists: () => void; onconfig: () => void } = $props()
   const g = $derived(game(gameId))
+  const configurable = $derived(!!g && !g.remote && system(g.system)?.emulator === 'retroarch')
   const inLists = $derived(app.lists.filter((l) => l.games.includes(gameId)).length)
 
   $effect(() => {
@@ -89,6 +90,9 @@
       </button>
       {#if !isKids()}
         <button class="btn" data-nav onclick={edit}><Icon name="pencil" /> Editar informações</button>
+        {#if configurable}
+          <button class="btn" data-nav aria-haspopup="dialog" onclick={onconfig}><Icon name="gear" /> Configurar este jogo</button>
+        {/if}
         <button class="btn" data-nav onclick={toggleHidden}>
           <Icon name={g?.hidden ? 'check' : 'close'} /> {g?.hidden ? 'Mostrar na biblioteca' : 'Ocultar da biblioteca'}
         </button>

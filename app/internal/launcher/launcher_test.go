@@ -155,3 +155,27 @@ func TestNativeExe(t *testing.T) {
 		t.Fatalf("caminho escolhido sumiu: %v", err)
 	}
 }
+
+func TestGameCoreAndShader(t *testing.T) {
+	spec := setup(t)
+	os.WriteFile(filepath.Join(spec.Cores, "bsnes_libretro.so"), nil, 0o644)
+	snes, _ := catalog.Find("snes")
+	spec.Core, spec.Shader = "bsnes", "/sh/crt-easymode.slangp"
+	args, err := launcher.Command(snes, "/roms/smw.zip", spec, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{filepath.Join(spec.Bin, "retroarch"), "--fullscreen", "--appendconfig=/x/input.cfg",
+		"--set-shader", "/sh/crt-easymode.slangp", "-L", filepath.Join(spec.Cores, "bsnes_libretro.so"), "/roms/smw.zip"}
+	if !slices.Equal(args, want) {
+		t.Fatalf("args %v\nwant %v", args, want)
+	}
+	spec.Core = "../../etc/evil"
+	if _, err := launcher.Command(snes, "/roms/smw.zip", spec, nil); err == nil {
+		t.Fatal("core fora da lista do console")
+	}
+	spec.Core = "nestopia"
+	if _, err := launcher.Command(snes, "/roms/smw.zip", spec, nil); err == nil {
+		t.Fatal("core de outro console")
+	}
+}

@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -48,6 +49,8 @@ type Spec struct {
 	Fullscreen bool              // abre o jogo em tela cheia
 	RAAppend   []string          // configs extras do RetroArch (entrada, saves do perfil)
 	Work       string            // pasta pra configs geradas na hora (o Flatpak enxerga a home, não o /tmp)
+	Core       string            // RetroArch: core no lugar do padrão do console (configuração do jogo)
+	Shader     string            // RetroArch: preset de shader pro jogo (--set-shader)
 }
 
 // Resume escolhe de onde o jogo começa. Vazio = do início.
@@ -92,6 +95,23 @@ func program(emu string, spec Spec) ([]string, error) {
 	return []string{"flatpak", "run", id}, nil
 }
 
+// CoresDir: pasta de cores do RetroArch que o Command usa.
+func CoresDir(spec Spec) string {
+	if spec.Cores != "" {
+		return spec.Cores
+	}
+	exe := ""
+	if args, err := program(catalog.RetroArch, spec); err == nil {
+		exe = args[0]
+	}
+	return DefaultCores(spec.goos(), exe)
+}
+
+// CorePath: arquivo do core no sistema (ex.: <cores>/snes9x_libretro.so).
+func CorePath(cores, name, goos string) string {
+	return filepath.Join(cores, name+"_libretro"+CoreExt(goos))
+}
+
 // Command devolve o comando pra abrir o jogo.
 func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]string, error) {
 	if rom == "" {
@@ -110,13 +130,20 @@ func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]strin
 		if cores == "" {
 			cores = DefaultCores(spec.goos(), args[0])
 		}
-		core := filepath.Join(cores, sys.Core+"_libretro"+CoreExt(spec.goos()))
+		name := sys.Core
+		if spec.Core != "" {
+			if !slices.Contains(sys.Cores(), spec.Core) {
+				return nil, fmt.Errorf("core %s não roda %s", spec.Core, sys.Name)
+			}
+			name = spec.Core
+		}
+		core := CorePath(cores, name, spec.goos())
 		if _, err := os.Stat(core); err != nil {
 			hint := "rode make emulators"
 			if spec.goos() != "linux" {
 				hint = "baixe pelo menu do RetroArch (Online Updater › Core Downloader)"
 			}
-			return nil, fmt.Errorf("core %s não instalado: %s", sys.Core, hint)
+			return nil, fmt.Errorf("core %s não instalado: %s", name, hint)
 		}
 		if spec.Fullscreen {
 			args = append(args, "--fullscreen")
@@ -142,6 +169,9 @@ func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]strin
 		}
 		if len(appendCfg) > 0 {
 			args = append(args, "--appendconfig="+strings.Join(appendCfg, "|"))
+		}
+		if spec.Shader != "" {
+			args = append(args, "--set-shader", spec.Shader)
 		}
 		args = append(args, "-L", core, rom)
 	case catalog.PPSSPP:
