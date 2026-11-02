@@ -196,7 +196,7 @@
     color: #ffd23f;
     font-size: 1.2rem;
     letter-spacing: 0.15em;
-    animation: blink 1.1s steps(2) infinite;
+    animation: blink 1.1s steps(1) infinite; /* liga/desliga, sem meio-termo */
   }
   .reduce .coin,
   .reduce img {
