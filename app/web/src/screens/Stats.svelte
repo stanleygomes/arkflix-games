@@ -33,10 +33,12 @@
   })
   const dur = (s: number) => (s > 0 ? playTime(s) : '0 min')
   const dayLabel = (d: string) => d.slice(8, 10) + '/' + d.slice(5, 7)
+  // embedded: aberta como painel da tela Você (lista sempre visível)
+  let { embedded = false }: { embedded?: boolean } = $props()
 </script>
 
-<div class="page">
-  <TopBar actions={false} />
+<div class="page" class:embedded>
+  {#if !embedded}<TopBar actions={false} />{/if}
   <main class="body">
     <!-- placar de fliperama: o "recorde" é o tempo total jogado (HHH:MM) -->
     <div class="hud" aria-label="Placar">
@@ -45,7 +47,7 @@
       <p><span>JOGOS</span> {String(app.games.filter((g) => !g.remote).length).padStart(3, '0')}</p>
     </div>
     <header class="head">
-      <h1 class="pixel">Estatísticas</h1>
+      {#if !embedded}<h1 class="pixel">Estatísticas</h1>{/if}
       <div class="segmented" role="group" aria-label="Período">
         {#each periods as p, i (p.id)}
           <button class="btn small" data-nav data-nav-default={i === 0 ? '' : undefined} aria-pressed={period === p.id} onclick={() => (period = p.id)}>
@@ -103,10 +105,20 @@
       {/if}
     {/if}
   </main>
-  <HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />
+  {#if !embedded}<HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />{/if}
 </div>
 
 <style>
+  /* embutida na tela Você: sem barra, sem rodapé, sem rolagem própria */
+  .page.embedded {
+    height: auto;
+    display: block;
+  }
+  .page.embedded > main {
+    padding: 0;
+    overflow: visible;
+  }
+
   .hud {
     display: flex;
     justify-content: space-between;

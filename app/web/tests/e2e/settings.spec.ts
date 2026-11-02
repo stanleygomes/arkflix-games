@@ -52,9 +52,8 @@ test('biblioteca: adicionar pasta e salvar procura os jogos de novo', async ({ p
 test('sobre: versão e atalhos', async ({ page, app }) => {
   await open(page, app)
   await settings(page)
-  await page.keyboard.press('Escape') // do painel volta pra lista
-  // R1 anda pela lista: biblioteca → importar, servidor, armazenamento, emuladores, bluetooth, atualizações, perfis, protetor, sobre
-  for (let i = 0; i < 9; i++) await page.keyboard.press('e')
+  await page.keyboard.press('Escape') // do conteúdo volta pra lista
+  await pickItem(page, 'Sobre')
   await expect(page.getByRole('heading', { name: 'Sobre' })).toBeVisible()
   await expect(page.locator('.facts').first()).toContainText('Navegador')
   await expect(page.getByRole('definition').filter({ hasText: '10-registra.sh' })).toBeVisible()

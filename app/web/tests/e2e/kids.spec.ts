@@ -39,7 +39,7 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
   await page.keyboard.press('m')
   await expect(page.locator('main.you')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Deste console' })).toHaveCount(0)
-  await expect(page.locator('main.you [data-item]')).toHaveText([/Resumo/, /Central/, /Estatísticas/])
+  await expect(page.locator('main.you [data-item]')).toHaveText([/Perfil/, /Central/])
   await axe(page, 'você infantil')
   await page.keyboard.press('Escape')
   await page.goto(`${app.url}/`)

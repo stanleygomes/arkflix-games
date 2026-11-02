@@ -60,7 +60,7 @@ test('perfis: cria com avatar e PIN, troca, e um não vê favoritos nem saves do
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first().click()
   await expect(page.getByText('Nenhum ponto salvo ainda.')).toBeVisible()
   await page.getByRole('button', { name: 'Favoritar' }).click()
-  await page.getByRole('button', { name: 'Voltar' }).click()
+  await page.locator('.back-btn').click() // voltar do topo (aqui diz "Início")
 
   // volta pro principal: o favorito da Bia não aparece, o dele sim
   await switchProfile(page)

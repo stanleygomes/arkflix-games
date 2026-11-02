@@ -7,14 +7,14 @@
   import TopBar from '../components/TopBar.svelte'
   import { api } from '../lib/api'
   import { pushHandler } from '../lib/input'
-  import { focusDefault } from '../lib/nav'
+  import { focusDefault, focusWithin } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { avatarName } from '../lib/avatars'
   import { app, askPIN, back, confirm, prompt, resetTo, toast } from '../lib/state.svelte'
 
   // setup: primeira vez do app (configurar o perfil principal antes de tudo)
-  let { id, setup = false, suggest = '' }: { id?: string; setup?: boolean; suggest?: string } = $props()
+  let { id, setup = false, suggest = '', embedded = false, onclose }: { id?: string; setup?: boolean; suggest?: string; embedded?: boolean; onclose?: () => void } = $props()
 
   const COLOR_NAMES = ['Vermelho', 'Laranja', 'Amarelo', 'Verde', 'Azul', 'Roxo', 'Rosa', 'Turquesa']
 
@@ -76,7 +76,7 @@
 
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
-    tick().then(focusDefault)
+    if (!embedded) tick().then(focusDefault)
   })
 
   $effect(() =>
@@ -87,13 +87,19 @@
     }),
   )
 
+  // embutida: concluir volta pra lista da tela Você; sozinha, volta de tela
+  function close() {
+    if (embedded) onclose?.()
+    else back()
+  }
+
   async function editName() {
     await prompt('Nome do perfil', name, 'Usar este nome', async (v) => {
       if (!v.trim()) return 'O perfil precisa de um nome'
       name = v.trim()
       return null
     }, { max: 20 })
-    tick().then(focusDefault)
+    tick().then(() => (embedded ? focusWithin(root) : focusDefault()))
   }
 
   async function refresh() {
@@ -112,7 +118,7 @@
         return
       }
       toast(existing ? 'Perfil salvo' : `Perfil "${name}" criado`, 'ok', 2500)
-      back()
+      close()
     } catch (err) {
       play('error')
       toast((err as Error).message, 'error')
@@ -152,7 +158,7 @@
     } catch (err) {
       toast((err as Error).message, 'error')
     }
-    tick().then(focusDefault)
+    tick().then(() => (embedded ? focusWithin(root) : focusDefault()))
   }
 
   async function remove() {
@@ -173,22 +179,23 @@
       await api.deleteProfile(existing.id, pin)
       await refresh()
       toast('Perfil apagado', 'ok', 2500)
-      back()
+      close()
     } catch (err) {
       toast((err as Error).message, 'error')
     }
   }
+  let root = $state<HTMLElement | null>(null)
 </script>
 
-<div class="page">
-  <TopBar actions={false} />
-  <main class="editor" aria-labelledby="editor-title">
+<div class="page" class:embedded bind:this={root}>
+  {#if !embedded}<TopBar actions={false} />{/if}
+  <main class="editor" aria-labelledby={embedded ? undefined : 'editor-title'}>
     <div class="preview">
       <Avatar {avatar} {color} size="10rem" />
       <p class="pixel big-name">{name || 'Sem nome'}</p>
     </div>
     <div class="form">
-      <h1 id="editor-title" class="pixel">{setup ? 'Boas-vindas! Monte seu perfil' : existing ? 'Editar perfil' : 'Novo perfil'}</h1>
+      {#if !embedded}<h1 id="editor-title" class="pixel">{setup ? 'Boas-vindas! Monte seu perfil' : existing ? 'Editar perfil' : 'Novo perfil'}</h1>{/if}
       {#if setup}<p class="muted">Escolha seu nome e um personagem. Dá pra mudar depois e criar perfis pra mais gente.</p>{/if}
       <button class="btn field" data-nav data-nav-default onclick={editName}>
         <span class="muted">Nome</span> <strong>{name || 'Escolher nome'}</strong>
@@ -262,10 +269,20 @@
       </div>
     </div>
   </main>
-  <HelpBar hints={setup ? [{ button: 'south', label: 'Escolher' }] : [{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />
+  {#if !embedded}<HelpBar hints={setup ? [{ button: 'south', label: 'Escolher' }] : [{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />{/if}
 </div>
 
 <style>
+  /* embutida na tela Você: sem barra, sem rodapé, sem rolagem própria */
+  .page.embedded {
+    height: auto;
+    display: block;
+  }
+  .page.embedded > main {
+    padding: 0;
+    overflow: visible;
+  }
+
   .page {
     height: 100vh;
     display: flex;

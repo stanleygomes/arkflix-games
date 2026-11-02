@@ -4,7 +4,7 @@ async function openControls(page: import('@playwright/test').Page, app: import('
   await open(page, app)
   await settings(page)
   await pickItem(page, 'Controles')
-  await expect(page.getByRole('heading', { name: 'Controles' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Botões', level: 1 })).toBeVisible()
   // foco de volta na lista: o ✕ apertado no teste não aciona botão do painel
   await page.keyboard.press('Escape')
 }
@@ -58,9 +58,10 @@ test('testar L1/R1 na prévia não troca de seção', async ({ page, app }) => {
   await page.locator('[data-retropad="up"]').focus()
   await app.pad('r1')
   await app.pad('l1')
-  await expect(page.getByRole('heading', { name: 'Controles' })).toBeVisible()
+  await page.waitForTimeout(400) // os botões do controle chegam pelo servidor (SSE)
+  await expect(page.getByRole('heading', { name: 'Botões', level: 1 })).toBeVisible()
   await expect(page.locator('[data-retropad="up"]')).toBeFocused()
-  // no teclado, E continua indo pra próxima seção
+  // no teclado, E continua indo pra próxima seção (aba) de Controles
   await page.keyboard.press('e')
-  await expect(page.getByRole('heading', { name: 'Acessibilidade' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Bluetooth', level: 1 })).toBeVisible() // próxima aba do grupo
 })

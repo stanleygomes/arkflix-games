@@ -116,18 +116,42 @@ export async function you(page: Page) {
   await expect(page.locator('main.you')).toBeVisible()
 }
 
-/** Abre um item da tela "Você" pelo nome ("Biblioteca", "Estatísticas"...). */
-export async function openItem(page: Page, label: string) {
-  await you(page)
-  await page.locator('main.you [data-item]').filter({ has: page.getByText(label, { exact: true }) }).focus()
-  await page.keyboard.press('Enter') // pelo controle: o mouse parado em cima roubaria o foco
+/** Onde mora cada coisa na tela "Você": item da lista e aba dentro dele. */
+const WHERE: Record<string, [string, string?]> = {
+  Resumo: ['Perfil', 'Resumo'],
+  Estatísticas: ['Perfil', 'Estatísticas'],
+  Perfil: ['Perfil', 'Editar perfil'],
+  Conquistas: ['Perfil', 'Conquistas'],
+  Central: ['Central'],
+  Controles: ['Controles', 'Botões'],
+  Bluetooth: ['Controles', 'Bluetooth'],
+  'Acessibilidade e som': ['Tela e som'],
+  Biblioteca: ['Jogos', 'Biblioteca'],
+  'Importar jogos': ['Jogos', 'Importar jogos'],
+  'Servidor RomM': ['Jogos', 'Servidor RomM'],
+  Emuladores: ['Jogos', 'Emuladores e BIOS'],
+  Armazenamento: ['Sistema', 'Armazenamento'],
+  Atualizações: ['Sistema', 'Atualizações'],
+  'Perfis da casa': ['Sistema', 'Perfis da casa'],
+  Sobre: ['Sistema', 'Sobre'],
 }
 
-/** Abre as configurações (pela tela "Você"); depois, as abas são as de sempre. */
-/** Já na tela Você: escolhe o item da lista (Enter = abre/entra no painel). */
+/** Abre uma parte da tela "Você" pelo nome ("Biblioteca", "Estatísticas"...). */
+export async function openItem(page: Page, label: string) {
+  await you(page)
+  await pickItem(page, label)
+}
+
+/** Já na tela Você: escolhe o item da lista (Enter = entra) e a aba dele. */
 export async function pickItem(page: Page, label: string) {
-  await page.locator('main.you [data-item]').filter({ has: page.getByText(label, { exact: true }) }).focus()
-  await page.keyboard.press('Enter')
+  const [item, tab] = WHERE[label] ?? [label]
+  await page.locator('main.you [data-item]').filter({ has: page.getByText(item, { exact: true }) }).focus()
+  await page.keyboard.press('Enter') // pelo controle: o mouse parado em cima roubaria o foco
+  if (tab) {
+    const btn = page.locator('main.you .subtabs').getByRole('button', { name: tab, exact: true })
+    await btn.focus()
+    await page.keyboard.press('Enter')
+  }
 }
 export async function settings(page: Page) {
   await openItem(page, 'Biblioteca')

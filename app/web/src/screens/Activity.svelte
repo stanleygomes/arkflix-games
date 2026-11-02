@@ -15,7 +15,7 @@
 
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
-    tick().then(focusDefault)
+    if (!embedded) tick().then(focusDefault)
     // abriu a central: os avisos foram vistos (ao sair, pra a bolinha não sumir antes)
     return markRead
   })
@@ -53,12 +53,14 @@
     const g = t.id.startsWith('download:') ? game(t.id.slice(9)) : undefined
     return (t.state === 'error' || t.state === 'cancelled') && g?.remote ? g : undefined
   }
+  // embedded: aberta como painel da tela Você (lista sempre visível)
+  let { embedded = false }: { embedded?: boolean } = $props()
 </script>
 
-<div class="page">
-  <TopBar actions={false} />
-  <main class="central" aria-labelledby="central-title">
-    <h1 id="central-title" class="pixel">Central</h1>
+<div class="page" class:embedded>
+  {#if !embedded}<TopBar actions={false} />{/if}
+  <main class="central" aria-labelledby={embedded ? undefined : 'central-title'}>
+    {#if !embedded}<h1 id="central-title" class="pixel">Central</h1>{/if}
     <section class="col" aria-labelledby="tasks-title">
       <header>
         <h2 id="tasks-title" class="pixel">Downloads e tarefas</h2>
@@ -130,10 +132,20 @@
   {#if options}
     <DownloadOptions onclose={closeOptions} />
   {/if}
-  <HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />
+  {#if !embedded}<HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />{/if}
 </div>
 
 <style>
+  /* embutida na tela Você: sem barra, sem rodapé, sem rolagem própria */
+  .page.embedded {
+    height: auto;
+    display: block;
+  }
+  .page.embedded > main {
+    padding: 0;
+    overflow: visible;
+  }
+
   .page {
     height: 100vh;
     display: flex;

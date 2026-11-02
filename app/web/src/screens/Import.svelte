@@ -5,7 +5,7 @@
   import TopBar from '../components/TopBar.svelte'
   import { api } from '../lib/api'
   import { bytes } from '../lib/format'
-  import { focusDefault } from '../lib/nav'
+  import { focusDefault, focusWithin } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { app, system, toast } from '../lib/state.svelte'
@@ -18,7 +18,7 @@
 
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
-    tick().then(focusDefault)
+    if (!embedded) tick().then(focusDefault)
   })
 
   const ready = $derived(items.filter((i) => !i.problem && i.system))
@@ -66,7 +66,7 @@
 
   function removeItem(i: number) {
     items.splice(i, 1)
-    tick().then(focusDefault)
+    tick().then(() => (embedded ? focusWithin(root) : focusDefault()))
   }
 
   async function run() {
@@ -85,12 +85,15 @@
       busy = false
     }
   }
+  // embedded: aberta como painel da tela Você (lista sempre visível)
+  let { embedded = false }: { embedded?: boolean } = $props()
+  let root = $state<HTMLElement | null>(null)
 </script>
 
-<div class="page">
-  <TopBar actions={false} />
+<div class="page" class:embedded bind:this={root}>
+  {#if !embedded}<TopBar actions={false} />{/if}
   <main class="body">
-    <h1 class="pixel">Importar jogos</h1>
+    {#if !embedded}<h1 class="pixel">Importar jogos</h1>{/if}
     <p class="muted">Os jogos são copiados pra <code>{app.settings?.importDir}</code>, numa pasta por console. Zip com disco vira pasta; o resto vai como está.</p>
 
     <div class="sources panel">
@@ -155,10 +158,20 @@
       </section>
     {/if}
   </main>
-  <HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />
+  {#if !embedded}<HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />{/if}
 </div>
 
 <style>
+  /* embutida na tela Você: sem barra, sem rodapé, sem rolagem própria */
+  .page.embedded {
+    height: auto;
+    display: block;
+  }
+  .page.embedded > main {
+    padding: 0;
+    overflow: visible;
+  }
+
   .page {
     height: 100vh;
     display: flex;

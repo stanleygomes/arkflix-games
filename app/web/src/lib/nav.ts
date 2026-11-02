@@ -98,6 +98,12 @@ export function focusEl(el: HTMLElement | null | undefined): boolean {
   return true
 }
 
+/** Foca o padrão de dentro de el (painel embutido na tela Você). */
+export function focusWithin(el: HTMLElement | null | undefined): boolean {
+  if (!el) return false
+  return focusEl(el.querySelector<HTMLElement>('[data-nav-default]') ?? el.querySelector<HTMLElement>('[data-nav]'))
+}
+
 /** Foca o padrão da tela ([data-nav-default]) ou o primeiro focável. */
 export function focusDefault(): boolean {
   const s = scope()

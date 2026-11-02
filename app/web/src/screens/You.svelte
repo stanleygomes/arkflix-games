@@ -18,18 +18,21 @@
   import ServerPanel from './settings/ServerPanel.svelte'
   import StoragePanel from './settings/StoragePanel.svelte'
   import UpdatesPanel from './settings/UpdatesPanel.svelte'
+  import Activity from './Activity.svelte'
+  import ImportScreen from './Import.svelte'
+  import ProfileEditor from './ProfileEditor.svelte'
+  import StatsScreen from './Stats.svelte'
   import Avatar from '../components/Avatar.svelte'
   import HelpBar from '../components/HelpBar.svelte'
   import Icon, { type IconName } from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
   import { activity, unread } from '../lib/activity.svelte'
   import { api } from '../lib/api'
-  import { avatarName } from '../lib/avatars'
   import { summarize, type ProfileSummary } from '../lib/profilestats'
   import { bytes, playTime } from '../lib/format'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { app, currentProfile, go, isKids, system, type Screen } from '../lib/state.svelte'
-  import type { BTInfo, CheevosInfo, EmulatorsInfo, KidsTimeInfo, RemoteInfo, StorageInfo } from '../lib/types'
+  import type { CheevosInfo, EmulatorsInfo, KidsTimeInfo, RemoteInfo, StorageInfo } from '../lib/types'
   import { versionArrow } from '../lib/update'
 
   const me = $derived(currentProfile())
@@ -42,7 +45,6 @@
   let storage = $state<StorageInfo | null>(null)
   let emus = $state<EmulatorsInfo | null>(null)
   let summary = $state<ProfileSummary | null>(null)
-  let blue = $state<BTInfo | null>(null)
   let cheevos = $state<CheevosInfo | null>(null)
 
   $effect(() => {
@@ -52,7 +54,6 @@
     api.remoteStatus().then((r) => (remote = r)).catch(() => {})
     api.storage().then((s) => (storage = s)).catch(() => {})
     api.emulatorStatus().then((e) => (emus = e)).catch(() => {})
-    api.btStatus().then((b) => (blue = b)).catch(() => {})
     api.cheevosStatus().then((c) => (cheevos = c)).catch(() => {})
   })
 
@@ -68,112 +69,172 @@
 
   let { item = '' }: { item?: string } = $props()
 
-  // painel = abre aqui do lado; tela = abre por cima e volta pra cá; ação = faz na hora
-  type Item = { id: string; label: string; icon: IconName; value: string; panel?: Component; screen?: Screen; action?: () => void }
-  const to = (s: Screen) => ({ screen: s })
-  const panel = (p: Component) => ({ panel: p })
-  const PANELS: Record<string, Component> = {
-    controls: ControlsPanel,
-    a11y: A11yPanel,
-    cheevos: CheevosPanel,
-    library: LibraryPanel,
-    server: ServerPanel,
-    storage: StoragePanel,
-    emulators: EmulatorsPanel,
-    bluetooth: BluetoothPanel,
-    updates: UpdatesPanel,
-    about: AboutPanel,
-  }
 
-  const mine = $derived.by((): Item[] => {
-    const a = app.settings?.a11y
+  // Poucos itens, cada um com abas: nada escondido lá embaixo da lista.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type Sub = { id: string; label: string; panel?: Component<any>; props?: Record<string, unknown>; screen?: Screen; note?: string }
+  type Group = { id: string; label: string; icon: IconName; value: string; subs: Sub[] }
+
+  const groups = $derived.by((): Group[] => {
+    const s = app.settings
+    const a = s?.a11y
+    const news = unread()
+    const busy = activity.tasks.filter((t) => t.state === 'running').length
+    const out: Group[] = [
+      {
+        id: 'me',
+        label: 'Perfil',
+        icon: 'chart',
+        value: `${me?.name ?? ''} · ${hours} h jogadas`,
+        subs: [
+          { id: 'overview', label: 'Resumo' },
+          { id: 'stats', label: 'Estatísticas', panel: StatsScreen },
+          ...(kids
+            ? []
+            : [
+                { id: 'profile', label: 'Editar perfil', panel: ProfileEditor, props: { id: me?.id } },
+                { id: 'cheevos', label: 'Conquistas', panel: CheevosPanel },
+              ]),
+        ],
+      },
+      {
+        id: 'activity',
+        label: 'Central',
+        icon: 'bell',
+        value: busy ? `${busy} em andamento` : news ? `${news} aviso${news === 1 ? '' : 's'} novo${news === 1 ? '' : 's'}` : 'downloads e avisos',
+        subs: [{ id: 'activity', label: 'Central', panel: Activity }],
+      },
+    ]
+    if (kids) return out
     const access = a
       ? [`texto ${Math.round(a.fontScale * 100)}%`, a.highContrast && 'alto contraste', a.reduceMotion && 'sem animações', !a.sounds && 'sem sons']
           .filter(Boolean)
           .join(' · ')
       : ''
-    const pad = app.pads.length ? app.pads.map((p) => p.name).join(', ') : 'nenhum controle conectado'
-    const news = unread()
-    const busy = activity.tasks.filter((t) => t.state === 'running').length
-    const items: Item[] = [
-      { id: 'activity', label: 'Central', icon: 'bell', value: busy ? `${busy} em andamento` : news ? `${news} aviso${news === 1 ? '' : 's'} novo${news === 1 ? '' : 's'}` : 'downloads e avisos', ...to({ name: 'activity' }) },
-      { id: 'stats', label: 'Estatísticas', icon: 'chart', value: `${hours} h jogadas · ${played} jogos`, ...to({ name: 'stats' }) },
-    ]
-    if (!kids) {
-      items.splice(1, 0, { id: 'profile', label: 'Perfil', icon: 'pencil', value: `${me?.name ?? ''} · ${avatarName(me?.avatar ?? '')}${me?.hasPIN ? ' · com PIN' : ''}`, ...to({ name: 'profile', id: me?.id }) })
-      items.push(
-        { id: 'controls', label: 'Controles', icon: 'pad', value: pad, ...panel(PANELS.controls) },
-        { id: 'a11y', label: 'Acessibilidade e som', icon: 'sliders', value: access, ...panel(PANELS.a11y) },
-        { id: 'cheevos', label: 'Conquistas', icon: 'trophy', value: cheevos ? (cheevos.connected ? `RetroAchievements: ${cheevos.user}` : 'desligadas') : '…', ...panel(PANELS.cheevos) },
-      )
+    out.push(
+      {
+        id: 'controls',
+        label: 'Controles',
+        icon: 'pad',
+        value: app.pads.length ? app.pads.map((p) => p.name).join(', ') : 'nenhum conectado',
+        subs: [
+          { id: 'controls', label: 'Botões', panel: ControlsPanel },
+          { id: 'bluetooth', label: 'Bluetooth', panel: BluetoothPanel },
+        ],
+      },
+      { id: 'a11y', label: 'Tela e som', icon: 'sliders', value: access, subs: [{ id: 'a11y', label: 'Tela e som', panel: A11yPanel }] },
+      {
+        id: 'games',
+        label: 'Jogos',
+        icon: 'folder',
+        value: `${app.games.length} jogos · ${remote ? (remote.connected ? 'servidor conectado' : 'sem servidor') : '…'} · ${emuSummary()}`,
+        subs: [
+          { id: 'library', label: 'Biblioteca', panel: LibraryPanel },
+          { id: 'import', label: 'Importar jogos', panel: ImportScreen },
+          { id: 'server', label: 'Servidor RomM', panel: ServerPanel },
+          { id: 'emulators', label: 'Emuladores e BIOS', panel: EmulatorsPanel },
+        ],
+      },
+      {
+        id: 'system',
+        label: 'Sistema',
+        icon: 'gear',
+        value: [storage && storage.total > 0 ? `${bytes(storage.free)} livres` : '', app.update?.available ? `nova: ${versionArrow(app.update)}` : `versão ${app.version}`]
+          .filter(Boolean)
+          .join(' · '),
+        subs: [
+          { id: 'storage', label: 'Armazenamento', panel: StoragePanel },
+          { id: 'updates', label: 'Atualizações', panel: UpdatesPanel },
+          { id: 'profiles', label: 'Perfis da casa', screen: { name: 'profiles' }, note: 'Criar perfis, pôr PIN e ligar o modo infantil.' },
+          { id: 'about', label: 'Sobre', panel: AboutPanel },
+        ],
+      },
+    )
+    return out
+  })
+
+  // ids antigos (atalhos de outras telas e da busca) -> grupo e aba
+  const ALIAS: Record<string, string> = { saver: 'a11y', you: 'overview' }
+  function locate(id: string): [string, string] | null {
+    const want = ALIAS[id] ?? id
+    for (const g of groups) {
+      if (g.id === want) return [g.id, g.subs[0].id]
+      const sub = g.subs.find((x) => x.id === want)
+      if (sub) return [g.id, sub.id]
     }
-    return items
-  })
+    return null
+  }
 
-  const house = $derived.by((): Item[] => {
-    if (kids) return []
-    const s = app.settings
-    const saver = s?.screensaver
-    const items: Item[] = [
-      { id: 'library', label: 'Biblioteca', icon: 'folder', value: `${s?.libraryDirs.length ?? 0} pasta${s?.libraryDirs.length === 1 ? '' : 's'} · ${app.games.length} jogos · capas ${s?.covers.enabled ? 'ligadas' : 'desligadas'}`, ...panel(PANELS.library) },
-      { id: 'import', label: 'Importar jogos', icon: 'plus', value: 'de qualquer pasta ou pendrive', ...to({ name: 'import' }) },
-      { id: 'server', label: 'Servidor RomM', icon: 'cloud', value: remote ? (remote.connected ? `conectado · ${remote.games} jogos` : 'offline') : '…', ...panel(PANELS.server) },
-      { id: 'storage', label: 'Armazenamento', icon: 'disc', value: storage ? (storage.total > 0 ? `${bytes(storage.free)} livres de ${bytes(storage.total)}` : 'jogos: ' + bytes(storage.games)) : '…', ...panel(PANELS.storage) },
-      { id: 'emulators', label: 'Emuladores', icon: 'pad', value: emuSummary(), ...panel(PANELS.emulators) },
-      { id: 'bluetooth', label: 'Bluetooth', icon: 'bluetooth', value: blue ? (blue.supported ? (blue.powered ? `${blue.devices.filter((d) => d.gamepad && d.connected).length} controle(s) conectado(s)` : 'desligado') : 'pelo sistema') : '…', ...panel(PANELS.bluetooth) },
-      { id: 'updates', label: 'Atualizações', icon: 'download', value: app.update?.available ? `nova: ${versionArrow(app.update)}` : 'em dia', ...panel(PANELS.updates) },
-      { id: 'profiles', label: 'Perfis da casa', icon: 'lock', value: `${app.profile?.profiles.length ?? 1} perfil${(app.profile?.profiles.length ?? 1) === 1 ? '' : 's'} · modo infantil`, ...to({ name: 'profiles' }) },
-      { id: 'saver', label: 'Protetor de tela', icon: 'resume', value: saver?.enabled ? `${saver.mode === 'snake' ? 'cobrinha' : 'vitrine'} · ${saver.minutes} min` : 'desligado', ...panel(PANELS.a11y) },
-      { id: 'about', label: 'Sobre', icon: 'info', value: `versão ${app.version}`, ...panel(PANELS.about) },
-    ]
-    if (app.mode === 'desktop') items.push({ id: 'power', label: 'Energia', icon: 'power', value: 'minimizar, tela cheia, fechar', action: () => (app.power = true) })
-    return items
-  })
-
-  const overview: Item = { id: 'overview', label: 'Resumo', icon: 'chart', value: 'suas horas e a semana' }
-  const all = $derived([overview, ...mine, ...house])
-  // item escolhido: o pedido por outra tela (atalho), o último visto ou o resumo
-  let active = $state(untrack(() => (item && all.some((i) => i.id === item) ? item : (app.youItem ?? 'overview'))))
-  const sel = $derived(all.find((i) => i.id === active) ?? overview)
+  const start = untrack(() => locate(item) ?? locate(app.youItem ?? '') ?? ['me', 'overview'])
+  let active = $state(start[0])
+  let subId = $state(start[1])
+  const group = $derived(groups.find((g) => g.id === active) ?? groups[0])
+  const sub = $derived(group.subs.find((x) => x.id === subId) ?? group.subs[0])
   $effect(() => {
-    app.youItem = active
+    app.youItem = sub.id
   })
 
-  // ao abrir: foco no item (ou já dentro do painel, se veio de um atalho)
+  // ao abrir: foco no item (ou já dentro do conteúdo, se veio de um atalho)
   $effect(() => {
-    untrack(() => tick().then(() => (item && sel.panel ? enter() : focusEl(listItem(active)))))
+    untrack(() => tick().then(() => (item ? enter() : focusEl(listItem(active)))))
   })
 
   function listItem(id: string) {
     return document.querySelector<HTMLElement>(`.menu [data-item="${id}"]`)
   }
 
-  function select(it: Item) {
-    active = it.id
+  function select(g: Group) {
+    if (active === g.id) return
+    active = g.id
+    subId = g.subs[0].id
   }
 
-  // Enter/clique: painel = entra nele; tela = abre; ação = faz
-  function open(it: Item) {
-    active = it.id
-    if (it.screen) go(it.screen)
-    else if (it.action) it.action()
-    else tick().then(enter)
+  // Enter/clique no item: entra no conteúdo (nas abas, se tiver)
+  function open(g: Group) {
+    select(g)
+    tick().then(enter)
   }
 
   function enter() {
     const box = document.querySelector<HTMLElement>('.detail')
-    const first = box?.querySelector<HTMLElement>('[data-nav-default]') ?? box?.querySelector<HTMLElement>('[data-nav]') ?? box
+    const first =
+      box?.querySelector<HTMLElement>('.subtabs [aria-current="page"]') ??
+      box?.querySelector<HTMLElement>('.content [data-nav-default]') ??
+      box?.querySelector<HTMLElement>('.content [data-nav]') ??
+      box
     if (first) focusEl(first)
   }
 
-  function cycle(delta: number) {
-    const i = all.findIndex((x) => x.id === active)
-    const next = all[(i + delta + all.length) % all.length]
-    play('move')
-    focusEl(listItem(next.id))
+  function pickSub(x: Sub) {
+    subId = x.id
   }
 
-  $effect(() =>
+  // Enter/clique na aba: entra no conteúdo dela
+  function enterSub(x: Sub) {
+    subId = x.id
+    tick().then(() => {
+      const box = document.querySelector<HTMLElement>('.detail .content')
+      const first = box?.querySelector<HTMLElement>('[data-nav-default]') ?? box?.querySelector<HTMLElement>('[data-nav]')
+      if (first) focusEl(first)
+    })
+  }
+
+  // L1/R1: troca de aba no grupo; sem abas, troca de item
+  function cycle(delta: number) {
+    play('move')
+    if (group.subs.length > 1) {
+      const i = group.subs.findIndex((x) => x.id === sub.id)
+      subId = group.subs[(i + delta + group.subs.length) % group.subs.length].id
+      tick().then(() => focusEl(document.querySelector<HTMLElement>('.subtabs [aria-current="page"]')))
+      return
+    }
+    const i = groups.findIndex((g) => g.id === active)
+    focusEl(listItem(groups[(i + delta + groups.length) % groups.length].id))
+  }
+
+  // .pre: registra antes dos painéis, que assim ouvem primeiro (a prévia de
+  // controles usa L1/R1 pra testar, sem trocar de aba)
+  $effect.pre(() =>
     pushHandler((a) => {
       const el = current()
       const inside = !!el?.closest('.detail')
@@ -208,41 +269,44 @@
           {#if kids}<p class="tag">Perfil infantil</p>{/if}
         </div>
       </header>
-      {#each [{ title: '', items: [overview] }, { title: 'Só pra você', items: mine }, { title: 'Deste console', items: house }] as group (group.title)}
-        {#if group.items.length}
-          {#if group.title}<p class="group sub">{group.title}</p>{/if}
-          <ul>
-            {#each group.items as it (it.id)}
-              <li>
-                <button
-                  class="item"
-                  data-nav
-                  data-item={it.id}
-                  data-nav-default={it.id === active || undefined}
-                  aria-current={it.id === active ? 'page' : undefined}
-                  onfocus={() => select(it)}
-                  onclick={() => open(it)}
-                >
-                  <Icon name={it.icon} size="1.3em" />
-                  <span class="text"><span class="label">{it.label}</span><span class="value muted">{it.value}</span></span>
-                  {#if it.screen}<span class="go" aria-hidden="true">›</span>{/if}
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      {/each}
+      <ul>
+        {#each groups as g (g.id)}
+          <li>
+            <button
+              class="item"
+              data-nav
+              data-item={g.id}
+              data-nav-default={g.id === active || undefined}
+              aria-current={g.id === active ? 'page' : undefined}
+              onfocus={() => select(g)}
+              onclick={() => open(g)}
+            >
+              <Icon name={g.icon} size="1.3em" />
+              <span class="text"><span class="label">{g.label}</span><span class="value muted">{g.value}</span></span>
+            </button>
+          </li>
+        {/each}
+      </ul>
       {#if kids}<p class="muted small">O resto do console quem muda é um adulto.</p>{/if}
     </nav>
 
     <!-- focável: dá pra rolar o painel com o controle mesmo sem botão dentro -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-    <section class="detail" aria-labelledby="you-title" tabindex={sel.panel ? 0 : undefined} data-panel={sel.panel ? '' : undefined} data-nav={sel.id === 'about' ? '' : undefined}>
-      <p class="crumb muted" aria-hidden="true">Você ›</p>
-      <h1 id="you-title" class="pixel">{sel.id === 'overview' ? (me?.name ?? 'Você') : sel.label}</h1>
-      {#if sel.panel}
-        {#key sel.id}<sel.panel />{/key}
-      {:else if sel.id === 'overview'}
+    <section class="detail" aria-labelledby="you-title" tabindex={sub.panel ? 0 : undefined} data-panel={sub.panel ? '' : undefined} data-nav={sub.id === 'about' ? '' : undefined}>
+      <p class="crumb muted" aria-hidden="true">Você › {group.label}</p>
+      <h1 id="you-title" class="pixel">{sub.id === 'overview' ? (me?.name ?? 'Você') : group.subs.length > 1 ? sub.label : group.label}</h1>
+      {#if group.subs.length > 1}
+        <div class="subtabs" role="group" aria-label={`Seções de ${group.label}`}>
+          {#each group.subs as x (x.id)}
+            <button class="btn small" data-nav aria-current={x.id === sub.id ? 'page' : undefined} onfocus={() => pickSub(x)} onclick={() => enterSub(x)}>{x.label}</button>
+          {/each}
+        </div>
+      {/if}
+      <div class="content">
+      {#if sub.panel}
+        <!-- telas inteiras (central, perfil, estatísticas, importar) entram embutidas -->
+        {#key sub.id}<sub.panel {...sub.props ?? {}} embedded onclose={() => focusEl(listItem(active))} />{/key}
+      {:else if sub.id === 'overview'}
         <div class="card" style:--profile={me?.color ?? 'var(--accent)'}>
           {#if me}<Avatar avatar={me.avatar} color={me.color} size="7rem" />{/if}
       {#if kidsTime?.limited}
@@ -276,19 +340,20 @@
       {/if}
           <button class="btn primary" data-nav onclick={() => go({ name: 'profiles' })}><Icon name="resume" /> Trocar perfil</button>
         </div>
-      {:else}
+      {:else if sub.screen}
         <div class="preview">
-          <p class="big-value">{sel.value}</p>
-          <button class="btn primary" data-nav onclick={() => open(sel)}><Icon name={sel.icon} /> {sel.action ? sel.label : `Abrir ${sel.label.toLowerCase()}`}</button>
+          <p class="big-value">{sub.note}</p>
+          <button class="btn primary" data-nav onclick={() => sub.screen && go(sub.screen)}><Icon name="lock" /> Abrir {sub.label.toLowerCase()}</button>
         </div>
       {/if}
+      </div>
     </section>
   </main>
   <HelpBar
     hints={[
       { button: 'south', label: 'Abrir' },
-      { button: 'l1', label: 'Item anterior' },
-      { button: 'r1', label: 'Próximo item' },
+      { button: 'l1', label: 'Aba anterior' },
+      { button: 'r1', label: 'Próxima aba' },
       { button: 'east', label: 'Voltar' },
     ]}
   />
@@ -326,12 +391,6 @@
   .who .name {
     font-size: 1.1rem;
   }
-  .group {
-    font-size: 0.95rem;
-    color: var(--accent-2);
-    text-transform: uppercase;
-    margin: 1.1rem 0 0.4rem;
-  }
   .menu ul {
     list-style: none;
     margin: 0;
@@ -353,6 +412,16 @@
   .detail :global(.panel-body > h2:first-child),
   .detail :global(.panel-body > .head > h2) {
     display: none;
+  }
+  .subtabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: -0.4rem 0 1.4rem;
+  }
+  .subtabs [aria-current='page'] {
+    background: var(--accent-2);
+    color: #050008;
   }
   .crumb {
     margin: 0;
@@ -511,10 +580,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .go {
-    font-family: var(--font-title);
-    color: var(--accent-2);
   }
   .small {
     font-size: 0.9rem;
