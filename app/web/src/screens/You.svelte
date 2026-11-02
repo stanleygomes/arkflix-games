@@ -16,7 +16,7 @@
   import { focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { app, currentProfile, go, isKids, system, type Screen } from '../lib/state.svelte'
-  import type { BTInfo, CheevosInfo, EmulatorsInfo, KidsTimeInfo, RemoteInfo, RemotePlayInfo, StorageInfo } from '../lib/types'
+  import type { BTInfo, CheevosInfo, EmulatorsInfo, KidsTimeInfo, RemoteInfo, StorageInfo } from '../lib/types'
   import { versionArrow } from '../lib/update'
 
   const me = $derived(currentProfile())
@@ -31,7 +31,6 @@
   let summary = $state<ProfileSummary | null>(null)
   let blue = $state<BTInfo | null>(null)
   let cheevos = $state<CheevosInfo | null>(null)
-  let stream = $state<RemotePlayInfo | null>(null)
 
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
@@ -43,7 +42,6 @@
     api.emulatorStatus().then((e) => (emus = e)).catch(() => {})
     api.btStatus().then((b) => (blue = b)).catch(() => {})
     api.cheevosStatus().then((c) => (cheevos = c)).catch(() => {})
-    api.remotePlayStatus().then((r) => (stream = r)).catch(() => {})
   })
 
   const hours = $derived(Math.floor(app.games.reduce((t, g) => t + (g.playTime || 0), 0) / 3600))
@@ -95,7 +93,6 @@
       { id: 'storage', label: 'Armazenamento', icon: 'disc', value: storage ? (storage.total > 0 ? `${bytes(storage.free)} livres de ${bytes(storage.total)}` : 'jogos: ' + bytes(storage.games)) : '…', open: to({ name: 'settings', tab: 'storage' }) },
       { id: 'emulators', label: 'Emuladores', icon: 'pad', value: emuSummary(), open: to({ name: 'settings', tab: 'emulators' }) },
       { id: 'bluetooth', label: 'Bluetooth', icon: 'bluetooth', value: blue ? (blue.supported ? (blue.powered ? `${blue.devices.filter((d) => d.gamepad && d.connected).length} controle(s) conectado(s)` : 'desligado') : 'pelo sistema') : '…', open: to({ name: 'settings', tab: 'bluetooth' }) },
-      { id: 'remoteplay', label: 'Jogar em outro aparelho', icon: 'tv', value: stream ? (stream.running ? `ligado · ${stream.lanIP || 'nesta rede'}` : stream.installed ? 'desligado' : 'TV ou celular com Moonlight') : '…', open: to({ name: 'settings', tab: 'remoteplay' }) },
       { id: 'updates', label: 'Atualizações', icon: 'download', value: app.update?.available ? `nova: ${versionArrow(app.update)}` : 'em dia', open: to({ name: 'settings', tab: 'updates' }) },
       { id: 'profiles', label: 'Perfis da casa', icon: 'lock', value: `${app.profile?.profiles.length ?? 1} perfil${(app.profile?.profiles.length ?? 1) === 1 ? '' : 's'} · modo infantil`, open: to({ name: 'profiles' }) },
       { id: 'saver', label: 'Protetor de tela', icon: 'resume', value: saver?.enabled ? `${saver.mode === 'snake' ? 'cobrinha' : 'vitrine'} · ${saver.minutes} min` : 'desligado', open: to({ name: 'settings', tab: 'a11y' }) },

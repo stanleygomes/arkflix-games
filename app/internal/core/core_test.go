@@ -17,7 +17,6 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/hooks"
 	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
-	"github.com/stanleygomes/arkflix-games/app/internal/remoteplay"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
 
@@ -73,7 +72,7 @@ func setup(t *testing.T) harness {
 	runner := &hooks.Runner{Dir: filepath.Join(env.Data, "scripts"), Log: filepath.Join(env.Data, "logs", "scripts.log")}
 	t.Cleanup(runner.Wait)
 	svc, err := core.New(core.Options{Version: "test", Mode: "web", Store: store, Emitter: rec, Pads: pads, Hooks: runner, MinPlay: -1,
-		Emulators: launcher.Spec{Bin: env.Bin, Cores: env.Cores}, Bluetooth: bt.NewFake(), RemotePlay: remoteplay.NewFake()})
+		Emulators: launcher.Spec{Bin: env.Bin, Cores: env.Cores}, Bluetooth: bt.NewFake()})
 	if err != nil {
 		t.Fatal(err)
 	}
