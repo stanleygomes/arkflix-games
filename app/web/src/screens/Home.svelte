@@ -510,6 +510,28 @@
     background: color-mix(in srgb, var(--accent) 22%, var(--surface));
     border-color: transparent;
   }
+  /* tela baixa (notebook): faixa dos consoles mais compacta */
+  @media (max-height: 820px) {
+    /* (seletor mais forte: as regras normais vêm depois no arquivo) */
+    .content .hud {
+      display: none;
+    }
+    .hero .cards {
+      min-height: 0;
+    }
+    .tabs {
+      min-height: 7.4rem;
+      padding-bottom: 1.8rem;
+    }
+    .tab {
+      width: 4rem;
+      height: 4rem;
+    }
+    .tab[aria-current='page'] {
+      width: 5.2rem;
+      height: 5.2rem;
+    }
+  }
   .tab.first-system {
     margin-left: 0.8rem;
   }
@@ -570,7 +592,7 @@
       opacity: 0;
     }
   }
-  @media (max-height: 720px) {
+  @media (max-height: 820px) {
     .hero-art {
       display: none;
     }
@@ -589,7 +611,7 @@
   }
   /* nome do jogo como o logo no destaque do PS5: bem grande */
   .title {
-    font-size: clamp(2.8rem, 6.5vw, 6rem);
+    font-size: clamp(2.2rem, min(6.5vw, 8vh), 6rem);
     line-height: 1;
     color: #fff;
     text-shadow:
@@ -698,7 +720,8 @@
     scrollbar-width: none;
   }
   .card {
-    width: clamp(7.5rem, 11vw, 10rem);
+    /* capa grande (é o que a pessoa procura), mas cabendo na altura da TV */
+    width: clamp(8.5rem, min(14.5vw, 22vh), 14rem);
     padding: 0;
     border: none;
     background: none;
