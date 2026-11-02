@@ -1,5 +1,7 @@
-// Detecta o sistema de quem visita e troca os links pelos arquivos da última
-// release (API pública do GitHub). Sem a API, os links vão pra página de releases.
+// Detecta o sistema de quem visita e destaca o download dele. Os links são
+// fixos (.../releases/latest/download/<arquivo sem versão>): o GitHub sempre
+// entrega o da última release. A API só mostra o número da versão (se cair ou
+// passar do limite, nada quebra).
 const REPO = 'stanleygomes/arkflix-games'
 const LABELS = { windows: 'Baixar pra Windows', macos: 'Baixar pra macOS', linux: 'Baixar pra Linux' }
 const MAIN_ASSET = { windows: 'windows-x86_64-setup.exe', macos: 'macos-universal.dmg', linux: 'linux-x86_64.tar.gz' }
@@ -19,16 +21,9 @@ async function latest() {
   return res.json()
 }
 
-function wire(release) {
-  const assets = release.assets ?? []
-  const find = (suffix) => assets.find((a) => a.name.endsWith(suffix))
-  for (const link of document.querySelectorAll('[data-asset]')) {
-    const asset = find(link.dataset.asset)
-    if (asset) {
-      link.href = asset.browser_download_url
-      link.title = `${asset.name} (${(asset.size / 1048576).toFixed(1)} MB)`
-    }
-  }
+const DOWNLOAD = `https://github.com/${REPO}/releases/latest/download/arkflix-games-`
+
+function showVersion(release) {
   document.getElementById('hud-version').textContent = release.tag_name
   const line = document.getElementById('release-line')
   line.innerHTML = ''
@@ -37,10 +32,9 @@ function wire(release) {
   a.href = release.html_url
   a.textContent = `${release.tag_name} · novidades`
   line.append(a)
-  return find
 }
 
-function highlight(os, find) {
+function highlight(os) {
   if (!os) return
   document.querySelector(`[data-os="${os}"]`)?.classList.add('mine')
   const cta = document.getElementById('cta-main')
@@ -50,8 +44,7 @@ function highlight(os, find) {
     document.getElementById('cta-note').textContent = 'Um comando instala o app e os emuladores · também pra Windows e macOS'
     return
   }
-  const asset = find?.(MAIN_ASSET[os])
-  if (asset) cta.href = asset.browser_download_url
+  cta.href = DOWNLOAD + MAIN_ASSET[os]
   document.getElementById('cta-note').textContent = 'Grátis e de código aberto · também pra outros sistemas, mais abaixo'
 }
 
@@ -65,7 +58,5 @@ document.getElementById('copy-cmd')?.addEventListener('click', async (ev) => {
   }
 })
 
-const os = detectOS()
-latest()
-  .then((release) => highlight(os, wire(release)))
-  .catch(() => highlight(os, null))
+highlight(detectOS())
+latest().then(showVersion).catch(() => {})
