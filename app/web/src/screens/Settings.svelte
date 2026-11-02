@@ -13,6 +13,7 @@
   import ControlsPanel from './settings/ControlsPanel.svelte'
   import LibraryPanel from './settings/LibraryPanel.svelte'
   import ServerPanel from './settings/ServerPanel.svelte'
+  import StoragePanel from './settings/StoragePanel.svelte'
 
   let { tab = 'library' }: { tab?: SettingsTab } = $props()
   let active = $state<SettingsTab>('library')
@@ -23,6 +24,7 @@
   const tabs: { id: SettingsTab; label: string; icon: IconName }[] = [
     { id: 'library', label: 'Biblioteca', icon: 'folder' },
     { id: 'server', label: 'Servidor', icon: 'cloud' },
+    { id: 'storage', label: 'Armazenamento', icon: 'disc' },
     { id: 'controls', label: 'Controles', icon: 'pad' },
     { id: 'a11y', label: 'Acessibilidade', icon: 'sliders' },
     { id: 'about', label: 'Sobre', icon: 'info' },
@@ -89,6 +91,8 @@
         <LibraryPanel />
       {:else if active === 'server'}
         <ServerPanel />
+      {:else if active === 'storage'}
+        <StoragePanel />
       {:else if active === 'controls'}
         <ControlsPanel />
       {:else if active === 'a11y'}

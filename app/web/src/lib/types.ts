@@ -110,6 +110,21 @@ export interface Covers {
   db: string
 }
 
+export interface StorageInfo {
+  disk: string
+  total: number
+  free: number
+  games: number
+  gameCount: number
+  saves: number
+  app: number
+  cache: number
+  byConsole: { system: string; name: string; bytes: number; count: number }[]
+  saveDirs: { label: string; path: string; bytes: number }[]
+  remote: number
+  remoteCount: number
+}
+
 export interface RemoteInfo {
   connected: boolean
   base: string

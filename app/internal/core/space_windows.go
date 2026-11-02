@@ -8,18 +8,21 @@ import (
 
 var getDiskFreeSpaceEx = syscall.NewLazyDLL("kernel32.dll").NewProc("GetDiskFreeSpaceExW")
 
-// freeSpace: bytes livres no disco da pasta (-1 se não deu pra saber).
-func freeSpace(dir string) int64 {
+// diskUsage: tamanho total e livre (pra você) do disco da pasta; -1 se não
+// deu pra saber. Sobe até achar uma pasta que existe.
+func diskUsage(dir string) (total, free int64) {
 	for d := dir; ; d = filepath.Dir(d) {
 		p, err := syscall.UTF16PtrFromString(d)
 		if err == nil {
-			var free uint64
-			if r, _, _ := getDiskFreeSpaceEx.Call(uintptr(unsafe.Pointer(p)), uintptr(unsafe.Pointer(&free)), 0, 0); r != 0 {
-				return int64(free)
+			var avail, size uint64
+			if r, _, _ := getDiskFreeSpaceEx.Call(uintptr(unsafe.Pointer(p)), uintptr(unsafe.Pointer(&avail)), uintptr(unsafe.Pointer(&size)), 0); r != 0 {
+				return int64(size), int64(avail)
 			}
 		}
 		if d == filepath.Dir(d) {
-			return -1
+			return -1, -1
 		}
 	}
 }
+
+func freeSpace(dir string) int64 { _, free := diskUsage(dir); return free }

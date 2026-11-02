@@ -14,7 +14,7 @@ export type Screen =
   | { name: 'profile'; id?: string; setup?: boolean; suggest?: string }
   | { name: 'welcome' }
 
-export type SettingsTab = 'library' | 'server' | 'controls' | 'a11y' | 'about'
+export type SettingsTab = 'library' | 'server' | 'storage' | 'controls' | 'a11y' | 'about'
 
 export interface Toast {
   id: number
