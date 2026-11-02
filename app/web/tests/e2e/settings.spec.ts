@@ -1,8 +1,8 @@
-import { axe, expect, open, test } from './fixtures'
+import { axe, expect, open, test, settings } from './fixtures'
 
 test('acessibilidade: fonte, alto contraste e animações aplicam na hora e persistem', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('m')
+  await settings(page)
   await page.getByRole('button', { name: 'Acessibilidade', exact: true }).click()
   await axe(page, 'configurações: acessibilidade')
 
@@ -27,7 +27,7 @@ test('acessibilidade: fonte, alto contraste e animações aplicam na hora e pers
 
 test('títulos sem fonte pixel trocam a fonte de verdade', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('m')
+  await settings(page)
   await page.getByRole('button', { name: 'Acessibilidade', exact: true }).click()
   await page.getByRole('switch', { name: 'Títulos em fonte pixel' }).click()
   await expect(page.locator('body')).toHaveClass(/no-pixel/)
@@ -37,7 +37,7 @@ test('títulos sem fonte pixel trocam a fonte de verdade', async ({ page, app })
 
 test('biblioteca: adicionar pasta e salvar procura os jogos de novo', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('m')
+  await settings(page)
   await expect(page.getByRole('button', { name: 'Biblioteca', exact: true })).toBeFocused()
   await axe(page, 'configurações: biblioteca')
   const save = page.getByRole('button', { name: 'Salvar' })
@@ -51,8 +51,8 @@ test('biblioteca: adicionar pasta e salvar procura os jogos de novo', async ({ p
 
 test('sobre: versão e atalhos', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('m')
-  for (let i = 0; i < 5; i++) await page.keyboard.press('e') // biblioteca, servidor, armazenamento, controles, acessibilidade
+  await settings(page)
+  for (let i = 0; i < 3; i++) await page.keyboard.press('e') // biblioteca → servidor, armazenamento, sobre
   await expect(page.getByRole('heading', { name: 'Sobre' })).toBeVisible()
   await expect(page.locator('.facts').first()).toContainText('Navegador')
   await expect(page.getByRole('definition').filter({ hasText: '10-registra.sh' })).toBeVisible()

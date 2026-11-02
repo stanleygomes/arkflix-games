@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { axe, expect, open, test } from './fixtures'
+import { axe, expect, open, test, openItem } from './fixtures'
 
 test('estatísticas: totais, rankings e períodos a partir do histórico', async ({ page, app }) => {
   // histórico conhecido: 2 partidas de SMW (1 h + 30 min) hoje/ontem, 1 de Sonic há 10 dias, 1 antiga
@@ -18,7 +18,7 @@ test('estatísticas: totais, rankings e períodos a partir do histórico', async
   writeFileSync(join(app.root, app.data, 'sessions.jsonl'), lines.map((l) => JSON.stringify(l)).join('\n') + '\n')
 
   await open(page, app)
-  await page.getByRole('button', { name: 'Estatísticas' }).click()
+  await openItem(page, 'Estatísticas')
   await expect(page.getByRole('heading', { name: 'Estatísticas', level: 1 })).toBeVisible()
   const tiles = page.locator('.tiles')
   await expect(tiles).toContainText('3 h 40 min')
@@ -41,6 +41,6 @@ test('estatísticas: totais, rankings e períodos a partir do histórico', async
 
 test('sem partidas: explica em vez de gráfico vazio', async ({ page, app }) => {
   await open(page, app)
-  await page.getByRole('button', { name: 'Estatísticas' }).click()
+  await openItem(page, 'Estatísticas')
   await expect(page.locator('.empty')).toContainText('Nenhuma partida')
 })

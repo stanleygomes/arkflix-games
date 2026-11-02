@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { axe, expect, open, test, type App } from './fixtures'
+import { axe, expect, open, test, type App, settings } from './fixtures'
 
 async function patchSettings(page: Page, app: App, fn: (s: Record<string, any>) => Record<string, any>) {
   const call = (m: string, args: unknown[] = []) =>
@@ -18,8 +18,6 @@ test.use({ reducedMotion: 'no-preference' })
 test('cobrinha liga depois de 5 min parado, joga sozinha e qualquer tecla só acorda', async ({ page, app }) => {
   await page.clock.install()
   await open(page, app)
-  const fav = page.getByRole('button', { name: /^Favorit/ }).first()
-  const pressedBefore = await fav.getAttribute('aria-pressed')
   await page.clock.fastForward('04:00')
   await expect(saver(page)).toHaveCount(0)
   await page.clock.fastForward('01:05')
@@ -31,7 +29,7 @@ test('cobrinha liga depois de 5 min parado, joga sozinha e qualquer tecla só ac
 
   await page.keyboard.press('f') // seria "favoritar": aqui só acorda
   await expect(saver(page)).toHaveCount(0)
-  await expect(fav).toHaveAttribute('aria-pressed', pressedBefore ?? 'false')
+  await expect(page.locator('.shelf h2', { hasText: 'Favoritos' })).toHaveCount(0)
 
   // o controle também acorda sem agir
   await page.clock.fastForward('05:05')
@@ -79,7 +77,7 @@ test('vitrine com reduzir animações: capa parada, INSERT COIN e clique só aco
 
 test('configuração do protetor: minutos, estilo, desligar e ver agora', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('m')
+  await settings(page)
   await page.getByRole('button', { name: 'Acessibilidade', exact: true }).click()
   await page.getByRole('group', { name: 'Minutos parado' }).getByRole('button', { name: '10 min' }).click()
   await page.getByRole('group', { name: 'Estilo do protetor' }).getByRole('button', { name: 'Vitrine' }).click()

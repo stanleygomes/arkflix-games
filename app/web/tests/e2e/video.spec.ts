@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { axe, expect, open, test, type App } from './fixtures'
+import { axe, expect, open, test, type App, settings } from './fixtures'
 
 async function setA11y(page: Page, app: App, patch: Record<string, boolean>) {
   const call = (m: string, args: unknown[] = []) =>
@@ -55,7 +55,7 @@ test('reduzir animações e o interruptor de vídeo desligam; som é opcional', 
 
 test('interruptores de vídeo nas configurações', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('m')
+  await settings(page)
   await page.getByRole('button', { name: 'Acessibilidade', exact: true }).click()
   const sw = page.getByRole('switch', { name: 'Vídeo dos jogos' })
   await expect(sw).toHaveAttribute('aria-checked', 'true')

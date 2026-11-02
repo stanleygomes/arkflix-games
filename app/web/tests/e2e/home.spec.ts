@@ -3,7 +3,7 @@ import { axe, expect, focused, goTab, open, test } from './fixtures'
 test('tela inicial: consoles com jogos, destaque e acessibilidade', async ({ page, app }) => {
   await open(page, app)
   const tabs = page.locator('nav.tabs [data-tab]')
-  await expect(tabs).toHaveText(['Início', 'Todos', 'Nunca jogados', 'NES', 'SNES', 'MD', 'N64', 'PS1', 'PS2', 'PSP', 'ARC'].map((t) => new RegExp(`^${t}`)))
+  await expect(tabs).toHaveText(['Início', 'NES', 'SNES', 'MD', 'N64', 'PS1', 'PS2', 'PSP', 'ARC'].map((t) => new RegExp(`^${t}`)))
   await expect(page.locator('nav.tabs [aria-current="page"]')).toHaveText(/^Início/)
   await expect(page.locator('#hero-title')).toBeVisible()
   await expect(page.locator('.shelf [data-game]')).toHaveCount(9)
@@ -14,8 +14,8 @@ test('teclado: troca console, desce pra fileira e o destaque acompanha', async (
   await open(page, app)
   await goTab(page, 'snes')
   await expect(page.locator('nav.tabs [aria-current="page"]')).toHaveText(/^SNES/)
-  const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())
-  expect(accent).toBe('rgb(184, 150, 255)') // paleta do SNES (neon)
+  // paleta do SNES (neon); a cor desliza, então espera ela chegar
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())).toBe('rgb(184, 150, 255)')
 
   await page.keyboard.press('ArrowDown')
   expect((await focused(page)).label).toContain('Mega Man X')
@@ -32,7 +32,7 @@ test('teclado: troca console, desce pra fileira e o destaque acompanha', async (
 
 test('controle PlayStation: L1/R1 trocam console, ✕ abre o jogo, ○ volta', async ({ page, app }) => {
   await open(page, app)
-  for (let i = 0; i < 4; i++) await app.pad('r1', 'playstation') // Todos, Nunca jogados, NES, SNES
+  for (let i = 0; i < 2; i++) await app.pad('r1', 'playstation') // NES, SNES
   await expect(page.locator('nav.tabs [aria-current="page"]')).toHaveText(/^SNES/)
   await expect(page.locator('.help .glyph').first()).toHaveText('✕') // ajuda com os símbolos do PS
   await app.pad('down', 'playstation')
@@ -70,23 +70,22 @@ test('jogar pelo destaque abre o emulador e volta com aviso', async ({ page, app
   expect(app.calls()).toMatch(/retroarch\|--fullscreen --appendconfig=\S*retroarch-input\.cfg -L .*mesen_libretro\.so .*Super Mario Bros\. 3\.zip/)
   // script de fim de jogo (é assim que o backup do solomon dispara)
   await expect.poll(() => (app.exists('hook.log') ? app.read('hook.log') : '')).toMatch(/Super Mario Bros\. 3\.zip\|Super Mario Bros\. 3\|nes\|\d+\|/)
-  // jogou: aparece a coleção Recentes e a fileira "Continuar jogando" no Início
-  await expect(page.locator('nav.tabs [data-tab="collection:recent"]')).toHaveCount(1)
+  // jogou: aparece a fileira "Continuar jogando" no Início
   await goTab(page, 'home')
   await expect(page.locator('.shelf h2', { hasText: 'Continuar jogando' })).toBeVisible()
 })
 
-test('coleções automáticas: aparecem quando têm jogo, com o console marcado', async ({ page, app }) => {
+test('fileiras do Início: biblioteca com Ver tudo, favoritos quando tem', async ({ page, app }) => {
   await open(page, app)
-  await expect(page.locator('nav.tabs [data-tab="collection:favorites"]')).toHaveCount(0)
-  await goTab(page, 'collection:all')
-  await expect(page.locator('.shelf [data-game]')).toHaveCount(9)
-  await page.getByRole('button', { name: 'Ver tudo' }).click()
+  await expect(page.locator('nav.tabs [data-tab^="collection:"]')).toHaveCount(0)
+  await expect(page.locator('.shelf h2', { hasText: 'Favoritos' })).toHaveCount(0)
+  const lib = page.locator('.shelf', { has: page.locator('h2', { hasText: 'Sua biblioteca' }) })
+  await lib.getByRole('button', { name: 'Ver tudo' }).click()
   await expect(page.getByRole('heading', { name: 'Todos os jogos' })).toBeVisible()
   await expect(page.locator('.grid .sys').first()).toHaveText(/NES|SNES|MD|ARC|N64|PS1|PS2|PSP/)
   await axe(page, 'coleção todos os jogos')
   await page.locator('.grid [data-game]').first().focus()
-  await page.keyboard.press('f') // favorita: a coleção Favoritos passa a existir
+  await page.keyboard.press('f') // favorita: a fileira Favoritos passa a existir
   await page.keyboard.press('Escape')
-  await expect(page.locator('nav.tabs [data-tab="collection:favorites"]')).toHaveCount(1)
+  await expect(page.locator('.shelf h2', { hasText: 'Favoritos' })).toBeVisible()
 })

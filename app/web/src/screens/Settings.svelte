@@ -15,19 +15,20 @@
   import ServerPanel from './settings/ServerPanel.svelte'
   import StoragePanel from './settings/StoragePanel.svelte'
 
-  let { tab = 'library' }: { tab?: SettingsTab } = $props()
-  let active = $state<SettingsTab>('library')
+  let { tab = 'controls' }: { tab?: SettingsTab } = $props()
+  let active = $state<SettingsTab>('controls')
   $effect.pre(() => {
     active = tab
   })
 
-  const tabs: { id: SettingsTab; label: string; icon: IconName }[] = [
-    { id: 'library', label: 'Biblioteca', icon: 'folder' },
-    { id: 'server', label: 'Servidor', icon: 'cloud' },
-    { id: 'storage', label: 'Armazenamento', icon: 'disc' },
-    { id: 'controls', label: 'Controles', icon: 'pad' },
-    { id: 'a11y', label: 'Acessibilidade', icon: 'sliders' },
-    { id: 'about', label: 'Sobre', icon: 'info' },
+  // na ordem da tela "Você": primeiro o que é só seu, depois o do console
+  const tabs: { id: SettingsTab; label: string; icon: IconName; group: string }[] = [
+    { id: 'controls', label: 'Controles', icon: 'pad', group: 'Só pra você' },
+    { id: 'a11y', label: 'Acessibilidade', icon: 'sliders', group: 'Só pra você' },
+    { id: 'library', label: 'Biblioteca', icon: 'folder', group: 'Deste console' },
+    { id: 'server', label: 'Servidor', icon: 'cloud', group: 'Deste console' },
+    { id: 'storage', label: 'Armazenamento', icon: 'disc', group: 'Deste console' },
+    { id: 'about', label: 'Sobre', icon: 'info', group: 'Deste console' },
   ]
 
   $effect(() => {
@@ -71,11 +72,13 @@
   <main class="layout">
     <nav class="tabs" aria-label="Seções das configurações">
       <h1 class="pixel">Configurações</h1>
-      {#each tabs as t (t.id)}
+      {#each tabs as t, i (t.id)}
+        {#if i === 0 || tabs[i - 1].group !== t.group}<p class="group pixel">{t.group}</p>{/if}
         <button
           class="tab cursor"
           data-nav
           data-settings-tab={t.id}
+          data-nav-default={tab === t.id || undefined}
           aria-current={active === t.id ? 'page' : undefined}
           onfocus={() => (active = t.id)}
           onclick={() => (active = t.id)}
@@ -117,6 +120,12 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
+  }
+  .group {
+    font-size: 0.72rem;
+    color: var(--accent-2);
+    text-transform: uppercase;
+    margin: 1rem 0 0.2rem;
   }
   .layout {
     flex: 1;

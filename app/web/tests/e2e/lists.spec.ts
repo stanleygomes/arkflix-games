@@ -1,6 +1,6 @@
-import { axe, expect, goTab, open, test } from './fixtures'
+import { axe, expect, open, test } from './fixtures'
 
-test('listas: criar pela página do jogo, ver a aba, renomear e apagar', async ({ page, app }) => {
+test('listas: criar pela página do jogo, ver a fileira, renomear e apagar', async ({ page, app }) => {
   await open(page, app)
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').click()
   await page.getByRole('button', { name: /^Listas/ }).click()
@@ -24,23 +24,23 @@ test('listas: criar pela página do jogo, ver a aba, renomear e apagar', async (
   expect(saved[0]).toMatchObject({ name: 'Plataforma raiz', games: [expect.any(String)] })
 
   await page.keyboard.press('Escape')
-  const slug = `list:${saved[0].id}`
-  await goTab(page, slug)
-  await expect(page.locator('.shelf [data-game]')).toHaveCount(1)
-  await page.getByRole('button', { name: 'Ver tudo' }).click()
+  const row = page.locator('.shelf', { has: page.locator('h2', { hasText: 'Plataforma raiz' }) })
+  await expect(row.locator('[data-game]')).toHaveCount(1)
+  await row.getByRole('button', { name: 'Ver tudo' }).click()
   await expect(page.getByRole('heading', { name: 'Plataforma raiz' })).toBeVisible()
 
-  await page.keyboard.press('m')
+  await page.keyboard.press('m') // opções da lista
   await page.getByRole('button', { name: 'Renomear lista' }).click()
   const rename = page.getByRole('dialog', { name: 'Renomear lista' })
   await rename.getByLabel('Renomear lista').fill('Mario')
   await rename.getByRole('button', { name: 'Salvar' }).click()
   await expect(page.getByRole('heading', { name: 'Mario' })).toBeVisible()
 
-  await page.keyboard.press('m')
+  await page.keyboard.press('m') // opções da lista
   await page.getByRole('button', { name: 'Apagar lista' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Apagar' }).click()
-  await expect(page.locator(`nav.tabs [data-tab="${slug}"]`)).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.shelf h2', { hasText: 'Mario' })).toHaveCount(0)
   expect(JSON.parse(app.read(`${app.data}/lists.json`))).toEqual([])
 })
 

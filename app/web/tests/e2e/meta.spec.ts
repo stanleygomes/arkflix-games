@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { axe, expect, goTab, open, test } from './fixtures'
+import { axe, expect, open, test } from './fixtures'
 
 test('editor de metadados: edita, valida, aparece em todo lugar e restaura', async ({ page, app }) => {
   await open(page, app)
@@ -44,16 +44,13 @@ test('editor de metadados: edita, valida, aparece em todo lugar e restaura', asy
   await expect(page.locator('.facts')).toContainText('Completo')
 
   await page.keyboard.press('Escape')
-  await expect(page.locator('nav.tabs [data-tab="collection:completed"]')).toHaveCount(1)
-  await goTab(page, 'collection:completed')
-  await expect(page.locator('.shelf [data-game]')).toHaveCount(1)
   await page.keyboard.press('/')
   await page.keyboard.type('classico')
   await expect(page.locator('.results .name')).toHaveText(['SMW clássico'])
 
   // restaurar só o nome, depois tudo
   await page.keyboard.press('Escape')
-  await page.locator('.shelf [data-game]').first().click()
+  await page.locator('.shelf [data-game][aria-label^="SMW clássico"]').first().click()
   await page.getByRole('button', { name: 'Editar' }).click()
   await page.getByRole('button', { name: 'Restaurar nome automático' }).click()
   await expect(page.getByRole('button', { name: /^Nome Super Mario World automático/ })).toBeVisible()

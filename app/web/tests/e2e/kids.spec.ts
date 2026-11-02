@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { axe, expect, test, type App } from './fixtures'
+import { axe, expect, test, type App, switchProfile } from './fixtures'
 
 const call = async (page: Page, app: App, m: string, args: unknown[] = []) => {
   const res = await page.request.post(`${app.url}/api/call/${m}`, { data: args, headers: { 'X-Arkflix': '1' } })
@@ -20,7 +20,7 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
   await page.getByRole('button', { name: /^Jogador 1/ }).click()
   await page.locator('.dots').waitFor()
   await page.keyboard.type('9090')
-  await page.getByRole('button', { name: 'Trocar perfil (Jogador 1)' }).click()
+  await switchProfile(page)
   await page.getByRole('button', { name: 'Gerenciar perfis' }).click()
   await page.getByRole('button', { name: 'Editar Nina' }).click()
   await page.getByRole('switch', { name: /Perfil infantil/ }).click()
@@ -31,17 +31,18 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
 
   // entra como Nina
   await page.getByRole('button', { name: /^Nina/ }).click()
-  await expect(page.getByRole('button', { name: 'Trocar perfil (Nina)' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Você: Nina/ })).toBeVisible()
   await expect(page.locator('body')).toHaveClass(/kids/)
   await expect(page.locator('.shelf [data-game]')).toHaveCount(1)
-  await expect(page.getByRole('button', { name: 'Configurações' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Importar jogos' })).toHaveCount(0)
   await axe(page, 'início infantil')
 
-  // atalhos não furam
+  // Start abre a tela Você só com o que é dela: nada do console
   await page.keyboard.press('m')
-  await expect(page.getByText('Bloqueado no perfil infantil')).toBeVisible()
-  await expect(page.getByRole('heading', { name: /Configurações/ })).toHaveCount(0)
+  await expect(page.locator('main.you')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Deste console' })).toHaveCount(0)
+  await expect(page.locator('main.you [data-item]')).toHaveText([/Estatísticas/])
+  await axe(page, 'você infantil')
+  await page.keyboard.press('Escape')
   await page.goto(`${app.url}/`)
   await expect(page.locator('.shelf [data-game]')).toHaveCount(1)
 
@@ -59,7 +60,7 @@ test('modo infantil: só jogo liberado, nada de configurar (nem por atalho) e sa
   expect((await call(page, app, 'SetProfileKids', [nina.id, false])).ok).toBe(false)
 
   // sair pro adulto pede o PIN dele
-  await page.getByRole('button', { name: 'Trocar perfil (Nina)' }).click()
+  await switchProfile(page)
   await expect(page.getByRole('button', { name: 'Gerenciar perfis' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Adicionar perfil' })).toHaveCount(0)
   await page.getByRole('button', { name: /^Jogador 1/ }).click()

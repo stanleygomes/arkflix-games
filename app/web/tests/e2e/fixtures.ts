@@ -101,3 +101,28 @@ export async function goTab(page: Page, slug: string) {
   }
   throw new Error(`não chegou na aba ${slug}`)
 }
+
+/** Abre a tela "Você" (Start no controle, M no teclado). */
+export async function you(page: Page) {
+  await page.keyboard.press('m')
+  await expect(page.locator('main.you')).toBeVisible()
+}
+
+/** Abre um item da tela "Você" pelo nome ("Biblioteca", "Estatísticas"...). */
+export async function openItem(page: Page, label: string) {
+  await you(page)
+  await page.locator('main.you [data-item]').filter({ has: page.getByText(label, { exact: true }) }).focus()
+  await page.keyboard.press('Enter') // pelo controle: o mouse parado em cima roubaria o foco
+}
+
+/** Abre as configurações (pela tela "Você"); depois, as abas são as de sempre. */
+export async function settings(page: Page) {
+  await openItem(page, 'Biblioteca')
+  await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
+}
+
+/** Vai pra "Quem vai jogar?" (avatar › Você › Trocar perfil). */
+export async function switchProfile(page: Page) {
+  await page.getByRole('button', { name: /^Você: / }).click()
+  await page.getByRole('button', { name: 'Trocar perfil' }).click()
+}

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { axe, expect, open, test, type App } from './fixtures'
+import { axe, expect, open, test, type App, switchProfile } from './fixtures'
 
 const call = (page: Page, app: App, m: string, args: unknown[] = []) =>
   page.request.post(`${app.url}/api/call/${m}`, { data: args, headers: { 'X-Arkflix': '1' } })
@@ -17,7 +17,7 @@ test('perfis: cria com avatar e PIN, troca, e um não vê favoritos nem saves do
   await page.keyboard.press('f')
   await expect(smw).toHaveAttribute('aria-label', /favorito/)
 
-  await page.getByRole('button', { name: 'Trocar perfil (Jogador 1)' }).click()
+  await switchProfile(page)
   await expect(page.getByRole('heading', { name: 'Quem vai jogar?' })).toBeVisible()
   await axe(page, 'quem vai jogar')
   await page.getByRole('button', { name: 'Adicionar perfil' }).click()
@@ -54,7 +54,7 @@ test('perfis: cria com avatar e PIN, troca, e um não vê favoritos nem saves do
   await typePIN(page, '0000')
   await expect(page.getByRole('alert')).toContainText('PIN errado')
   for (const d of '4321') await page.getByRole('dialog', { name: 'PIN de Bia' }).getByRole('button', { name: d, exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Trocar perfil (Bia)' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Você: Bia/ })).toBeVisible()
   await expect(page.locator('.shelf [data-game][aria-label*="favorito"]')).toHaveCount(0)
 
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first().click()
@@ -63,9 +63,9 @@ test('perfis: cria com avatar e PIN, troca, e um não vê favoritos nem saves do
   await page.getByRole('button', { name: 'Voltar' }).click()
 
   // volta pro principal: o favorito da Bia não aparece, o dele sim
-  await page.getByRole('button', { name: 'Trocar perfil (Bia)' }).click()
+  await switchProfile(page)
   await page.getByRole('button', { name: /^Jogador 1/ }).click()
-  await expect(page.getByRole('button', { name: 'Trocar perfil (Jogador 1)' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Você: Jogador\ 1/ })).toBeVisible()
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first().click()
   await expect(page.locator('.states [data-state]')).toHaveCount(2)
 })
@@ -79,7 +79,7 @@ test('com mais de um perfil, o app abre em "Quem vai jogar?" e não deixa pular'
   await expect(page.getByRole('heading', { name: 'Quem vai jogar?' })).toBeVisible()
   await page.keyboard.press('ArrowRight')
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('button', { name: 'Trocar perfil (Leo)' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Você: Leo/ })).toBeVisible()
 })
 
 test('apagar perfil pede confirmação e o PIN', async ({ page, app }) => {
@@ -88,7 +88,7 @@ test('apagar perfil pede confirmação e o PIN', async ({ page, app }) => {
   await call(page, app, 'SetProfilePIN', [id, '', '2468'])
   await page.goto(app.url)
   await page.getByRole('button', { name: /^Jogador 1/ }).click()
-  await page.getByRole('button', { name: 'Trocar perfil (Jogador 1)' }).click()
+  await switchProfile(page)
   await page.getByRole('button', { name: 'Gerenciar perfis' }).click()
   await page.getByRole('button', { name: 'Editar Tio' }).click()
   await page.getByRole('button', { name: 'Apagar perfil' }).click()

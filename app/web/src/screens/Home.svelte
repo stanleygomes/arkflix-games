@@ -15,15 +15,14 @@
   import { indicator } from '../lib/indicator'
   import { shade } from '../lib/motion'
   import { pickRandom, sortGames } from '../lib/library'
-  import { activeCollections, sortOf, sourceGames, sourceTitle } from '../lib/sources'
+  import { sortOf, sourceGames, sourceTitle } from '../lib/sources'
   import { app, currentProfile, go, isKids, system, toast } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
 
+  // abas: só o Início e os consoles. Coleções e listas viram fileiras do Início.
   type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'list' | 'system' }
   const tabs = $derived<Tab[]>([
     { slug: 'home', short: 'Início', name: 'Início', kind: 'home' },
-    ...activeCollections(app.games).map((c) => ({ slug: `collection:${c.id}`, short: c.short, name: c.label, kind: 'collection' as const })),
-    ...app.lists.map((l) => ({ slug: `list:${l.id}`, short: l.name, name: `Lista ${l.name}`, kind: 'list' as const })),
     ...app.systems
       .filter((s) => app.games.some((g) => g.system === s.slug))
       .map((s) => ({ slug: s.slug, short: s.short, name: s.name, kind: 'system' as const })),
@@ -45,10 +44,18 @@
     }
     const out: Row[] = []
     const recent = app.games.filter((g) => g.lastPlayed > 0).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 12)
-    if (recent.length) out.push({ id: 'recent', title: 'Continuar jogando', games: recent })
+    if (recent.length) out.push({ id: 'recent', title: 'Continuar jogando', games: recent, source: 'collection:recent' })
     const favs = app.games.filter((g) => g.favorite)
-    if (favs.length) out.push({ id: 'favorites', title: 'Favoritos', games: favs })
-    if (!out.length) out.push({ id: 'all', title: `Sua biblioteca · ${app.games.length} jogos`, games: app.games })
+    if (favs.length) out.push({ id: 'favorites', title: 'Favoritos', games: favs, source: 'collection:favorites' })
+    for (const l of app.lists) {
+      const games = sourceGames(`list:${l.id}`)
+      if (games.length) out.push({ id: `list-${l.id}`, title: l.name, games, source: `list:${l.id}` })
+    }
+    const remote = app.games.filter((g) => g.remote)
+    if (remote.length) out.push({ id: 'server', title: `No servidor · ${remote.length}`, games: remote.slice(0, 20), source: 'collection:server' })
+    // a biblioteca toda, sempre por último (ou sozinha, no começo)
+    const all = sortGames(app.games, sortOf('collection:all'))
+    out.push({ id: 'all', title: `Sua biblioteca · ${app.games.length} jogo${app.games.length === 1 ? '' : 's'}`, games: all.slice(0, 30), source: 'collection:all' })
     return out
   })
 
@@ -159,7 +166,7 @@
           return true
         }
         case 'menu':
-          go({ name: 'settings' })
+          go({ name: 'you' })
           return true
         case 'random':
           surprise()
@@ -226,7 +233,7 @@
         <p class="muted">Importe ROMs ou aponte suas pastas de jogos nas configurações.</p>
         <div class="actions">
           <button class="btn primary" data-nav data-nav-default onclick={() => go({ name: 'import' })}><Icon name="plus" /> Importar jogos</button>
-          <button class="btn" data-nav onclick={() => go({ name: 'settings' })}><Icon name="gear" /> Configurações</button>
+          <button class="btn" data-nav onclick={() => go({ name: 'you' })}><Icon name="gear" /> Configurações</button>
         </div>
       </section>
     {:else if selected}
@@ -260,14 +267,8 @@
               <Icon name="resume" /> Continuar
             </button>
           {/if}
-          <button class="btn" data-nav data-nav-group="actions" aria-pressed={selected.favorite} onclick={() => toggleFav(selected)}>
-            <Icon name="star" /> {selected.favorite ? 'Favorito' : 'Favoritar'}
-          </button>
           <button class="btn" data-nav data-nav-group="actions" onclick={() => go({ name: 'game', id: selected.id })}>
-            <Icon name="disc" /> Saves e detalhes
-          </button>
-          <button class="btn" data-nav data-nav-group="actions" onclick={surprise} disabled={spinning}>
-            <Icon name="dice" /> Surpresa
+            <Icon name="disc" /> Detalhes
           </button>
         </div>
       </section>
@@ -324,7 +325,7 @@
       { button: 'r1', label: 'Próximo console' },
       { button: 'select', label: 'Buscar' },
       { button: 'r3', label: 'Surpresa' },
-      ...(isKids() ? [] : [{ button: 'start', label: 'Configurações' }]),
+      { button: 'start', label: isKids() ? 'Você' : 'Você e configurações' },
     ]}
   />
 </div>

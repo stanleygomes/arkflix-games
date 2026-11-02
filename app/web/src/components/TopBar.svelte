@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { app, currentProfile, go, isKids } from '../lib/state.svelte'
+  import { app, currentProfile, go } from '../lib/state.svelte'
   import Avatar from './Avatar.svelte'
   import Icon from './Icon.svelte'
 
@@ -22,30 +22,15 @@
   <div class="middle">{@render children?.()}</div>
   <div class="right">
     {#if actions}
-      {#if me}
-        <button class="profile-btn" data-nav aria-label={`Trocar perfil (${me.name})`} onclick={() => go({ name: 'profiles' })}>
-          <Avatar avatar={me.avatar} color={me.color} size="2.1rem" />
-        </button>
-      {/if}
       <button class="icon-btn" data-nav aria-label="Buscar jogos" onclick={() => go({ name: 'search' })}>
         <Icon name="search" />
       </button>
-      <button class="icon-btn" data-nav aria-label="Estatísticas" onclick={() => go({ name: 'stats' })}>
-        <Icon name="chart" />
-      </button>
-      {#if !isKids()}
-        <button class="icon-btn" data-nav aria-label="Importar jogos" onclick={() => go({ name: 'import' })}>
-          <Icon name="plus" />
-        </button>
-        <button class="icon-btn" data-nav aria-label="Configurações" onclick={() => go({ name: 'settings' })}>
-          <Icon name="gear" />
+      {#if me}
+        <!-- o avatar abre "Você": perfil, configurações, estatísticas, energia -->
+        <button class="profile-btn" data-nav aria-label={`Você: ${me.name} (perfil e configurações)`} onclick={() => go({ name: 'you' })}>
+          <Avatar avatar={me.avatar} color={me.color} size="2.1rem" />
         </button>
       {/if}
-    {/if}
-    {#if app.mode === 'desktop'}
-      <button class="icon-btn" data-nav aria-label="Energia: minimizar, tela cheia ou fechar" aria-haspopup="dialog" onclick={() => (app.power = true)}>
-        <Icon name="power" />
-      </button>
     {/if}
     <span class="status" role="img" aria-label={padLabel} title={padLabel}>
       <Icon name="pad" />

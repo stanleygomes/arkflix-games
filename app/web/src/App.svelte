@@ -28,11 +28,12 @@
   import Profiles from './screens/Profiles.svelte'
   import ProfileEditor from './screens/ProfileEditor.svelte'
   import Welcome from './screens/Welcome.svelte'
+  import You from './screens/You.svelte'
 
   const current = $derived(screen())
 
   // telas "especiais" ligam como uma TV; o resto desliza na direção da navegação
-  const CRT = new Set(['settings', 'profiles', 'welcome'])
+  const CRT = new Set(['you', 'profiles', 'welcome'])
   function motionFor(name: string): ScreenMotion {
     const { dir } = app.nav
     if (dir === 'reset') return { kind: 'none', dir: 1 } // o mosaico em blocos cobre
@@ -145,6 +146,8 @@
       <ProfileEditor id={current.id} setup={current.setup} suggest={current.suggest} />
     {:else if current.name === 'welcome'}
       <Welcome />
+    {:else if current.name === 'you'}
+      <You />
     {/if}
     </div>
   {/key}

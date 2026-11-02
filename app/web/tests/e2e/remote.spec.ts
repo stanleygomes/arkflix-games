@@ -1,8 +1,8 @@
-import { axe, expect, goTab, open, test } from './fixtures'
+import { axe, expect, open, test, settings } from './fixtures'
 
 test('servidor RomM: entra, lista, baixa um jogo e sai', async ({ page, app }) => {
   await open(page, app)
-  await page.keyboard.press('m')
+  await settings(page)
   await page.getByRole('button', { name: 'Servidor', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Servidor RomM' })).toBeVisible()
   await axe(page, 'servidor desconectado')
@@ -30,11 +30,12 @@ test('servidor RomM: entra, lista, baixa um jogo e sai', async ({ page, app }) =
   await axe(page, 'servidor conectado')
 
   // na biblioteca: jogo remoto com selo, coleção "Servidor"
-  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape') // volta pra tela Você
+  await page.keyboard.press('Escape') // e pro Início
   const dkc = page.locator('.shelf [data-game][aria-label^="Donkey Kong Country"]').first()
   await expect(dkc).toHaveAttribute('aria-label', /no servidor/)
-  await goTab(page, 'collection:server')
-  await expect(page.locator('.shelf [data-game]')).toHaveCount(2) // DKC e Spyro (SMW já está aqui)
+  const server = page.locator('.shelf', { has: page.locator('h2', { hasText: 'No servidor' }) })
+  await expect(server.locator('[data-game]')).toHaveCount(2) // DKC e Spyro (SMW já está aqui)
 
   await dkc.click()
   await expect(page.locator('.facts')).toContainText('No servidor')
@@ -47,13 +48,14 @@ test('servidor RomM: entra, lista, baixa um jogo e sai', async ({ page, app }) =
 
   // sair do servidor tira os remotos (o baixado fica)
   await page.keyboard.press('Escape')
-  await page.keyboard.press('m')
+  await settings(page)
   await page.getByRole('button', { name: 'Servidor', exact: true }).click()
   await page.getByRole('button', { name: 'Sair do servidor' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Sair do servidor' }).click()
   await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible()
   expect(app.exists(`${app.data}/romm.json`)).toBe(false)
-  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape') // Você
+  await page.keyboard.press('Escape') // Início
   await expect(page.locator('.shelf [data-game][aria-label*="no servidor"]')).toHaveCount(0)
   await expect(page.locator('.shelf [data-game][aria-label^="Donkey Kong Country"]').first()).toBeVisible()
 })

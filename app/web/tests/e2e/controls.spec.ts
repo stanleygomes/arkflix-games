@@ -1,8 +1,8 @@
-import { axe, expect, open, test } from './fixtures'
+import { axe, expect, open, test, settings } from './fixtures'
 
 async function openControls(page: import('@playwright/test').Page, app: import('./fixtures').App) {
   await open(page, app)
-  await page.keyboard.press('m')
+  await settings(page)
   await page.getByRole('button', { name: 'Controles', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Controles' })).toBeVisible()
 }

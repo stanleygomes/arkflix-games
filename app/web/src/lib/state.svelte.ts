@@ -13,6 +13,7 @@ export type Screen =
   | { name: 'profiles' }
   | { name: 'profile'; id?: string; setup?: boolean; suggest?: string }
   | { name: 'welcome' }
+  | { name: 'you' }
 
 export type SettingsTab = 'library' | 'server' | 'storage' | 'controls' | 'a11y' | 'about'
 

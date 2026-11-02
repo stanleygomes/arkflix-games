@@ -1,4 +1,4 @@
-import { axe, expect, test } from './fixtures'
+import { axe, expect, openItem, test } from './fixtures'
 
 // Simula o app desktop: um "Wails" falso que repassa cada método pro servidor
 // de teste e registra os de janela (que no navegador não existem).
@@ -48,8 +48,8 @@ const calls = (page: import('@playwright/test').Page) => page.evaluate(() => (wi
 test('menu de energia: minimizar, sair da tela cheia e fechar com confirmação', async ({ page, app }) => {
   await asDesktop(page)
   await page.goto(app.url)
-  const power = page.getByRole('button', { name: /^Energia/ })
-  await power.click()
+  await openItem(page, 'Energia')
+  const power = page.locator('main.you [data-item="power"]')
   const menu = page.getByRole('dialog', { name: 'Energia' })
   await expect(menu.getByRole('button', { name: 'Minimizar' })).toBeFocused()
   await axe(page, 'menu de energia')

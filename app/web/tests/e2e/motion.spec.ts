@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, open, test } from './fixtures'
+import { expect, open, switchProfile, test } from './fixtures'
 
 test.use({ reducedMotion: 'no-preference' })
 
@@ -34,11 +34,12 @@ test('animações: telas, abas, capa em foco, título, estrela e PLAYER 1 START'
   expect(await running(page)).toBeGreaterThan(0)
   await expect(page.locator('.layer[inert]')).toHaveCount(0, { timeout: 2000 })
   await expect(page.locator('.layer')).toHaveCount(1)
-  await expect(page.locator('[data-settings-tab]:focus')).toHaveCount(1) // foco caiu na tela nova
+  await expect(page.locator('main.you :focus')).toHaveCount(1) // foco caiu na tela nova
   await page.keyboard.press('Escape')
   await expect(page.locator('.layer')).toHaveCount(1, { timeout: 2000 })
 
   // jogar: PLAYER 1 START sobre a capa
+  await page.keyboard.press('q') // volta pro Início
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').first().click()
   await page.getByRole('button', { name: 'Jogar do início' }).click()
   await expect(page.getByText('PLAYER 1 START')).toBeVisible()
@@ -47,7 +48,7 @@ test('animações: telas, abas, capa em foco, título, estrela e PLAYER 1 START'
 
 test('trocar de perfil passa pelo mosaico em blocos', async ({ page, app }) => {
   await open(page, app)
-  await page.getByRole('button', { name: /Trocar perfil/ }).click()
+  await switchProfile(page)
   await page.getByRole('button', { name: /^Jogador 1/ }).click()
   await expect(page.locator('.wipe')).toHaveCount(1)
   await expect(page.locator('.wipe')).toHaveCount(0, { timeout: 2000 })

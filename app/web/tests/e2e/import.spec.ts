@@ -1,9 +1,9 @@
 import { join } from 'node:path'
-import { axe, expect, open, test } from './fixtures'
+import { axe, expect, open, test, openItem } from './fixtures'
 
 test('importar: detecta console, recusa o que não dá e copia pra biblioteca', async ({ page, app }) => {
   await open(page, app)
-  await page.getByRole('button', { name: 'Importar jogos' }).click()
+  await openItem(page, 'Importar jogos')
   await expect(page.locator('h1')).toHaveText('Importar jogos')
   const input = page.getByLabel('Caminho de um arquivo ou pasta')
   await expect(input).toBeFocused()
@@ -27,13 +27,14 @@ test('importar: detecta console, recusa o que não dá e copia pra biblioteca', 
   const cue = app.read('home/Games/roms/psx/Metal Slug X/Metal Slug X (USA).cue')
   expect(cue).toContain('FILE "Metal Slug X (USA).bin" BINARY') // caminho do Windows corrigido
 
-  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape') // volta pra tela Você
+  await page.keyboard.press('Escape') // e pro Início
   await expect(page.locator('nav.tabs [data-tab="gbc"]')).toBeVisible()
 })
 
 test('extensão desconhecida: escolhe o console na mão', async ({ page, app }) => {
   await open(page, app, '/')
-  await page.getByRole('button', { name: 'Importar jogos' }).click()
+  await openItem(page, 'Importar jogos')
   const input = page.getByLabel('Caminho de um arquivo ou pasta')
   await input.fill(join(app.root, 'inbox', 'nao-existe.nes'))
   await input.press('Enter')
