@@ -21,8 +21,19 @@
   import type { Game, GameCheevos, SaveState } from '../lib/types'
   import { ago, playTime } from '../lib/format'
 
-  // ocultos ficam fora do Início (a página do jogo ainda abre)
-  const visible = $derived(shown())
+  // ocultos ficam fora do Início (a página do jogo ainda abre). Duas visões,
+  // como o Games/Media do PS5: Biblioteca (o que está neste PC) e Loja (o que está
+  // no servidor pra baixar). Perfil infantil não vê a Loja.
+  const store = $derived(app.homeView === 'store' && !isKids())
+  const remoteCount = $derived(shown().filter((g) => g.remote).length)
+  const visible = $derived(shown().filter((g) => (store ? g.remote : !g.remote)))
+
+  function setView(v: 'games' | 'store') {
+    if (app.homeView === v) return
+    app.homeView = v
+    app.homeTab = 'home'
+    app.selected = ''
+  }
 
   // abas: só o Início e os consoles. Coleções e listas viram fileiras do Início.
   type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'list' | 'system' }
@@ -45,7 +56,16 @@
         visible.filter((g) => g.system === app.homeTab),
         sortOf(`system:${app.homeTab}`),
       )
-      return [{ id: app.homeTab, title: `${sys?.name ?? ''} · ${games.length} jogo${games.length === 1 ? '' : 's'}`, games, source: `system:${app.homeTab}` }]
+      return [{ id: app.homeTab, title: `${sys?.name ?? ''} · ${games.length} jogo${games.length === 1 ? '' : 's'}${store ? ' pra baixar' : ''}`, games, source: `${store ? 'store' : 'system'}:${app.homeTab}` }]
+    }
+    if (store) {
+      // Loja: tudo do servidor e uma fileira por console
+      const out: Row[] = [{ id: 'store-all', title: `No servidor · ${visible.length} jogo${visible.length === 1 ? '' : 's'}`, games: sortGames(visible, 'name').slice(0, 30), source: 'store:' }]
+      for (const s of app.systems) {
+        const games = sortGames(visible.filter((g) => g.system === s.slug), 'name')
+        if (games.length) out.push({ id: `store-${s.slug}`, title: `${s.name} · ${games.length}`, games: games.slice(0, 20), source: `store:${s.slug}` })
+      }
+      return out
     }
     const out: Row[] = []
     const recent = visible.filter((g) => g.lastPlayed > 0).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 12)
@@ -56,8 +76,6 @@
       const games = sourceGames(`list:${l.id}`)
       if (games.length) out.push({ id: `list-${l.id}`, title: l.name, games, source: `list:${l.id}`, smart: !!l.rule })
     }
-    const remote = visible.filter((g) => g.remote)
-    if (remote.length) out.push({ id: 'server', title: `No servidor · ${remote.length}`, games: remote.slice(0, 20), source: 'collection:server' })
     // a biblioteca toda, sempre por último (ou sozinha, no começo)
     const all = sortGames(visible, sortOf('collection:all'))
     out.push({ id: 'all', title: `Sua biblioteca · ${visible.length} jogo${visible.length === 1 ? '' : 's'}`, games: all.slice(0, 30), source: 'collection:all' })
@@ -220,7 +238,16 @@
     <div class="backdrop" in:shade style:background-image={hero ? `url("${hero}")` : 'none'} aria-hidden="true"></div>
   {/key}
   <HeroVideo game={selected} />
-  <TopBar />
+  <TopBar>
+    {#if !isKids()}
+      <nav class="views" aria-label="Visão">
+        <button class="view pixel" data-nav data-view="games" aria-current={!store ? 'page' : undefined} onclick={() => setView('games')}>Biblioteca</button>
+        <button class="view pixel" data-nav data-view="store" aria-current={store ? 'page' : undefined} onclick={() => setView('store')}>
+          Loja{#if remoteCount}<span class="count">{remoteCount}</span>{/if}
+        </button>
+      </nav>
+    {/if}
+  </TopBar>
   <!-- consoles como no PS5: blocos com o desenho de cada um; o escolhido cresce e mostra o nome -->
   <nav class="tabs" aria-label="Consoles" use:indicator={app.homeTab}>
     {#each tabs as t (t.slug)}
@@ -250,12 +277,22 @@
         <p><span>JOGOS</span> {String(visible.length).padStart(3, '0')}</p>
       </div>
     {/if}
-    {#if visible.length === 0}
+    {#if visible.length === 0 && store}
+      <section class="empty panel">
+        <h1 class="pixel" id="hero-title">Loja vazia</h1>
+        <p class="muted">A Loja mostra os jogos do seu servidor RomM que ainda não estão neste PC. Conecte o servidor (ou já baixou tudo).</p>
+        <div class="actions">
+          <button class="btn primary" data-nav data-nav-default onclick={() => go({ name: 'you', item: 'server' })}><Icon name="cloud" /> Servidor RomM</button>
+          <button class="btn" data-nav onclick={() => setView('games')}><Icon name="pad" /> Ir pra Biblioteca</button>
+        </div>
+      </section>
+    {:else if visible.length === 0}
       <section class="empty panel">
         <h1 class="pixel" id="hero-title">Nenhum jogo ainda</h1>
-        <p class="muted">Importe ROMs ou aponte suas pastas de jogos nas configurações.</p>
+        <p class="muted">{remoteCount ? `Tem ${remoteCount} jogo${remoteCount === 1 ? '' : 's'} no servidor esperando: baixe pela Loja.` : 'Importe ROMs ou aponte suas pastas de jogos nas configurações.'}</p>
         <div class="actions">
-          <button class="btn primary" data-nav data-nav-default onclick={() => go({ name: 'import' })}><Icon name="plus" /> Importar jogos</button>
+          {#if remoteCount && !isKids()}<button class="btn primary" data-nav data-nav-default onclick={() => setView('store')}><Icon name="download" /> Abrir a Loja</button>{/if}
+          <button class="btn" class:primary={!remoteCount} data-nav data-nav-default={remoteCount ? undefined : ''} onclick={() => go({ name: 'import' })}><Icon name="plus" /> Importar jogos</button>
           <button class="btn" data-nav onclick={() => go({ name: 'you' })}><Icon name="gear" /> Configurações</button>
         </div>
       </section>
@@ -394,6 +431,31 @@
     transform: scale(1.05);
     z-index: -1;
     mask-image: linear-gradient(to bottom, #000 30%, transparent 85%);
+  }
+  .views {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .view {
+    font-size: 1.15rem;
+    color: var(--muted);
+    background: none;
+    border: 3px solid transparent;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .view[aria-current='page'] {
+    color: #fff;
+    text-shadow: 0 0 10px var(--accent);
+  }
+  .view .count {
+    font-size: 0.7rem;
+    color: var(--on-accent);
+    background: var(--accent);
+    padding: 0.15rem 0.35rem;
   }
   .tabs {
     position: relative;

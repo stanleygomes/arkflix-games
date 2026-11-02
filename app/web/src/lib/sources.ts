@@ -37,6 +37,7 @@ export function activeCollections(games: Game[]): Collection[] {
 export function sourceTitle(source: string): string {
   const [kind, id] = source.split(':')
   if (kind === 'system') return system(id)?.name ?? id
+  if (kind === 'store') return id ? `${system(id)?.name ?? id} na Loja` : 'Loja'
   if (source === HIDDEN) return 'Jogos ocultos'
   if (kind === 'collection') return collection(id)?.label ?? id
   if (kind === 'list') return app.lists.find((l) => l.id === id)?.name ?? 'Lista'
@@ -45,11 +46,12 @@ export function sourceTitle(source: string): string {
 
 export function sourceGames(source: string): Game[] {
   const [kind, id] = source.split(':')
-  if (kind === 'system') return shown().filter((g) => g.system === id)
+  if (kind === 'system') return shown().filter((g) => g.system === id && !g.remote)
+  if (kind === 'store') return shown().filter((g) => g.remote && (!id || g.system === id))
   if (source === HIDDEN) return app.games.filter((g) => g.hidden)
   if (kind === 'collection') {
     const c = collection(id)
-    return c ? shown().filter(c.pick) : []
+    return c ? shown().filter((g) => c.pick(g) && (c.id === 'server' || !g.remote)) : []
   }
   if (kind === 'list') {
     const l = app.lists.find((x) => x.id === id)

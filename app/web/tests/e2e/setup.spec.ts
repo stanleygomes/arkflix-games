@@ -32,7 +32,9 @@ test.describe('primeira vez', () => {
     await expect(page.getByRole('button', { name: /^Nome/ })).toContainText('Stanley')
     await page.getByRole('button', { name: 'Começar' }).click()
     await expect(page.getByRole('button', { name: /^Você: Stanley/ })).toBeVisible()
-    await expect(page.locator('.shelf [data-game][aria-label*="no servidor"]').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('[data-view="store"]')).toContainText(/\d/, { timeout: 10_000 }) // a Loja conta os do servidor
+    await page.locator('[data-view="store"]').click()
+    await expect(page.locator('.shelf [data-game][aria-label*="no servidor"]').first()).toBeVisible()
     expect(app.read(`${app.data}/romm.json`)).not.toContain('senha123')
   })
 
