@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ago, bytes, playTime } from '../../src/lib/format'
 import { glyph, keyAction, keyLabel, padAction, retroArchKey } from '../../src/lib/keys'
 import { filterGames, filterGroups, maxPlayers, normalize, pickRandom, search, sortGames } from '../../src/lib/library'
-import type { Game } from '../../src/lib/types'
+import type { Game, GameList, System } from '../../src/lib/types'
+import { shortcuts } from '../../src/lib/shortcuts'
 import { pickTarget, type Box } from '../../src/lib/nav'
 import { contrast, highContrastPalette, homePalette, onColor } from '../../src/lib/palette'
 
@@ -214,5 +215,23 @@ describe('sorteio', () => {
     expect([...seen].sort()).toEqual(['A', 'B', 'C'])
     expect(pickRandom([], 'x')).toBeUndefined()
     expect(pickRandom(games, '', () => 0.999)?.id).toBe('C')
+  })
+})
+
+describe('busca global', () => {
+  const systems = [
+    { slug: 'snes', name: 'Super Nintendo', short: 'SNES' },
+    { slug: 'nes', name: 'Nintendo Entertainment System', short: 'NES' },
+  ] as unknown as System[]
+  const ctx = { systems, withGames: new Set(['snes']), lists: [{ id: 'a', name: 'Plataforma raiz', games: ['x'] }] as GameList[], kids: false, desktop: false }
+  it('acha configuração por palavra parecida e sem acento', () => {
+    expect(shortcuts('espaço', ctx).map((s) => s.label)).toEqual(['Armazenamento'])
+    expect(shortcuts('tela cheia', ctx)).toEqual([]) // energia só no desktop
+    expect(shortcuts('tela cheia', { ...ctx, desktop: true }).map((s) => s.label)).toEqual(['Energia'])
+  })
+  it('console só com jogo; lista pelo nome; infantil não vê configuração', () => {
+    expect(shortcuts('nintendo', ctx).map((s) => s.id)).toEqual(['system:snes'])
+    expect(shortcuts('plataf', ctx).map((s) => s.kind)).toEqual(['list'])
+    expect(shortcuts('bluetooth', { ...ctx, kids: true })).toEqual([])
   })
 })
