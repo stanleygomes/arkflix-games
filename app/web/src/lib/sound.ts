@@ -47,7 +47,7 @@ function tone(freq: number, start: number, dur: number, type: OscillatorType, vo
   osc.stop(start + dur + 0.02)
 }
 
-export type Sfx = 'move' | 'accept' | 'back' | 'error' | 'toggle' | 'start'
+export type Sfx = 'move' | 'accept' | 'back' | 'error' | 'toggle' | 'start' | 'swoosh' | 'notify' | 'boot'
 
 const patterns: Record<Sfx, [number, number, number][]> = {
   // [frequência, início (s), duração (s)]
@@ -57,14 +57,27 @@ const patterns: Record<Sfx, [number, number, number][]> = {
   error: [[180, 0, 0.12], [150, 0.12, 0.14]],
   toggle: [[784, 0, 0.04], [1175, 0.04, 0.05]],
   start: [[523, 0, 0.07], [659, 0.07, 0.07], [784, 0.14, 0.07], [1047, 0.21, 0.18]],
+  // troca de tela: varredura curta pra baixo
+  swoosh: [[1568, 0, 0.025], [1175, 0.02, 0.025], [880, 0.04, 0.03], [659, 0.06, 0.04]],
+  // aviso: dois toques suaves
+  notify: [[1319, 0, 0.06], [1760, 0.08, 0.1]],
+  // ligar o console: arpejo subindo e um acorde segurado
+  boot: [
+    [262, 0, 0.09], [330, 0.09, 0.09], [392, 0.18, 0.09], [523, 0.27, 0.09], [659, 0.36, 0.09], [784, 0.45, 0.09],
+    [523, 0.6, 0.7], [659, 0.6, 0.7], [784, 0.6, 0.7], [1047, 0.6, 0.7],
+  ],
 }
+
+// volume relativo de cada som (os de fundo bem baixinhos)
+const level: Partial<Record<Sfx, number>> = { swoosh: 0.45, notify: 0.6, boot: 0.8 }
 
 export function play(name: Sfx) {
   if (!sfxOn) return
   const a = audio()
   if (!a || a.state !== 'running' || !master) return
   const t = a.currentTime
-  for (const [f, s, d] of patterns[name]) tone(f, t + s, d, 'square', 0.12 * sfxVolume, master)
+  const v = 0.12 * sfxVolume * (level[name] ?? 1)
+  for (const [f, s, d] of patterns[name]) tone(f, t + s, d, name === 'boot' ? 'triangle' : 'square', v, master)
 }
 
 // Trilha: 32 passos de colcheia, 112 bpm. Melodia em Lá menor pentatônica.

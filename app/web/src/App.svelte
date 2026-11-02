@@ -113,6 +113,14 @@
     configure(a)
   })
 
+  // som de troca de tela (o da primeira tela é o do boot)
+  let lastNav = 0
+  $effect(() => {
+    const seq = app.nav.seq
+    if (seq !== lastNav && lastNav !== 0) play('swoosh')
+    lastNav = seq || -1
+  })
+
   // ao trocar de tela, foca o padrão dela
   $effect(() => {
     void app.stack.length

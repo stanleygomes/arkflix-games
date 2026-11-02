@@ -1,4 +1,5 @@
 // Estado global da interface (Svelte 5 runes).
+import { play } from './sound'
 import type { Boot, Family, Game, GameEvent, GameList, Mapping, Pad, ProfileState, Settings, System, RetroPadButton } from './types'
 
 export type Screen =
@@ -126,6 +127,7 @@ export function toast(text: string, kind: Toast['kind'] = 'info', ms = 5000, gro
   const id = nextToast++
   app.toasts.push({ id, text, kind })
   notice(id, text, kind, group)
+  if (kind !== 'error') play('notify') // o erro já toca o som dele onde acontece
   setTimeout(() => {
     const i = app.toasts.findIndex((t) => t.id === id)
     if (i >= 0) app.toasts.splice(i, 1)
