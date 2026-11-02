@@ -16,58 +16,67 @@
     { xbox: 'Xbox', playstation: 'PlayStation', '8bitdo': '8BitDo / estilo SNES', nintendo: 'Nintendo', generic: 'Genérico', keyboard: 'Teclado' }[family],
   )
 
-  type Btn = { id: string; x: number; y: number; w?: number; h?: number; r?: number }
+  type Btn = { id: string; x: number; y: number; w?: number; h?: number; r?: number; rx?: number }
+  // gatilhos e bumpers vêm antes do corpo: o corpo cobre a base e eles ficam
+  // "presos" no ombro, como no controle de verdade
+  const shoulders = new Set(['l1', 'r1', 'l2', 'r2'])
   const layout = $derived.by((): Btn[] => {
     if (snes) {
       return [
-        { id: 'l2', x: 40, y: 18, w: 40, h: 8 }, { id: 'r2', x: 160, y: 18, w: 40, h: 8 },
-        { id: 'l1', x: 34, y: 30, w: 52, h: 9 }, { id: 'r1', x: 154, y: 30, w: 52, h: 9 },
-        { id: 'up', x: 54, y: 56, w: 12, h: 13 }, { id: 'down', x: 54, y: 82, w: 12, h: 13 },
-        { id: 'left', x: 41, y: 69, w: 13, h: 12 }, { id: 'right', x: 66, y: 69, w: 13, h: 12 },
-        { id: 'select', x: 100, y: 78, w: 16, h: 6 }, { id: 'start', x: 124, y: 78, w: 16, h: 6 },
-        { id: 'home', x: 120, y: 64, r: 4 },
-        { id: 'north', x: 184, y: 56, r: 8 }, { id: 'south', x: 184, y: 92, r: 8 },
-        { id: 'west', x: 166, y: 74, r: 8 }, { id: 'east', x: 202, y: 74, r: 8 },
-        { id: 'l3', x: 96, y: 108, r: 9 }, { id: 'r3', x: 144, y: 108, r: 9 },
+        { id: 'l2', x: 46, y: 26, w: 40, h: 14, rx: 4 }, { id: 'r2', x: 154, y: 26, w: 40, h: 14, rx: 4 },
+        { id: 'l1', x: 36, y: 34, w: 54, h: 14, rx: 5 }, { id: 'r1', x: 150, y: 34, w: 54, h: 14, rx: 5 },
+        { id: 'up', x: 54, y: 62, w: 12, h: 13 }, { id: 'down', x: 54, y: 88, w: 12, h: 13 },
+        { id: 'left', x: 41, y: 75, w: 13, h: 12 }, { id: 'right', x: 66, y: 75, w: 13, h: 12 },
+        { id: 'select', x: 100, y: 84, w: 16, h: 6, rx: 3 }, { id: 'start', x: 124, y: 84, w: 16, h: 6, rx: 3 },
+        { id: 'home', x: 120, y: 70, r: 4 },
+        { id: 'north', x: 184, y: 64, r: 8 }, { id: 'south', x: 184, y: 98, r: 8 },
+        { id: 'west', x: 167, y: 81, r: 8 }, { id: 'east', x: 201, y: 81, r: 8 },
+        { id: 'l3', x: 96, y: 112, r: 8 }, { id: 'r3', x: 144, y: 112, r: 8 },
       ]
     }
+    // PlayStation: direcional em cima, analógicos embaixo e simétricos;
+    // Xbox: analógico esquerdo em cima e direcional embaixo
     const ps = kind === 'playstation'
-    const dpad = ps ? { x: 60, y: 64 } : { x: 92, y: 102 }
-    const stick = ps ? { x: 92, y: 102 } : { x: 60, y: 64 }
+    const dpad = ps ? { x: 62, y: 72 } : { x: 92, y: 104 }
+    const lstick = ps ? { x: 92, y: 104 } : { x: 62, y: 72 }
+    const face = { x: 178, y: 72 }
     return [
-      { id: 'l2', x: 34, y: 6, w: 44, h: 10 }, { id: 'r2', x: 162, y: 6, w: 44, h: 10 },
-      { id: 'l1', x: 30, y: 20, w: 52, h: 9 }, { id: 'r1', x: 158, y: 20, w: 52, h: 9 },
+      { id: 'l2', x: 52, y: 20, w: 40, h: 22, rx: 6 }, { id: 'r2', x: 148, y: 20, w: 40, h: 22, rx: 6 },
+      { id: 'l1', x: 44, y: 32, w: 52, h: 14, rx: 5 }, { id: 'r1', x: 144, y: 32, w: 52, h: 14, rx: 5 },
       { id: 'up', x: dpad.x - 6, y: dpad.y - 19, w: 12, h: 13 }, { id: 'down', x: dpad.x - 6, y: dpad.y + 6, w: 12, h: 13 },
       { id: 'left', x: dpad.x - 19, y: dpad.y - 6, w: 13, h: 12 }, { id: 'right', x: dpad.x + 6, y: dpad.y - 6, w: 13, h: 12 },
-      { id: 'l3', x: stick.x, y: stick.y, r: 12 }, { id: 'r3', x: 148, y: 102, r: 12 },
-      { id: 'select', x: 98, y: 56, w: 14, h: 8 }, { id: 'start', x: 128, y: 56, w: 14, h: 8 },
-      { id: 'home', x: 120, y: 40, r: 7 },
-      { id: 'north', x: 180, y: 48, r: 9 }, { id: 'south', x: 180, y: 80, r: 9 },
-      { id: 'west', x: 164, y: 64, r: 9 }, { id: 'east', x: 196, y: 64, r: 9 },
+      { id: 'l3', x: lstick.x, y: lstick.y, r: 12 }, { id: 'r3', x: 148, y: 104, r: 12 },
+      { id: 'select', x: 98, y: 66, w: 12, h: 8, rx: 3 }, { id: 'start', x: 130, y: 66, w: 12, h: 8, rx: 3 },
+      { id: 'home', x: 120, y: ps ? 92 : 56, r: 6 },
+      { id: 'north', x: face.x, y: face.y - 15, r: 8 }, { id: 'south', x: face.x, y: face.y + 15, r: 8 },
+      { id: 'west', x: face.x - 15, y: face.y, r: 8 }, { id: 'east', x: face.x + 15, y: face.y, r: 8 },
     ]
   })
   const face = new Set(['north', 'south', 'east', 'west'])
 </script>
 
 <figure class="preview">
-  <svg viewBox="0 0 240 140" role="img" aria-label={`Controle ${name}${highlight ? `, configurando ${glyph(highlight, family)}` : ''}`}>
+  <svg viewBox="0 0 240 150" role="img" aria-label={`Controle ${name}${highlight ? `, configurando ${glyph(highlight, family)}` : ''}`}>
+    {#each layout.filter((b) => shoulders.has(b.id)) as b (b.id)}
+      <rect class={`btn ${pressed.has(b.id) ? 'pressed' : ''} ${highlight === b.id ? 'highlight' : ''}`} data-button={b.id} x={b.x} y={b.y} width={b.w} height={b.h} rx={b.rx} />
+    {/each}
     {#if snes}
-      <path class="body" d="M40 44 h160 a36 36 0 0 1 0 72 h-160 a36 36 0 0 1 0 -72 z" />
+      <path class="body" d="M40 46 h160 a38 38 0 0 1 0 76 h-160 a38 38 0 0 1 0 -76 z" />
     {:else}
       <path
         class="body"
-        d="M44 30 h152 c22 0 30 18 36 46 c8 36 6 58 -12 60 c-16 2 -24 -14 -34 -28 h-92 c-10 14 -18 30 -34 28 c-18 -2 -20 -24 -12 -60 c6 -28 14 -46 36 -46 z"
+        d="M62 42 C42 42 32 54 26 76 C18 106 16 132 32 138 C46 143 56 130 68 114 L172 114 C184 130 194 143 208 138 C224 132 222 106 214 76 C208 54 198 42 178 42 C150 40 90 40 62 42 Z"
       />
     {/if}
-    {#each layout as b (b.id)}
+    {#each layout.filter((b) => !shoulders.has(b.id)) as b (b.id)}
       {@const cls = `btn ${pressed.has(b.id) ? 'pressed' : ''} ${highlight === b.id ? 'highlight' : ''}`}
       {#if b.r}
         <circle class={cls} data-button={b.id} cx={b.x} cy={b.y} r={b.r} />
         {#if face.has(b.id)}
-          <text class="label" x={b.x} y={b.y + 3.5}>{glyph(b.id, kind === 'playstation' ? 'playstation' : snes ? '8bitdo' : 'xbox')}</text>
+          <text class="label" x={b.x} y={b.y + 3.2}>{glyph(b.id, kind === 'playstation' ? 'playstation' : snes ? '8bitdo' : 'xbox')}</text>
         {/if}
       {:else}
-        <rect class={cls} data-button={b.id} x={b.x} y={b.y} width={b.w} height={b.h} />
+        <rect class={cls} data-button={b.id} x={b.x} y={b.y} width={b.w} height={b.h} rx={b.rx} />
       {/if}
     {/each}
   </svg>
@@ -88,14 +97,15 @@
     shape-rendering: crispEdges;
   }
   .body {
-    fill: color-mix(in srgb, var(--surface) 70%, #fff 8%);
-    stroke: #05040a;
-    stroke-width: 3;
+    fill: color-mix(in srgb, var(--surface) 80%, #fff 6%);
+    stroke: var(--accent-2);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-2) 60%, transparent));
   }
   .btn {
-    fill: #2b2a33;
-    stroke: #05040a;
-    stroke-width: 2;
+    fill: #1b1924;
+    stroke: color-mix(in srgb, var(--accent-2) 70%, #000);
+    stroke-width: 1.2;
     transition: fill 80ms;
   }
   .btn.pressed {
@@ -112,9 +122,10 @@
     }
   }
   .label {
-    font-family: var(--font-title);
+    font-family: var(--font-body);
+    font-weight: 700;
     font-size: 9px;
-    fill: #f4f1e8;
+    fill: var(--text);
     text-anchor: middle;
     pointer-events: none;
   }
