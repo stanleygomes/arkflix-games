@@ -23,6 +23,8 @@
     return d.charAt(0).toUpperCase() + d.slice(1)
   })
   const canBack = $derived(app.stack.length > 1)
+  // voltando pro Início, o botão diz isso (fica claro onde ele leva)
+  const toHome = $derived(app.stack.length > 1 && app.stack[app.stack.length - 2].name === 'home')
   function goBack() {
     play('back')
     back()
@@ -36,8 +38,8 @@
   {#if canBack}
     <!-- voltar sempre no mesmo lugar, em toda tela que veio de outra -->
     <button class="back-btn" data-nav onclick={goBack}>
-      <Icon name="back" size="1.2em" />
-      <span class="sub">Voltar</span>
+      <Icon name={toHome ? 'home' : 'back'} size="1.2em" />
+      <span class="sub">{toHome ? 'Início' : 'Voltar'}</span>
       <span aria-hidden="true"><Glyph button="east" family={glyphFamily()} /></span>
     </button>
   {/if}
@@ -72,6 +74,12 @@
       <Icon name="pad" size="1.3em" />
       {#if app.pads.length}<span class="count hud">{app.pads.length}</span>{/if}
     </span>
+    {#if app.mode === 'desktop'}
+      <!-- energia sempre à mão: minimizar, tela cheia, fechar -->
+      <button class="icon-btn power" data-nav aria-label="Energia" title="Energia" onclick={() => (app.power = true)}>
+        <Icon name="power" size="1.35em" />
+      </button>
+    {/if}
     <span class="when">
       <time class="clock sub" datetime={now.toISOString()}>{clock}</time>
       <span class="date">{date}</span>
@@ -149,6 +157,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .power {
+    color: #ff6b81;
   }
   .sep {
     width: 2px;
