@@ -31,3 +31,35 @@ test('ocultar jogo: some do Início e da busca, volta pela Biblioteca', async ({
   await page.keyboard.press('Escape')
   await expect(page.locator('.grid [data-game]')).toHaveCount(0)
 })
+
+test('apagar do PC: mostra quanto libera, mantém os saves e recusa pasta só de leitura', async ({ page, app }) => {
+  await open(page, app)
+  await page.keyboard.press('/')
+  await page.keyboard.type('crash')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter')
+  await expect(page.locator('h1')).toHaveText('Crash Bandicoot')
+  await gameOption(page, 'Apagar do PC')
+  const ask = page.getByRole('alertdialog')
+  await expect(ask).toContainText('Libera 43 B')
+  await expect(ask).toContainText('saves e pontos salvos não são apagados')
+  await axe(page, 'confirmar apagar jogo')
+  await ask.getByRole('button', { name: 'Cancelar' }).click()
+  expect(app.exists('home/Games/roms/psx/Crash Bandicoot (USA)/Crash Bandicoot (USA).bin')).toBe(true)
+
+  // cancelar volta pro menu
+  await page.getByRole('dialog', { name: 'Opções' }).getByRole('button', { name: 'Apagar do PC' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Apagar do PC' }).click()
+  await expect(page.locator('h1')).not.toHaveText('Crash Bandicoot')
+  expect(app.exists('home/Games/roms/psx/Crash Bandicoot (USA)')).toBe(false)
+  expect(app.exists('home/Games/roms/psx')).toBe(true)
+
+  // pasta só de leitura (Jogos antigos): nem aparece
+  await page.keyboard.press('/')
+  await page.keyboard.type('mario bros')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Enter')
+  await expect(page.locator('h1')).toHaveText(/Super Mario Bros/)
+  await page.getByRole('button', { name: 'Opções', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Opções' }).getByRole('button', { name: 'Apagar do PC' })).toHaveCount(0)
+})

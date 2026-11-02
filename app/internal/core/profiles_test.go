@@ -150,6 +150,8 @@ func TestKidsProfile(t *testing.T) {
 	blocked["DeleteProfile"] = h.svc.DeleteProfile(kid.ID, "")
 	blocked["UpdateCovers"] = h.svc.UpdateCovers(false)
 	_, blocked["SetHidden"] = h.svc.SetHidden(smw.ID, true)
+	_, blocked["GameSize"] = h.svc.GameSize(smw.ID)
+	blocked["DeleteGame"] = h.svc.DeleteGame(smw.ID)
 	blocked["BluetoothPair"] = h.svc.BluetoothPair(bt.FakeXbox)
 	blocked["BluetoothForget"] = h.svc.BluetoothForget(bt.FakeEightBitDo)
 	blocked["BluetoothPower"] = h.svc.BluetoothPower(false)

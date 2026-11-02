@@ -57,6 +57,13 @@ export interface Game {
   remote?: boolean
 }
 
+/** O que apagar o jogo libera (GameSize). */
+export interface GameSizeInfo {
+  size: number
+  files: number
+  server: boolean // está no servidor: volta como "no servidor"
+}
+
 export interface ScreensaverSettings {
   enabled: boolean
   minutes: number
