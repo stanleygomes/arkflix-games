@@ -19,16 +19,17 @@ export interface App {
   data: string
 }
 
-type Options = { fakeExit: string; fakeSleep: string; firstRun: string }
+type Options = { fakeExit: string; fakeSleep: string; firstRun: string; browserPads: string }
 
 export const test = base.extend<Options & { app: App }>({
   fakeExit: ['0', { option: true }],
   fakeSleep: ['0.8', { option: true }],
   firstRun: ['0', { option: true }],
-  app: async ({ page, fakeExit, fakeSleep, firstRun }, use, info) => {
+  browserPads: ['0', { option: true }],
+  app: async ({ page, fakeExit, fakeSleep, firstRun, browserPads }, use, info) => {
     const root = info.outputPath('fx')
     const proc = spawn(BIN, ['--web', '127.0.0.1:0', '--fixture', root, '--test', '--assets', DIST], {
-      env: { ...process.env, ARKFLIX_FAKE_EXIT: fakeExit, ARKFLIX_FAKE_SLEEP: fakeSleep, ARKFLIX_FIXTURE_FIRST_RUN: firstRun },
+      env: { ...process.env, ARKFLIX_FAKE_EXIT: fakeExit, ARKFLIX_FAKE_SLEEP: fakeSleep, ARKFLIX_FIXTURE_FIRST_RUN: firstRun, ARKFLIX_FIXTURE_BROWSER_PADS: browserPads },
     })
     let log = ''
     const url = await new Promise<string>((resolve, reject) => {

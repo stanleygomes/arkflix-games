@@ -1,7 +1,8 @@
-// Package launcher monta e roda o comando de cada emulador. Por padrão usa os
-// Flatpaks (org.libretro.RetroArch, org.ppsspp.PPSSPP, net.pcsx2.PCSX2), com
-// a config, os cores, os saves e as BIOS deles. Spec.Bin aponta uma pasta com
-// executáveis próprios no lugar (os testes usam emuladores falsos assim).
+// Package launcher monta e roda o comando de cada emulador. No Linux usa os
+// Flatpaks (org.libretro.RetroArch, org.ppsspp.PPSSPP, net.pcsx2.PCSX2); no
+// Windows e no macOS, os emuladores dos instaladores oficiais, nos lugares
+// padrão (ou o caminho escolhido nas configurações). Spec.Bin aponta uma pasta
+// com executáveis próprios no lugar (os testes usam emuladores falsos assim).
 package launcher
 
 import (
@@ -40,11 +41,13 @@ func FlatpakCores() string {
 
 // Spec diz como abrir os emuladores.
 type Spec struct {
-	Bin        string   // vazio = Flatpak; senão, pasta com retroarch, ppsspp e pcsx2
-	Cores      string   // vazio = cores do Flatpak
-	Fullscreen bool     // abre o jogo em tela cheia
-	RAAppend   []string // configs extras do RetroArch (entrada, saves do perfil)
-	Work       string   // pasta pra configs geradas na hora (o Flatpak enxerga a home, não o /tmp)
+	Bin        string            // pasta com retroarch, ppsspp e pcsx2 (testes); vazio = padrão do sistema
+	Exe        map[string]string // executável escolhido por emulador (configurações)
+	Cores      string            // vazio = cores do emulador no sistema
+	GOOS       string            // vazio = este sistema (os testes trocam)
+	Fullscreen bool              // abre o jogo em tela cheia
+	RAAppend   []string          // configs extras do RetroArch (entrada, saves do perfil)
+	Work       string            // pasta pra configs geradas na hora (o Flatpak enxerga a home, não o /tmp)
 }
 
 // Resume escolhe de onde o jogo começa. Vazio = do início.
@@ -66,6 +69,18 @@ func program(emu string, spec Spec) ([]string, error) {
 			return nil, fmt.Errorf("%s não encontrado em %s", executables[emu], spec.Bin)
 		}
 		return []string{path}, nil
+	}
+	if exe := spec.Exe[emu]; exe != "" {
+		if _, err := os.Stat(exe); err != nil {
+			return nil, fmt.Errorf("%s não encontrado em %s (configurações › biblioteca)", names[emu], exe)
+		}
+		return []string{exe}, nil
+	}
+	if goos := spec.goos(); goos != "linux" {
+		if exe := Find(goos, emu); exe != "" {
+			return []string{exe}, nil
+		}
+		return nil, fmt.Errorf("%s não encontrado: instale de %s ou informe o caminho em configurações › biblioteca", names[emu], sites[emu])
 	}
 	id := Flatpaks[emu]
 	if _, err := exec.LookPath("flatpak"); err != nil {
@@ -93,11 +108,15 @@ func Command(sys catalog.System, rom string, spec Spec, resume *Resume) ([]strin
 	case catalog.RetroArch:
 		cores := spec.Cores
 		if cores == "" {
-			cores = FlatpakCores()
+			cores = DefaultCores(spec.goos(), args[0])
 		}
-		core := filepath.Join(cores, sys.Core+"_libretro.so")
+		core := filepath.Join(cores, sys.Core+"_libretro"+CoreExt(spec.goos()))
 		if _, err := os.Stat(core); err != nil {
-			return nil, fmt.Errorf("core %s não instalado: rode make emulators", sys.Core)
+			hint := "rode make emulators"
+			if spec.goos() != "linux" {
+				hint = "baixe pelo menu do RetroArch (Online Updater › Core Downloader)"
+			}
+			return nil, fmt.Errorf("core %s não instalado: %s", sys.Core, hint)
 		}
 		if spec.Fullscreen {
 			args = append(args, "--fullscreen")

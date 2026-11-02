@@ -3,11 +3,12 @@
 // e voltar. Na tela de controles, "captura" pega o próximo botão/tecla cru.
 import { api, on } from './api'
 import { wake } from './idle.svelte'
+import { startBrowserPads } from './browserpads'
 import { keyAction, padAction, type Action } from './keys'
 import { current, move, type Dir } from './nav'
 import { play, unlock } from './sound'
 import { app, back, go, screen } from './state.svelte'
-import type { PadEvent } from './types'
+import type { Pad, PadEvent } from './types'
 
 export type Source = 'pad' | 'key'
 type Handler = (a: Action, src: Source) => boolean | void
@@ -147,10 +148,12 @@ function handleKey(ev: KeyboardEvent) {
 }
 
 let started = false
-export function startInput() {
+/** native: o Go lê os controles (Linux). Senão, a Gamepad API do WebView. */
+export function startInput(native = true, onPads: (pads: Pad[]) => void = () => {}) {
   if (started) return
   started = true
   window.addEventListener('keydown', handleKey)
   window.addEventListener('pointerdown', unlock, { once: true })
-  on<PadEvent>('pad', handlePad)
+  if (native) on<PadEvent>('pad', handlePad)
+  else startBrowserPads(handlePad, onPads)
 }

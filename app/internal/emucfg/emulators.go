@@ -7,15 +7,6 @@ import (
 	"strings"
 )
 
-// Pastas de config dos Flatpaks.
-func PPSSPPDir(home string) string {
-	return filepath.Join(home, ".var", "app", "org.ppsspp.PPSSPP", "config", "ppsspp", "PSP", "SYSTEM")
-}
-
-func PCSX2Ini(home string) string {
-	return filepath.Join(home, ".var", "app", "net.pcsx2.PCSX2", "config", "PCSX2", "inis", "PCSX2.ini")
-}
-
 // ErrNotSetUp: o emulador nunca foi aberto (sem config pra ajustar ainda). O
 // primeiro jogo abre com o padrão dele; do segundo em diante, já ajustado.
 var ErrNotSetUp = errors.New("emulador ainda não configurado")

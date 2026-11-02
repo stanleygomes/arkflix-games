@@ -71,12 +71,15 @@ func parseFlags() flags {
 	return f
 }
 
+// defaultData: ~/.config/arkflix-games no Linux, %AppData%\arkflix-games no
+// Windows, ~/Library/Application Support/arkflix-games no macOS.
 func defaultData() string {
-	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
-		return filepath.Join(dir, "arkflix-games")
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		home, _ := os.UserHomeDir()
+		dir = filepath.Join(home, ".config")
 	}
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "arkflix-games")
+	return filepath.Join(dir, "arkflix-games")
 }
 
 func assets(f flags) (fs.FS, error) {
@@ -145,7 +148,8 @@ func main() {
 
 	if f.web != "" {
 		broker := httpapi.NewBroker()
-		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f), Emulators: emu})
+		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f), Emulators: emu,
+			BrowserPads: f.fixture != "" && os.Getenv("ARKFLIX_FIXTURE_BROWSER_PADS") == "1"})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -167,17 +171,19 @@ func main() {
 	os.Exit(runDesktop(store, pads, ui, f.smoke, f.windowed, emu))
 }
 
-// cacheDir: capas baixadas e bancos do libretro (~/.cache/arkflix-games).
+// cacheDir: capas baixadas e bancos do libretro (~/.cache/arkflix-games no
+// Linux; a pasta de cache do sistema nos outros).
 // No ambiente falso, fica dentro dele.
 func cacheDir(f flags) string {
 	if f.fixture != "" {
 		return filepath.Join(f.fixture, "cache")
 	}
-	if dir := os.Getenv("XDG_CACHE_HOME"); dir != "" {
-		return filepath.Join(dir, "arkflix-games")
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		home, _ := os.UserHomeDir()
+		dir = filepath.Join(home, ".cache")
 	}
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".cache", "arkflix-games")
+	return filepath.Join(dir, "arkflix-games")
 }
 
 // O desktop nunca roda com o ambiente falso: partida mínima padrão (10 s).

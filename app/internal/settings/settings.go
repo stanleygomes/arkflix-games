@@ -8,6 +8,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -32,6 +33,15 @@ type Accessibility struct {
 	MusicVolume  int     `json:"musicVolume"`
 	Videos       bool    `json:"videos"`     // vídeo do jogo no destaque
 	VideoSound   bool    `json:"videoSound"` // com som (padrão: mudo)
+}
+
+// Emulators: caminhos dos emuladores. Vazio = padrão do sistema (Flatpak no
+// Linux; no Windows e no macOS, os lugares onde os instaladores oficiais põem).
+type Emulators struct {
+	RetroArch string `json:"retroarch"`
+	Cores     string `json:"cores"`
+	PPSSPP    string `json:"ppsspp"`
+	PCSX2     string `json:"pcsx2"`
 }
 
 // Screensaver é o protetor de tela: liga depois de Minutes sem entrada.
@@ -74,17 +84,36 @@ type Settings struct {
 	ESDEDir     string        `json:"esdeDir"` // capas e descrições locais (gamelists do ES-DE)
 	Covers      Covers        `json:"covers"`
 	UI          UI            `json:"ui"`
+	Emulators   Emulators     `json:"emulators"`
 	A11y        Accessibility `json:"a11y"`
 	Screensaver Screensaver   `json:"screensaver"`
 	Saves       SaveDirs      `json:"saves"`
 }
 
 // Defaults usa a pasta do usuário.
-func Defaults(home string) Settings {
+func Defaults(home string) Settings { return DefaultsFor(runtime.GOOS, home) }
+
+// emulatorDirs: onde cada emulador guarda config e saves por padrão, em cada
+// sistema (Linux: Flatpaks; Windows: instalador do RetroArch e Documentos;
+// macOS: Application Support).
+func emulatorDirs(goos, home string) (ra, psp, ps2 string) {
+	switch goos {
+	case "windows":
+		docs := filepath.Join(home, "Documents")
+		return filepath.Join("C:"+string(filepath.Separator), "RetroArch-Win64"), filepath.Join(docs, "PPSSPP", "PSP"), filepath.Join(docs, "PCSX2")
+	case "darwin":
+		support := filepath.Join(home, "Library", "Application Support")
+		return filepath.Join(support, "RetroArch"), filepath.Join(support, "PPSSPP", "PSP"), filepath.Join(support, "PCSX2")
+	}
 	varApp := filepath.Join(home, ".var", "app")
-	ra := filepath.Join(varApp, "org.libretro.RetroArch", "config", "retroarch")
-	psp := filepath.Join(varApp, "org.ppsspp.PPSSPP", "config", "ppsspp", "PSP")
-	ps2 := filepath.Join(varApp, "net.pcsx2.PCSX2", "config", "PCSX2")
+	return filepath.Join(varApp, "org.libretro.RetroArch", "config", "retroarch"),
+		filepath.Join(varApp, "org.ppsspp.PPSSPP", "config", "ppsspp", "PSP"),
+		filepath.Join(varApp, "net.pcsx2.PCSX2", "config", "PCSX2")
+}
+
+// DefaultsFor é o padrão de um sistema (goos do Go: linux, windows, darwin).
+func DefaultsFor(goos, home string) Settings {
+	ra, psp, ps2 := emulatorDirs(goos, home)
 	return Settings{
 		LibraryDirs: []LibraryDir{
 			{Path: filepath.Join(home, "Games", "roms"), Label: "Jogos", Writable: true},

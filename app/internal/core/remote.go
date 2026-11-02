@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/stanleygomes/arkflix-games/app/internal/catalog"
@@ -323,19 +322,6 @@ func (s *Service) DownloadGame(id string) error {
 		return errors.New("este jogo já está sendo baixado")
 	}
 	return nil
-}
-
-// freeSpace: bytes livres no disco da pasta (-1 se não deu pra saber).
-func freeSpace(dir string) int64 {
-	for d := dir; ; d = filepath.Dir(d) {
-		var st syscall.Statfs_t
-		if syscall.Statfs(d, &st) == nil {
-			return int64(st.Bavail) * int64(st.Bsize)
-		}
-		if d == filepath.Dir(d) {
-			return -1
-		}
-	}
 }
 
 func humanSize(n int64) string {

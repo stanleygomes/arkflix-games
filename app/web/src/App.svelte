@@ -30,9 +30,11 @@
   const current = $derived(screen())
 
   onMount(async () => {
+    let native = true
     try {
       const boot = await api.bootstrap()
       applyBoot(boot)
+      native = boot.nativePads !== false
       if (boot.profile?.setup) resetTo({ name: 'welcome' })
       else if (boot.profile?.choose) resetTo({ name: 'profiles' })
       app.ready = true
@@ -41,12 +43,14 @@
     } catch (err) {
       app.error = (err as Error).message
     }
-    on<Pad[]>('pads', (pads) => {
+    const padsChanged = (pads: Pad[] | null) => {
       const before = app.pads.length
       app.pads = pads ?? []
+      if (app.pads.length) app.family = app.pads[0].family
       if (app.pads.length > before) toast(`Controle conectado: ${app.pads[app.pads.length - 1].name}`, 'ok', 3000)
       else if (app.pads.length < before) toast('Controle desconectado', 'info', 3000)
-    })
+    }
+    on<Pad[]>('pads', padsChanged)
     on<Game[]>('library', (games) => (app.games = games ?? []))
     on<GameEvent>('game', async (e) => {
       if (e.state === 'running') {
@@ -65,7 +69,7 @@
       }
       app.games = await api.refresh()
     })
-    startInput()
+    startInput(native, padsChanged)
     watchDownloads()
     await tick()
     focusDefault()

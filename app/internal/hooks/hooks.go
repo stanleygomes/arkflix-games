@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -59,7 +60,7 @@ func (r *Runner) Scripts() map[string][]string {
 				continue
 			}
 			info, err := e.Info()
-			if err == nil && info.Mode()&0o111 != 0 {
+			if err == nil && Runnable(runtime.GOOS, e.Name(), info.Mode()) {
 				out[ev] = append(out[ev], e.Name())
 			}
 		}
@@ -97,7 +98,8 @@ func (r *Runner) Run(event string, args ...string) {
 		defer r.wg.Done()
 		for _, name := range scripts {
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
-			cmd := exec.CommandContext(ctx, filepath.Join(r.Dir, event, name), args...)
+			argv := Command(runtime.GOOS, filepath.Join(r.Dir, event, name), args)
+			cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 			cmd.Dir = filepath.Join(r.Dir, event)
 			cmd.WaitDelay = time.Second
 			out, err := cmd.CombinedOutput()
@@ -119,3 +121,29 @@ func (r *Runner) Run(event string, args ...string) {
 
 // Wait espera os scripts em andamento (testes e saída do app).
 func (r *Runner) Wait() { r.wg.Wait() }
+
+// Runnable: o arquivo é um script de evento? No Windows vale pela extensão
+// (.exe, .bat, .cmd, .ps1); no resto, pelo bit de execução.
+func Runnable(goos, name string, mode os.FileMode) bool {
+	if goos == "windows" {
+		switch strings.ToLower(filepath.Ext(name)) {
+		case ".exe", ".bat", ".cmd", ".ps1":
+			return true
+		}
+		return false
+	}
+	return mode&0o111 != 0
+}
+
+// Command monta a chamada do script (o .ps1 e o .bat precisam de quem os rode).
+func Command(goos, path string, args []string) []string {
+	if goos == "windows" {
+		switch strings.ToLower(filepath.Ext(path)) {
+		case ".ps1":
+			return append([]string{"powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path}, args...)
+		case ".bat", ".cmd":
+			return append([]string{"cmd", "/C", path}, args...)
+		}
+	}
+	return append([]string{path}, args...)
+}

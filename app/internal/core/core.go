@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -146,8 +147,11 @@ type Options struct {
 	MinPlay time.Duration
 	// Cache: pasta de cache (capas baixadas, bancos do libretro).
 	Cache string
-	// Emulators: onde estão os emuladores. Vazio = Flatpaks (o normal).
+	// Emulators: onde estão os emuladores. Vazio = padrão do sistema.
 	Emulators launcher.Spec
+	// BrowserPads: a interface lê os controles mesmo no Linux (testes do
+	// caminho do Windows/macOS).
+	BrowserPads bool
 }
 
 type entry struct {
@@ -345,6 +349,10 @@ type Boot struct {
 	Running  string            `json:"running"`
 	Lists    []lists.List      `json:"lists"`
 	Profile  ProfileState      `json:"profile"`
+	// NativePads: o Go lê os controles (Linux); senão, a interface lê pela
+	// Gamepad API do WebView (Windows, macOS).
+	NativePads bool   `json:"nativePads"`
+	Platform   string `json:"platform"`
 }
 
 // Bootstrap devolve o estado inicial.
@@ -354,7 +362,7 @@ func (s *Service) Bootstrap() (Boot, error) {
 	b := Boot{
 		Version: s.opt.Version, Mode: s.opt.Mode, Systems: catalog.Systems,
 		Games: s.views(), Settings: s.GetSettings(), Input: m, RetroPad: input.RetroPad,
-		Pads: s.Pads(), Running: s.Running(),
+		Pads: s.Pads(), Running: s.Running(), NativePads: gamepad.Native && !s.opt.BrowserPads, Platform: runtime.GOOS,
 	}
 	var err error
 	if b.Lists, err = u.lists.All(); err != nil {
@@ -460,12 +468,16 @@ func (s *Service) Play(id, stateID string) error {
 			resume.Slot = 0
 		}
 	}
-	if s.opt.Emulators.Bin == "" {
-		prepareEmulator(sys.Emulator)
-	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()
 	spec := s.opt.Emulators
+	if spec.Bin == "" {
+		prepareEmulator(sys.Emulator, s.saveDirs())
+		spec.Exe = map[string]string{catalog.RetroArch: cfg.Emulators.RetroArch, catalog.PPSSPP: cfg.Emulators.PPSSPP, catalog.PCSX2: cfg.Emulators.PCSX2}
+		if cfg.Emulators.Cores != "" {
+			spec.Cores = cfg.Emulators.Cores
+		}
+	}
 	spec.Fullscreen, spec.RAAppend, spec.Work = cfg.Fullscreen, u.raAppend(), u.dir
 	args, err := launcher.Command(sys, g.Launch, spec, resume)
 	if err != nil {
@@ -987,15 +999,15 @@ func (s *Service) OpenManual(id string) error {
 }
 
 // prepareEmulator deixa menu e saída iguais aos do RetroArch no PPSSPP e no
-// PCSX2 do Flatpak. Falhar aqui não impede o jogo: abre com o padrão dele.
-func prepareEmulator(emulator string) {
-	home, _ := os.UserHomeDir()
+// PCSX2 (a config deles fica ao lado das pastas de save, em todo sistema).
+// Falhar aqui não impede o jogo: abre com o padrão dele.
+func prepareEmulator(emulator string, dirs settings.SaveDirs) {
 	var err error
 	switch emulator {
 	case catalog.PPSSPP:
-		err = emucfg.PPSSPP(emucfg.PPSSPPDir(home))
+		err = emucfg.PPSSPP(filepath.Join(filepath.Dir(dirs.PPSSPPSaveData), "SYSTEM"))
 	case catalog.PCSX2:
-		err = emucfg.PCSX2(emucfg.PCSX2Ini(home))
+		err = emucfg.PCSX2(filepath.Join(filepath.Dir(dirs.PCSX2Memcards), "inis", "PCSX2.ini"))
 	}
 	if err != nil && !errors.Is(err, emucfg.ErrNotSetUp) {
 		log.Printf("atalhos do %s: %v", emulator, err)

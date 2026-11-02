@@ -67,6 +67,7 @@ export const app = $state({
   pin: null as PinAsk | null,
   power: false,
   profile: null as ProfileState | null,
+  platform: 'linux',
   lists: [] as GameList[],
   homeTab: 'home',
   selected: '',
@@ -168,6 +169,7 @@ export function applyBoot(boot: Boot) {
     pads: boot.pads ?? [],
     lists: boot.lists ?? [],
     profile: boot.profile,
+    platform: boot.platform || 'linux',
   })
 }
 

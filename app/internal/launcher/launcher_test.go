@@ -108,3 +108,50 @@ func TestRun(t *testing.T) {
 		t.Fatalf("falha devia trazer código e saída: %+v %v", res, err)
 	}
 }
+
+func TestPlatforms(t *testing.T) {
+	if launcher.CoreExt("windows") != ".dll" || launcher.CoreExt("darwin") != ".dylib" || launcher.CoreExt("linux") != ".so" {
+		t.Fatal("extensão dos cores por sistema")
+	}
+	env := func(k string) string {
+		return map[string]string{"ProgramFiles": `D:\Apps`, "LOCALAPPDATA": `C:\Users\s\AppData\Local`}[k]
+	}
+	win := launcher.Candidates("windows", catalog.RetroArch, `C:\Users\s`, env)
+	if win[0] != `C:\RetroArch-Win64\retroarch.exe` || !strings.Contains(strings.Join(win, "|"), "Apps") {
+		t.Fatalf("windows: %v", win)
+	}
+	if ps2 := launcher.Candidates("windows", catalog.PCSX2, "", env); !strings.HasSuffix(ps2[0], "pcsx2-qt.exe") {
+		t.Fatalf("pcsx2 windows: %v", ps2)
+	}
+	mac := launcher.Candidates("darwin", catalog.PPSSPP, "/Users/s", env)
+	if mac[0] != "/Applications/PPSSPPSDL.app/Contents/MacOS/PPSSPPSDL" || mac[1] != "/Users/s/Applications/PPSSPPSDL.app/Contents/MacOS/PPSSPPSDL" {
+		t.Fatalf("mac: %v", mac)
+	}
+	if launcher.Candidates("linux", catalog.RetroArch, "/h", env) != nil {
+		t.Fatal("linux usa Flatpak, sem lista")
+	}
+}
+
+// Windows/macOS: caminho escolhido nas configurações, ou erro dizendo onde baixar.
+func TestNativeExe(t *testing.T) {
+	dir := t.TempDir()
+	exe := filepath.Join(dir, "retroarch.exe")
+	os.WriteFile(exe, []byte("x"), 0o755)
+	os.MkdirAll(filepath.Join(dir, "cores"), 0o755)
+	os.WriteFile(filepath.Join(dir, "cores", "snes9x_libretro.dll"), nil, 0o644)
+	snes, _ := catalog.Find("snes")
+	spec := launcher.Spec{GOOS: "windows", Exe: map[string]string{catalog.RetroArch: exe}}
+	args, err := launcher.Command(snes, `C:\roms\smw.zip`, spec, nil)
+	if err != nil || args[0] != exe || !slices.Contains(args, filepath.Join(dir, "cores", "snes9x_libretro.dll")) {
+		t.Fatalf("retroarch.exe com cores ao lado: %v %v", args, err)
+	}
+	t.Setenv("PATH", t.TempDir())
+	psp, _ := catalog.Find("psp")
+	if _, err := launcher.Command(psp, "/r/x.iso", launcher.Spec{GOOS: "darwin"}, nil); err == nil || !strings.Contains(err.Error(), "ppsspp.org") {
+		t.Fatalf("sem PPSSPP: diz onde baixar: %v", err)
+	}
+	spec.Exe[catalog.RetroArch] = filepath.Join(dir, "sumiu.exe")
+	if _, err := launcher.Command(snes, "x.zip", spec, nil); err == nil || !strings.Contains(err.Error(), "configurações") {
+		t.Fatalf("caminho escolhido sumiu: %v", err)
+	}
+}

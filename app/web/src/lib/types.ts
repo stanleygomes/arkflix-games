@@ -88,6 +88,13 @@ export interface Accessibility {
   videoSound: boolean
 }
 
+export interface EmulatorPaths {
+  retroarch: string
+  cores: string
+  ppsspp: string
+  pcsx2: string
+}
+
 export interface SaveDirs {
   retroarchSaves: string
   retroarchStates: string
@@ -131,6 +138,7 @@ export interface Settings {
   a11y: Accessibility
   screensaver: ScreensaverSettings
   saves: SaveDirs
+  emulators: EmulatorPaths
 }
 
 export interface Mapping {
@@ -222,6 +230,8 @@ export interface Boot {
   running: string
   lists: GameList[]
   profile: ProfileState
+  nativePads: boolean
+  platform: string
 }
 
 export interface Profile {

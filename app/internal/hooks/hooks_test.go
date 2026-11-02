@@ -80,3 +80,23 @@ func TestNoScripts(t *testing.T) {
 		t.Fatal("pasta ausente devia dar lista vazia")
 	}
 }
+
+func TestWindowsScripts(t *testing.T) {
+	for name, want := range map[string]bool{"backup.ps1": true, "a.BAT": true, "x.cmd": true, "y.exe": true, "leia.txt": false, "z.sh": false} {
+		if hooks.Runnable("windows", name, 0o644) != want {
+			t.Errorf("windows %s: %v", name, !want)
+		}
+	}
+	if !hooks.Runnable("linux", "z.sh", 0o755) || hooks.Runnable("darwin", "z.sh", 0o644) {
+		t.Error("linux/mac: bit de execução")
+	}
+	if got := hooks.Command("windows", `C:\s\b.ps1`, []string{"rom"}); got[0] != "powershell" || got[len(got)-1] != "rom" {
+		t.Errorf("ps1: %v", got)
+	}
+	if got := hooks.Command("windows", `C:\s\b.bat`, nil); got[0] != "cmd" || got[1] != "/C" {
+		t.Errorf("bat: %v", got)
+	}
+	if got := hooks.Command("linux", "/s/b.sh", []string{"x"}); len(got) != 2 || got[0] != "/s/b.sh" {
+		t.Errorf("linux: %v", got)
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"os/exec"
+	goruntime "runtime"
 	"sync"
 	"time"
 
@@ -82,8 +83,14 @@ func (w *window) Quit() {
 	}
 }
 
-// OpenFile abre no programa padrão do sistema (xdg-open), sem esperar.
+// OpenFile abre no programa padrão do sistema, sem esperar.
 func (w *window) OpenFile(path string) error {
+	switch goruntime.GOOS {
+	case "windows":
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", path).Start()
+	case "darwin":
+		return exec.Command("open", path).Start()
+	}
 	return exec.Command("xdg-open", path).Start()
 }
 

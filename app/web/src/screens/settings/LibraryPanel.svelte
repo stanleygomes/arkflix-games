@@ -3,7 +3,7 @@
   import { api } from '../../lib/api'
   import { play } from '../../lib/sound'
   import { app, confirm, toast } from '../../lib/state.svelte'
-  import type { Settings } from '../../lib/types'
+  import type { EmulatorPaths, SaveDirs, Settings } from '../../lib/types'
 
   let draft = $state<Settings>($state.snapshot(app.settings!) as Settings)
   let busy = $state(false)
@@ -107,6 +107,27 @@
     <input id="esde-dir" type="text" data-nav bind:value={draft.esdeDir} spellcheck="false" />
   </div>
 
+  <details>
+    <summary data-nav>Emuladores e saves (avançado)</summary>
+    <p class="muted">
+      {app.platform === 'linux'
+        ? 'Vazio = os Flatpaks (make emulators instala).'
+        : 'Vazio = procura nos lugares onde os instaladores oficiais põem (retroarch.com, ppsspp.org, pcsx2.net).'}
+    </p>
+    {#each [{ id: 'retroarch', label: 'RetroArch (executável)' }, { id: 'cores', label: 'Pasta dos cores do RetroArch' }, { id: 'ppsspp', label: 'PPSSPP (executável)' }, { id: 'pcsx2', label: 'PCSX2 (executável)' }] as f (f.id)}
+      <div class="field">
+        <label for={`emu-${f.id}`}>{f.label}</label>
+        <input id={`emu-${f.id}`} type="text" data-nav bind:value={draft.emulators[f.id as keyof EmulatorPaths]} placeholder="padrão" spellcheck="false" />
+      </div>
+    {/each}
+    {#each [{ id: 'retroarchSaves', label: 'Saves do RetroArch' }, { id: 'retroarchStates', label: 'Save states do RetroArch' }, { id: 'ppssppSaveData', label: 'Saves do PPSSPP (SAVEDATA)' }, { id: 'ppssppStates', label: 'Save states do PPSSPP' }, { id: 'pcsx2Memcards', label: 'Memory cards do PCSX2' }, { id: 'pcsx2States', label: 'Save states do PCSX2' }] as f (f.id)}
+      <div class="field">
+        <label for={`save-${f.id}`}>{f.label}</label>
+        <input id={`save-${f.id}`} type="text" data-nav bind:value={draft.saves[f.id as keyof SaveDirs]} spellcheck="false" />
+      </div>
+    {/each}
+  </details>
+
   <fieldset>
     <legend>Capas</legend>
     <button type="button" class="switch-row btn" data-nav role="switch" aria-checked={draft.covers.enabled} aria-describedby="covers-help" onclick={toggleCovers}>
@@ -187,6 +208,20 @@
     display: flex;
     gap: 0.9rem;
     flex-wrap: wrap;
+  }
+  details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.3rem;
+    width: fit-content;
+  }
+  details[open] summary {
+    margin-bottom: 0.8rem;
   }
   .btn:disabled {
     opacity: 0.45;
