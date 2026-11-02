@@ -88,7 +88,7 @@ func (s *Service) deleteSet(e entry) ([]string, int64, error) {
 		return nil, 0, errors.New("o arquivo do jogo não existe mais")
 	}
 	if info.IsDir() {
-		return []string{entry}, treeSize(entry), nil
+		return []string{entry}, looseSize(entry), nil
 	}
 	paths := []string{entry}
 	seen := map[string]bool{entry: true}
@@ -147,7 +147,8 @@ func referenced(path string) []string {
 	return out
 }
 
-func treeSize(path string) int64 {
+// looseSize soma o que der pra ler (pra mostrar quanto libera).
+func looseSize(path string) int64 {
 	var total int64
 	filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
 		if err == nil && !d.IsDir() {
