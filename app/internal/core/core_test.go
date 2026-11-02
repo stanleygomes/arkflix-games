@@ -308,7 +308,7 @@ func (r *recorder) waitTask(t *testing.T, id string) core.TaskEvent {
 	for time.Now().Before(deadline) {
 		r.mu.Lock()
 		for i, e := range r.events {
-			if ev, ok := r.data[i].(core.TaskEvent); ok && e == "task" && ev.ID == id && ev.State != "running" {
+			if ev, ok := r.data[i].(core.TaskEvent); ok && e == "task" && ev.ID == id && (ev.State == "done" || ev.State == "error" || ev.State == "cancelled") {
 				r.mu.Unlock()
 				return ev
 			}

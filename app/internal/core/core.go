@@ -188,6 +188,7 @@ type Service struct {
 	thumbs   *thumbs.Store
 	profiles *profiles.Store
 	remote   *remoteState
+	dl       *dlQueue // fila de downloads do servidor
 	cheevos  *cheevosState
 	wiki     *wikiState
 
@@ -257,6 +258,9 @@ func New(opt Options) (*Service, error) {
 	s.u = u
 	s.remote = &remoteState{file: filepath.Join(store.Dir(), "romm.json"), dir: filepath.Join(opt.Cache, "romm")}
 	s.remote.load()
+	conn, _ := s.remote.snapshot()
+	s.dl = newDLQueue(filepath.Join(s.remote.dir, "queue.json"), conn != nil)
+	go s.dlLoop()
 	s.cheevos = newCheevos(opt.Cache, opt.Version)
 	s.wiki = newWikiState(opt.Cache, opt.Version)
 	if opt.Pads != nil {
@@ -913,9 +917,11 @@ func (s *Service) serveMedia(w http.ResponseWriter, r *http.Request) {
 
 // TaskEvent mostra o progresso de uma tarefa longa (capas).
 type TaskEvent struct {
-	ID       string  `json:"id"`
-	Label    string  `json:"label"`
-	State    string  `json:"state"` // running, done, error, cancelled
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	// running, done, error, cancelled; downloads também: queued (na fila),
+	// waiting (esperando a madrugada) e paused.
+	State    string  `json:"state"`
 	Progress float64 `json:"progress"`
 	Message  string  `json:"message,omitempty"`
 }
@@ -959,6 +965,11 @@ func (s *Service) runTaskCtx(id, label string, fn func(ctx context.Context, prog
 
 // CancelTask cancela uma tarefa em andamento (download, por exemplo).
 func (s *Service) CancelTask(id string) error {
+	if game, ok := downloadID(id); ok {
+		if handled, err := s.dlCancel(game); handled {
+			return err
+		}
+	}
 	s.mu.Lock()
 	cancel, ok := s.tasks[id]
 	s.mu.Unlock()

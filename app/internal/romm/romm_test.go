@@ -123,3 +123,57 @@ func TestLoginCatalogDownloadAndSaves(t *testing.T) {
 		t.Fatal("capa só do próprio servidor")
 	}
 }
+
+func TestDownloadResumeMultiAndLimit(t *testing.T) {
+	fake := fixture.NewFakeRomM()
+	srv := httptest.NewServer(fake)
+	defer srv.Close()
+	ctx := context.Background()
+	c := &romm.Client{Base: srv.URL, Token: "token-do-app"}
+	spyro, err := c.Rom(ctx, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// pausado no meio do .bin: o .cue completo é pulado e o .bin continua com Range
+	dir := filepath.Join(t.TempDir(), "psx")
+	part := filepath.Join(dir, "Spyro the Dragon (USA).part")
+	os.MkdirAll(part, 0o755)
+	os.WriteFile(filepath.Join(part, "Spyro the Dragon (USA).cue"), []byte("FILE \"Spyro the Dragon (USA).bin\" BINARY\n"), 0o644)
+	os.WriteFile(filepath.Join(part, "Spyro the Dragon (USA).bin"), []byte("PSX-"), 0o644)
+	var last int64
+	path, err := c.Download(ctx, spyro, dir, func(done, total int64) { last = done })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(filepath.Join(path, "Spyro the Dragon (USA).bin")); string(data) != "PSX-DISCO" {
+		t.Fatalf("retomada: %q", data)
+	}
+	if r := fake.Ranges(); len(r) != 1 || r[0] != "bytes=4-" {
+		t.Fatalf("só o .bin pede o resto: %v", r)
+	}
+	if last != spyro.Size {
+		t.Fatalf("progresso conta o que já tinha: %d de %d", last, spyro.Size)
+	}
+
+	// limite de velocidade: 96 KB a 64 KB/s levam ~1,5 s
+	big := make([]byte, 96<<10)
+	for i := range big {
+		big[i] = byte(i * 7 % 251)
+	}
+	fake.SetRom(1, big)
+	dkc, _ := c.Rom(ctx, 1)
+	c.Limit = func() int64 { return 64 << 10 }
+	start := time.Now()
+	if _, err := c.Download(ctx, dkc, filepath.Join(t.TempDir(), "snes"), nil); err != nil {
+		t.Fatal(err)
+	}
+	if took := time.Since(start); took < 1200*time.Millisecond || took > 4*time.Second {
+		t.Fatalf("96 KB a 64 KB/s em %v", took)
+	}
+	c.Limit = func() int64 { return 0 }
+	start = time.Now()
+	if _, err := c.Download(ctx, dkc, filepath.Join(t.TempDir(), "snes"), nil); err != nil || time.Since(start) > time.Second {
+		t.Fatalf("sem limite: %v %v", time.Since(start), err)
+	}
+}

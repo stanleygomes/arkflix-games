@@ -1,15 +1,16 @@
 <script lang="ts">
   // Central: downloads e tarefas (com cancelar) e o histórico dos avisos.
   import { tick } from 'svelte'
+  import DownloadOptions from '../components/DownloadOptions.svelte'
   import HelpBar from '../components/HelpBar.svelte'
   import Icon from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
-  import { activity, cancelTask, cancellable, clearFinished, markRead } from '../lib/activity.svelte'
+  import { active, activity, cancelTask, cancellable, clearFinished, downloadNow, markRead, pauseDownload, resumeDownload } from '../lib/activity.svelte'
   import { downloadGame } from '../lib/downloads.svelte'
   import { ago } from '../lib/format'
   import { focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
-  import { app, game } from '../lib/state.svelte'
+  import { app, game, isKids } from '../lib/state.svelte'
   import type { Task } from '../lib/activity.svelte'
 
   $effect(() => {
@@ -21,12 +22,36 @@
 
   const now = $derived(Date.now())
   const when = (ms: number) => ago(Math.floor(ms / 1000), now / 1000)
-  const status: Record<Task['state'], string> = { running: 'em andamento', done: 'pronto', error: 'falhou', cancelled: 'cancelado' }
+  const status: Record<Task['state'], string> = {
+    running: 'em andamento',
+    queued: 'na fila',
+    waiting: 'esperando a madrugada',
+    paused: 'pausado',
+    done: 'pronto',
+    error: 'falhou',
+    cancelled: 'cancelado',
+  }
+  let options = $state(false)
+  let optionsButton = $state<HTMLButtonElement>()
+
+  function closeOptions() {
+    options = false
+    tick().then(() => optionsButton?.focus())
+  }
+
+  // o primeiro botão de cada download: pausar, continuar ou baixar agora
+  function main(t: Task) {
+    if (!t.id.startsWith('download:') || isKids()) return undefined
+    if (t.state === 'running') return { icon: 'pause' as const, label: 'Pausar', run: () => pauseDownload(t.id) }
+    if (t.state === 'paused') return { icon: 'play' as const, label: 'Continuar', run: () => resumeDownload(t.id) }
+    if (t.state === 'waiting') return { icon: 'download' as const, label: 'Baixar agora mesmo assim', run: () => downloadNow(t.id) }
+    return undefined
+  }
 
   // download que falhou ou foi cancelado: dá pra tentar de novo
   function retry(t: Task) {
     const g = t.id.startsWith('download:') ? game(t.id.slice(9)) : undefined
-    return t.state !== 'running' && t.state !== 'done' && g?.remote ? g : undefined
+    return (t.state === 'error' || t.state === 'cancelled') && g?.remote ? g : undefined
   }
 </script>
 
@@ -37,9 +62,14 @@
     <section class="col" aria-labelledby="tasks-title">
       <header>
         <h2 id="tasks-title" class="pixel">Downloads e tarefas</h2>
-        {#if activity.tasks.some((t) => t.state !== 'running')}
-          <button class="btn small" data-nav onclick={clearFinished}><Icon name="trash" /> Limpar concluídas</button>
-        {/if}
+        <div class="tools">
+          {#if activity.tasks.some((t) => !active(t))}
+            <button class="btn small" data-nav onclick={clearFinished}><Icon name="trash" /> Limpar concluídas</button>
+          {/if}
+          {#if !isKids()}
+            <button class="btn small" data-nav bind:this={optionsButton} onclick={() => (options = true)}><Icon name="sliders" /> Opções de download</button>
+          {/if}
+        </div>
       </header>
       {#if activity.tasks.length === 0}
         <p class="empty muted">Nada baixando agora. Jogos do servidor, capas, saves e emuladores aparecem aqui.</p>
@@ -51,15 +81,21 @@
                 <span class="label">{t.label}</span>
                 <span class="state">{status[t.state]} · {when(t.at)}</span>
               </div>
-              {#if t.state === 'running'}
+              {#if t.state === 'running' || (t.state === 'paused' && t.progress > 0)}
                 <div class="energy" role="progressbar" aria-label={t.label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(t.progress * 100)}>
                   <span style:width={`${Math.floor(t.progress * 20) * 5}%`}></span>
                 </div>
-              {:else if t.message}
+              {:else if t.message && !active(t)}
                 <p class="msg muted">{t.message}</p>
               {/if}
               {#if cancellable(t)}
-                <button class="btn small" data-nav data-nav-default onclick={() => cancelTask(t.id)}><Icon name="close" /> Cancelar</button>
+                {@const first = main(t)}
+                <div class="buttons">
+                  {#if first}
+                    <button class="btn small" data-nav data-nav-default onclick={first.run}><Icon name={first.icon} /> {first.label}</button>
+                  {/if}
+                  <button class="btn small" data-nav data-nav-default={first ? undefined : ''} onclick={() => cancelTask(t.id)}><Icon name="close" /> Cancelar</button>
+                </div>
               {:else if retry(t)}
                 <button class="btn small" data-nav onclick={() => downloadGame(retry(t))}><Icon name="download" /> Baixar de novo</button>
               {/if}
@@ -91,6 +127,9 @@
       {/if}
     </section>
   </main>
+  {#if options}
+    <DownloadOptions onclose={closeOptions} />
+  {/if}
   <HelpBar hints={[{ button: 'south', label: 'Escolher' }, { button: 'east', label: 'Voltar' }]} />
 </div>
 
@@ -161,6 +200,18 @@
   }
   .label {
     font-weight: 700;
+  }
+  .tools,
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .tools {
+    justify-content: flex-end;
+  }
+  .task.paused {
+    border-style: dashed;
   }
   .state {
     color: var(--muted);

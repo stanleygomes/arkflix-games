@@ -308,7 +308,8 @@ export interface MediaFile {
 export interface TaskEvent {
   id: string
   label: string
-  state: 'running' | 'done' | 'error' | 'cancelled'
+  /** queued (na fila), waiting (esperando a madrugada) e paused: só downloads. */
+  state: 'running' | 'queued' | 'waiting' | 'paused' | 'done' | 'error' | 'cancelled'
   progress: number
   message?: string
 }
@@ -325,6 +326,13 @@ export interface Settings {
   saves: SaveDirs
   emulators: EmulatorPaths
   autoUpdate: boolean
+  downloads: DownloadOptions
+}
+
+/** Jogos do servidor: velocidade máxima (0 = sem limite) e só de madrugada. */
+export interface DownloadOptions {
+  limitKBps: number
+  nightOnly: boolean
 }
 
 export interface Mapping {

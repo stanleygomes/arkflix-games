@@ -11,7 +11,7 @@
   import TopBar from '../components/TopBar.svelte'
   import { api, on } from '../lib/api'
   import { ago, bytes, dateTime, playTime } from '../lib/format'
-  import { downloadGame, downloads } from '../lib/downloads.svelte'
+  import { downloadGame, downloadText, downloads } from '../lib/downloads.svelte'
   import { pushHandler } from '../lib/input'
   import { burst } from '../lib/motion'
   import { current, focusDefault } from '../lib/nav'
@@ -203,7 +203,7 @@
           {#if g.remote}
             {#if downloads[g.id] !== undefined}
               <div class="downloading" role="status">
-                <span><Icon name="download" /> Baixando… {Math.round(downloads[g.id] * 100)}%</span>
+                <span><Icon name="download" /> {downloadText(g.id)}</span>
                 <span class="energy" aria-hidden="true"><span style:width={`${Math.floor(downloads[g.id] * 20) * 5}%`}></span></span>
               </div>
             {:else if isKids()}

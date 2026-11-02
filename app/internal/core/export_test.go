@@ -69,3 +69,11 @@ func SetClock(s *Service, now func() time.Time) { s.opt.Now = now }
 
 // SetKidsTimers encurta o vigia do perfil infantil.
 func SetKidsTimers(tick, warn time.Duration) { kidsTick, kidsWarn = tick, warn }
+
+// SetDownloadClock troca o relógio da fila de downloads (madrugada).
+func SetDownloadClock(s *Service, now func() time.Time) {
+	s.dl.mu.Lock()
+	s.dl.clock = now
+	s.dl.mu.Unlock()
+	s.dlPump()
+}

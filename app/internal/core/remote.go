@@ -217,6 +217,7 @@ func (s *Service) DisconnectRemote() error {
 	if err := os.Remove(s.remote.file); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
+	s.dlClear()
 	os.RemoveAll(s.remote.dir)
 	s.remote.mu.Lock()
 	s.remote.conn, s.remote.roms, s.remote.updated = nil, nil, 0
@@ -270,57 +271,6 @@ func (s *Service) startRemoteRefresh() bool {
 		s.opt.Emitter.Emit("library", s.views())
 		return fmt.Sprintf("%d jogos no servidor", s.RemoteStatus().Games), nil
 	})
-}
-
-// DownloadGame baixa um jogo do servidor pra pasta de importação.
-func (s *Service) DownloadGame(id string) error {
-	if err := s.adult(); err != nil {
-		return err
-	}
-	e, _, err := s.find(id)
-	if err != nil {
-		return err
-	}
-	if !e.remote {
-		return errors.New("este jogo já está neste PC")
-	}
-	c, _ := s.remote.client()
-	if c == nil {
-		return errors.New("nenhum servidor ligado")
-	}
-	dest := s.opt.Store.Settings().ImportDir
-	if dest == "" {
-		return errors.New("pasta de importação não configurada")
-	}
-	dir := filepath.Join(dest, e.game.System)
-	if free := freeSpace(dest); free >= 0 && free < e.game.Size+200<<20 {
-		return fmt.Errorf("falta espaço em %s: o jogo tem %s", dest, humanSize(e.game.Size))
-	}
-	name := e.info.Name
-	if name == "" {
-		name = e.game.Title
-	}
-	ok := s.runTaskCtx("download:"+id, "Baixando "+name, func(ctx context.Context, progress func(float64)) (string, error) {
-		rom, err := c.Rom(ctx, e.romID)
-		if err != nil {
-			return "", err
-		}
-		_, err = c.Download(ctx, rom, dir, func(done, total int64) {
-			if total > 0 {
-				progress(float64(done) / float64(total))
-			}
-		})
-		if err != nil {
-			return "", err
-		}
-		s.scan()
-		s.opt.Emitter.Emit("library", s.views())
-		return name + " baixado", nil
-	})
-	if !ok {
-		return errors.New("este jogo já está sendo baixado")
-	}
-	return nil
 }
 
 func humanSize(n int64) string {

@@ -11,7 +11,7 @@
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { play } from '../lib/sound'
   import { toggleFavorite } from '../lib/actions'
-  import { downloadGame, downloads } from '../lib/downloads.svelte'
+  import { downloadGame, downloadText, downloads } from '../lib/downloads.svelte'
   import { indicator } from '../lib/indicator'
   import { shade } from '../lib/motion'
   import { pickRandom, sortGames } from '../lib/library'
@@ -276,7 +276,7 @@
           {#if selected.remote}
             <button class="btn primary" data-nav data-nav-group="actions" disabled={downloads[selected.id] !== undefined || isKids()} onclick={() => downloadGame(selected)}>
               <Icon name="download" />
-              {downloads[selected.id] !== undefined ? `Baixando ${Math.round(downloads[selected.id] * 100)}%` : 'Baixar do servidor'}
+              {downloads[selected.id] !== undefined ? downloadText(selected.id) : 'Baixar do servidor'}
             </button>
           {:else}
             <button class="btn primary" data-nav data-nav-group="actions" onclick={() => launch(selected)}>
