@@ -42,7 +42,9 @@ macos)
   mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
   for arch in arm64 amd64; do
     cc=clang; [[ $arch == amd64 ]] && cc="clang -arch x86_64"
-    (cd "$app" && GOOS=darwin GOARCH=$arch CGO_ENABLED=1 CC="$cc" go build -tags desktop,production -trimpath \
+    # o Wails usa UTType (UniformTypeIdentifiers): o CLI dele liga esse framework, aqui é à mão
+    (cd "$app" && GOOS=darwin GOARCH=$arch CGO_ENABLED=1 CC="$cc" MACOSX_DEPLOYMENT_TARGET=11.0 \
+      CGO_LDFLAGS="-framework UniformTypeIdentifiers" go build -tags desktop,production -trimpath \
       -ldflags "$ldflags" -o "$work/arkflix-games-$arch" .)
   done
   lipo -create -output "$bundle/Contents/MacOS/arkflix-games" "$work/arkflix-games-arm64" "$work/arkflix-games-amd64"
