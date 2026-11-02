@@ -14,7 +14,11 @@ rm -rf "$work" && mkdir -p "$work" "$dist"
 ldflags="-s -w -X main.version=$version"
 name=arkflix-games-$version
 
-checksum() { (cd "$dist" && sha256sum "$1" >"$1.sha256"); }
+# sha256sum no Linux, shasum no macOS (mesmo formato de saída)
+checksum() {
+  if command -v sha256sum >/dev/null; then (cd "$dist" && sha256sum "$1" >"$1.sha256")
+  else (cd "$dist" && shasum -a 256 "$1" >"$1.sha256"); fi
+}
 
 case $target in
 linux)
