@@ -242,8 +242,8 @@
   <TopBar>
     {#if !isKids()}
       <nav class="views" aria-label="Visão">
-        <button class="view sub" data-nav data-view="games" aria-current={!store ? 'page' : undefined} onclick={() => setView('games')}>Biblioteca</button>
-        <button class="view sub" data-nav data-view="store" aria-current={store ? 'page' : undefined} onclick={() => setView('store')}>
+        <button class="view" data-nav data-view="games" aria-current={!store ? 'page' : undefined} onclick={() => setView('games')}>Biblioteca</button>
+        <button class="view" data-nav data-view="store" aria-current={store ? 'page' : undefined} onclick={() => setView('store')}>
           Loja{#if remoteCount}<span class="count">{remoteCount}</span>{/if}
         </button>
       </nav>
@@ -445,9 +445,14 @@
     display: flex;
     gap: 0.4rem;
   }
+  /* fonte de texto (não pixel) aqui: nome curto e pequeno precisa ser lido de longe */
   .view {
-    font-size: 1.3rem;
-    color: var(--muted);
+    font-family: var(--font-body);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 1.15rem;
+    color: #d8cfe6;
     background: none;
     border: 3px solid transparent;
     padding: 0.4rem 0.9rem;
@@ -461,7 +466,8 @@
     text-shadow: 0 0 10px var(--accent);
   }
   .view .count {
-    font-size: 0.7rem;
+    font-size: 0.95rem;
+    line-height: 1;
     color: var(--on-accent);
     background: var(--accent);
     padding: 0.15rem 0.35rem;
