@@ -163,6 +163,11 @@ func main() {
 			// RomM falso no mesmo endereço (testes de ponta a ponta do servidor)
 			mux := http.NewServeMux()
 			mux.Handle("/fake-romm/", http.StripPrefix("/fake-romm", fixture.NewFakeRomM()))
+			// RetroAchievements falso: stanley / senha123, Super Mario World
+			ra := fixture.NewFakeRA()
+			ra.Prefix = "/fake-ra"
+			mux.Handle("/fake-ra/", http.StripPrefix("/fake-ra", ra))
+			os.Setenv("ARKFLIX_RA_BASE", "http://"+ln.Addr().String()+"/fake-ra")
 			mux.Handle("/", handler)
 			handler = mux
 		}

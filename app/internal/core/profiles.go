@@ -47,11 +47,14 @@ func (u *user) raSavesCfg() string {
 }
 
 // raAppend: configs extras do RetroArch pro perfil (controle e, fora do
-// principal, as pastas de save próprias).
+// principal, as pastas de save próprias) e a conta do RetroAchievements.
 func (u *user) raAppend() []string {
 	out := []string{u.inputs.ConfigPath()}
 	if u.id != profiles.Main {
 		out = append(out, u.raSavesCfg())
+	}
+	if cfg := u.cheevosAppend(); cfg != "" {
+		out = append(out, cfg)
 	}
 	return out
 }

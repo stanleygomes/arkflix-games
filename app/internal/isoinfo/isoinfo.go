@@ -194,6 +194,31 @@ func Read(r io.ReaderAt) (Info, error) {
 	return Info{System: "psx", Serial: serial}, nil
 }
 
+// Disc é uma imagem aberta pra quem precisa ler arquivos crus dela (o hash do
+// RetroAchievements lê o executável de boot setor a setor).
+type Disc struct{ im image }
+
+// OpenDisc abre uma .iso ou um .bin cru (modo 1 ou 2).
+func OpenDisc(r io.ReaderAt) (Disc, error) {
+	im, err := open(r)
+	return Disc{im: im}, err
+}
+
+// Find devolve o setor inicial e o tamanho de um arquivo ("PSP_GAME/PARAM.SFO").
+func (d Disc) Find(path string) (lba, size uint32, err error) {
+	rec, err := d.im.find(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	if rec.dir {
+		return 0, 0, fmt.Errorf("%s é diretório", path)
+	}
+	return rec.extent, rec.size, nil
+}
+
+// ReadAt lê n bytes de dados a partir do setor lógico lba.
+func (d Disc) ReadAt(lba uint32, n int) ([]byte, error) { return d.im.readAt(lba, n) }
+
 // ReadFile identifica o jogo de um arquivo .iso.
 func ReadFile(path string) (Info, error) {
 	f, err := os.Open(path)
