@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
+  import Boot from './components/Boot.svelte'
   import ConfirmDialog from './components/ConfirmDialog.svelte'
   import Guide from './components/Guide.svelte'
   import Playing from './components/Playing.svelte'
@@ -180,6 +181,7 @@
 <PowerMenu />
 <Guide />
 <Screensaver />
+{#if app.ready}<Boot />{/if}
 
 <style>
   .layer {

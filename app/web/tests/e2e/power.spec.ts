@@ -74,3 +74,17 @@ test('no navegador não há menu de energia', async ({ page, app }) => {
   await expect(page.locator('main')).toBeVisible()
   await expect(page.getByRole('button', { name: /^Energia/ })).toHaveCount(0)
 })
+
+test.describe('com animação', () => {
+  test.use({ reducedMotion: 'no-preference' })
+  test('ligar o app desktop mostra a tela de boot, e um botão pula', async ({ page, app }) => {
+    await asDesktop(page)
+    await page.goto(app.url)
+    await expect(page.locator('.boot')).toBeVisible()
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.boot')).toHaveCount(0)
+    await page.goto(app.url)
+    await expect(page.locator('.boot')).toBeVisible()
+    await expect(page.locator('.boot')).toHaveCount(0, { timeout: 4000 }) // some sozinha
+  })
+})
