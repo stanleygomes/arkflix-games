@@ -80,6 +80,14 @@ escolha **Abrir**.
 
 Os instaladores de cada sistema ficam na
 [página de releases](https://github.com/stanleygomes/arkflix-games/releases/latest).
+Links diretos, sempre da última versão:
+
+| Sistema | Download |
+| --- | --- |
+| Windows (instalador) | [arkflix-games-windows-x86_64-setup.exe](https://github.com/stanleygomes/arkflix-games/releases/latest/download/arkflix-games-windows-x86_64-setup.exe) |
+| Windows (portátil) | [arkflix-games-windows-x86_64.zip](https://github.com/stanleygomes/arkflix-games/releases/latest/download/arkflix-games-windows-x86_64.zip) |
+| macOS | [arkflix-games-macos-universal.dmg](https://github.com/stanleygomes/arkflix-games/releases/latest/download/arkflix-games-macos-universal.dmg) |
+| Linux | [arkflix-games-linux-x86_64.tar.gz](https://github.com/stanleygomes/arkflix-games/releases/latest/download/arkflix-games-linux-x86_64.tar.gz) |
 
 **Windows.** Baixe `arkflix-games-<versão>-windows-x86_64-setup.exe` e rode (não
 pede administrador; instala em `%LOCALAPPDATA%\Programs\arkflix-games`, com
