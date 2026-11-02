@@ -45,6 +45,8 @@ os emuladores vêm prontos.
 - Descrição, ano e gêneros que faltam vindos do Wikidata e da Wikipedia
   (abertos, sem conta), no editor do jogo ou em lote.
 - Pareamento de controle Bluetooth pela tela (Linux).
+- Jogar em outro aparelho da casa: instala e liga o Sunshine (o Moonlight
+  recebe na TV ou no celular) e mostra o IP e como parear.
 - Emuladores instalados e atualizados pelo próprio app, nos três sistemas.
 - Atualização automática do app pela última release.
 - Busca global (jogos, consoles, listas e configurações), sons de interface,

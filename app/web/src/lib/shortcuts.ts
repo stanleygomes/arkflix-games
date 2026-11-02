@@ -25,6 +25,7 @@ const SETTINGS: Entry[] = [
   { label: 'Armazenamento', hint: 'espaço em disco', words: 'armazenamento espaco disco livre tamanho', go: { name: 'settings', tab: 'storage' }, adult: true },
   { label: 'Emuladores', hint: 'instalar e atualizar', words: 'emuladores emulador retroarch ppsspp pcsx2 cores core instalar', go: { name: 'settings', tab: 'emulators' }, adult: true },
   { label: 'Bluetooth', hint: 'parear controle sem fio', words: 'bluetooth parear pareamento sem fio wireless', go: { name: 'settings', tab: 'bluetooth' }, adult: true },
+  { label: 'Jogar em outro aparelho', hint: 'TV ou celular com Moonlight', words: 'outro aparelho tv celular transmitir stream streaming moonlight sunshine remoto', go: { name: 'settings', tab: 'remoteplay' }, adult: true },
   { label: 'Atualizações', hint: 'versão nova do app', words: 'atualizar atualizacao atualizacoes update versao nova', go: { name: 'settings', tab: 'updates' }, adult: true },
   { label: 'Sobre', hint: 'versão, atalhos e scripts', words: 'sobre versao atalhos scripts', go: { name: 'settings', tab: 'about' }, adult: true },
   { label: 'Importar jogos', hint: 'de pasta ou pendrive', words: 'importar pendrive copiar adicionar jogo', go: { name: 'import' }, adult: true },

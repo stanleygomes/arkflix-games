@@ -36,6 +36,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/lists"
 	"github.com/stanleygomes/arkflix-games/app/internal/meta"
 	"github.com/stanleygomes/arkflix-games/app/internal/profiles"
+	"github.com/stanleygomes/arkflix-games/app/internal/remoteplay"
 	"github.com/stanleygomes/arkflix-games/app/internal/saves"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 	"github.com/stanleygomes/arkflix-games/app/internal/stats"
@@ -158,6 +159,9 @@ type Options struct {
 	// Bluetooth: pareamento de controles. Vazio = o do sistema (testes passam
 	// o bt.Fake, que nunca toca no rádio de verdade).
 	Bluetooth bt.Backend
+	// RemotePlay: o Sunshine (jogar em outro aparelho). Vazio = o do sistema
+	// (testes passam o remoteplay.Fake, que nunca instala nem roda nada).
+	RemotePlay remoteplay.Backend
 	// Update: atualização automática. Zero = não olha sozinho (testes).
 	Update UpdateOptions
 }
@@ -211,6 +215,9 @@ func New(opt Options) (*Service, error) {
 	}
 	if opt.Bluetooth == nil {
 		opt.Bluetooth = bt.New()
+	}
+	if opt.RemotePlay == nil {
+		opt.RemotePlay = remoteplay.New()
 	}
 	store := opt.Store
 	if opt.Source == nil {
