@@ -3,7 +3,7 @@ import { axe, expect, open, test } from './fixtures'
 test('guia rápido: abre com G, atalhos e central com avisos', async ({ page, app }) => {
   await open(page, app)
   await page.keyboard.press('f') // favorita: gera um aviso
-  await expect(page.getByRole('button', { name: /aviso novo/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Central: .*aviso novo/ })).toBeVisible()
   await page.keyboard.press('g')
   const guide = page.getByRole('dialog', { name: 'Jogador 1' })
   await expect(guide).toBeVisible()
@@ -19,7 +19,7 @@ test('guia rápido: abre com G, atalhos e central com avisos', async ({ page, ap
   await expect(page.locator('.notice')).toContainText('favoritos')
   await axe(page, 'central')
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('button', { name: /aviso novo/ })).toHaveCount(0) // visto
+  await expect(page.getByRole('button', { name: /^Central: .*aviso novo/ })).toHaveCount(0) // visto
 })
 
 test.describe('com jogo aberto', () => {

@@ -18,7 +18,7 @@
   import { shade } from '../lib/motion'
   import { pickRandom, sortGames } from '../lib/library'
   import { sortOf, sourceGames, sourceTitle } from '../lib/sources'
-  import { app, currentProfile, go, isKids, shown, system, toast } from '../lib/state.svelte'
+  import { app, go, isKids, shown, system, toast } from '../lib/state.svelte'
   import type { Game, GameCheevos, SaveState } from '../lib/types'
   import { ago, playTime } from '../lib/format'
 
@@ -231,14 +231,6 @@
   let menuFor = $state('')
 
   const hero = $derived(selected?.cover ?? '')
-  const me = $derived(currentProfile())
-  // placar de fliperama: o "recorde" é o tempo total jogado (HHH:MM)
-  const hiScore = $derived.by(() => {
-    const total = visible.reduce((sum, g) => sum + (g.playTime || 0), 0)
-    const h = Math.floor(total / 3600)
-    const m = Math.floor((total % 3600) / 60)
-    return `${String(h).padStart(3, '0')}:${String(m).padStart(2, '0')}`
-  })
 </script>
 
 <div class="home">
@@ -279,13 +271,6 @@
   </nav>
 
   <main class="content" aria-labelledby="hero-title">
-    {#if visible.length}
-      <div class="hud pixel" aria-label="Placar">
-        <p><span>1UP</span> {(me?.name ?? 'Jogador').toUpperCase()}</p>
-        <p><span>HI-SCORE</span> {hiScore}</p>
-        <p><span>JOGOS</span> {String(visible.length).padStart(3, '0')}</p>
-      </div>
-    {/if}
     {#if visible.length === 0 && store}
       <section class="empty panel">
         <h1 class="pixel" id="hero-title">Loja vazia</h1>
@@ -536,10 +521,6 @@
   }
   /* tela baixa (notebook): faixa dos consoles mais compacta */
   @media (max-height: 820px) {
-    /* (seletor mais forte: as regras normais vêm depois no arquivo) */
-    .content .hud {
-      display: none;
-    }
     .hero .cta {
       min-height: 0;
     }
@@ -568,22 +549,6 @@
     white-space: nowrap;
     font-size: 1.15rem;
     color: #fff;
-    text-shadow: 0 0 8px var(--accent);
-  }
-  .hud {
-    display: flex;
-    justify-content: space-between;
-    gap: 2rem;
-    padding: 0.4rem 0 1.4rem;
-    font-size: 1.2rem;
-    color: #fff;
-  }
-  .hud p {
-    line-height: 1;
-  }
-  .hud span {
-    margin-right: 0.6em;
-    color: var(--accent);
     text-shadow: 0 0 8px var(--accent);
   }
   .content {

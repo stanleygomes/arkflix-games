@@ -5,7 +5,7 @@
   import { api } from '../lib/api'
   import { playTime } from '../lib/format'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
-  import { app, system, toast } from '../lib/state.svelte'
+  import { app, system, toast, currentProfile } from '../lib/state.svelte'
   import type { Stats } from '../lib/types'
 
   const periods = [
@@ -27,6 +27,10 @@
   })
 
   const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const hiScore = $derived.by(() => {
+    const total = app.games.reduce((sum, g) => sum + (g.playTime || 0), 0)
+    return `${String(Math.floor(total / 3600)).padStart(3, '0')}:${String(Math.floor((total % 3600) / 60)).padStart(2, '0')}`
+  })
   const dur = (s: number) => (s > 0 ? playTime(s) : '0 min')
   const dayLabel = (d: string) => d.slice(8, 10) + '/' + d.slice(5, 7)
 </script>
@@ -34,6 +38,12 @@
 <div class="page">
   <TopBar actions={false} />
   <main class="body">
+    <!-- placar de fliperama: o "recorde" é o tempo total jogado (HHH:MM) -->
+    <div class="hud" aria-label="Placar">
+      <p><span>1UP</span> {(currentProfile()?.name ?? 'Jogador').toUpperCase()}</p>
+      <p><span>HI-SCORE</span> {hiScore}</p>
+      <p><span>JOGOS</span> {String(app.games.filter((g) => !g.remote).length).padStart(3, '0')}</p>
+    </div>
     <header class="head">
       <h1 class="pixel">Estatísticas</h1>
       <div class="segmented" role="group" aria-label="Período">
@@ -97,6 +107,22 @@
 </div>
 
 <style>
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    font-family: var(--font-hud);
+    font-size: 1.3rem;
+    letter-spacing: 0.06em;
+    color: #fff;
+  }
+  .hud p {
+    line-height: 1;
+  }
+  .hud span {
+    margin-right: 0.6em;
+    color: var(--accent-2);
+  }
   .page {
     height: 100vh;
     display: flex;
