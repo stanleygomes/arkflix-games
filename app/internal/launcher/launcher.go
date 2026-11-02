@@ -187,6 +187,10 @@ func Run(ctx context.Context, args, env []string) (Result, error) {
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Env = append(os.Environ(), env...)
+	// fechar pelo guia: pede pra sair (SIGTERM) e, se não sair, mata. O
+	// WaitDelay também solta quando um filho segura a saída aberta.
+	cmd.Cancel = func() error { return terminate(cmd.Process) }
+	cmd.WaitDelay = 3 * time.Second
 	var out tail
 	cmd.Stdout, cmd.Stderr = &out, &out
 	err := cmd.Run()

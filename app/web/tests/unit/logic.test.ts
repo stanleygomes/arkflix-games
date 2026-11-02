@@ -62,7 +62,8 @@ describe('entrada', () => {
     expect(padAction('north')).toBe('fav')
     expect(padAction('l1')).toBe('prevTab')
     expect(padAction('select')).toBe('search')
-    expect(padAction('home')).toBeNull()
+    expect(padAction('home')).toBe('guide')
+    expect(padAction('l3')).toBeNull()
   })
   it('teclado: setas e Enter; num campo de texto só Esc e cima/baixo', () => {
     expect(keyAction('ArrowLeft', false)).toBe('left')

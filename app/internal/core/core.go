@@ -182,7 +182,8 @@ type Service struct {
 	mu      sync.Mutex
 	entries []entry
 	running string
-	tasks   map[string]bool
+	tasks   map[string]context.CancelFunc
+	game    *gameRun // jogo aberto (fechar pelo guia)
 }
 
 // New prepara o serviço: gera a config de entrada do RetroArch, liga os
@@ -213,7 +214,7 @@ func New(opt Options) (*Service, error) {
 		}
 		opt.Hooks = runner
 	}
-	s := &Service{opt: opt, ready: make(chan struct{}), thumbs: covers, tasks: map[string]bool{}}
+	s := &Service{opt: opt, ready: make(chan struct{}), thumbs: covers, tasks: map[string]context.CancelFunc{}}
 	if s.opt.Saves == nil {
 		s.opt.Saves = saves.Local{Dirs: s.saveDirs}
 	}
@@ -481,7 +482,7 @@ func (s *Service) Play(id, stateID string) error {
 			spec.Cores = cfg.Emulators.Cores
 		}
 	}
-	spec.Fullscreen, spec.RAAppend, spec.Work = cfg.Fullscreen, u.raAppend(), u.dir
+	spec.Fullscreen, spec.RAAppend, spec.Work = cfg.Fullscreen, append(u.raAppend(), s.guideCfg(u)...), u.dir
 	args, err := launcher.Command(sys, g.Launch, spec, resume)
 	if err != nil {
 		return err
@@ -524,8 +525,16 @@ func (s *Service) Play(id, stateID string) error {
 		}
 		winMu.Unlock()
 	}()
+	gctx, stop := context.WithCancel(context.Background())
+	s.mu.Lock()
+	s.game = &gameRun{id: id, emulator: sys.Emulator, stop: stop}
+	s.mu.Unlock()
 	go func() {
-		res, err := launcher.Run(context.Background(), args, nil)
+		defer stop()
+		res, err := launcher.Run(gctx, args, nil)
+		if gctx.Err() != nil {
+			err, res.Code, res.Tail = nil, 0, "" // fechado pelo guia: não é erro
+		}
 		winMu.Lock()
 		exited = true
 		winMu.Unlock()
@@ -537,7 +546,7 @@ func (s *Service) Play(id, stateID string) error {
 		}
 		u.hist.Append(session)
 		s.mu.Lock()
-		s.running = ""
+		s.running, s.game = "", nil
 		if u.hist.Counts(session) {
 			u.plays[id]++
 		}
@@ -817,35 +826,58 @@ func (s *Service) serveMedia(w http.ResponseWriter, r *http.Request) {
 type TaskEvent struct {
 	ID       string  `json:"id"`
 	Label    string  `json:"label"`
-	State    string  `json:"state"` // running, done, error
+	State    string  `json:"state"` // running, done, error, cancelled
 	Progress float64 `json:"progress"`
 	Message  string  `json:"message,omitempty"`
 }
 
 // runTask roda fn em segundo plano, uma de cada id por vez, avisando o progresso.
 func (s *Service) runTask(id, label string, fn func(progress func(float64)) (string, error)) bool {
+	return s.runTaskCtx(id, label, func(_ context.Context, progress func(float64)) (string, error) { return fn(progress) })
+}
+
+// runTaskCtx é o runTask cancelável: CancelTask(id) cancela o ctx e o fim
+// chega como "cancelled".
+func (s *Service) runTaskCtx(id, label string, fn func(ctx context.Context, progress func(float64)) (string, error)) bool {
 	s.mu.Lock()
-	if s.tasks[id] {
+	if _, busy := s.tasks[id]; busy {
 		s.mu.Unlock()
 		return false
 	}
-	s.tasks[id] = true
+	ctx, cancel := context.WithCancel(context.Background())
+	s.tasks[id] = cancel
 	s.mu.Unlock()
 	s.opt.Emitter.Emit("task", TaskEvent{ID: id, Label: label, State: "running"})
 	go func() {
-		msg, err := fn(func(p float64) {
+		defer cancel()
+		msg, err := fn(ctx, func(p float64) {
 			s.opt.Emitter.Emit("task", TaskEvent{ID: id, Label: label, State: "running", Progress: p})
 		})
 		s.mu.Lock()
 		delete(s.tasks, id)
 		s.mu.Unlock()
 		ev := TaskEvent{ID: id, Label: label, State: "done", Progress: 1, Message: msg}
-		if err != nil {
+		switch {
+		case err != nil && ctx.Err() != nil:
+			ev.State, ev.Message, ev.Progress = "cancelled", "cancelado", 0
+		case err != nil:
 			ev.State, ev.Message = "error", err.Error()
 		}
 		s.opt.Emitter.Emit("task", ev)
 	}()
 	return true
+}
+
+// CancelTask cancela uma tarefa em andamento (download, por exemplo).
+func (s *Service) CancelTask(id string) error {
+	s.mu.Lock()
+	cancel, ok := s.tasks[id]
+	s.mu.Unlock()
+	if !ok {
+		return errors.New("essa tarefa já terminou")
+	}
+	cancel()
+	return nil
 }
 
 // startCovers baixa as capas dos jogos que ainda não passaram pelo libretro

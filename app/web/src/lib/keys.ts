@@ -16,6 +16,7 @@ export type Action =
   | 'nextTab'
   | 'search'
   | 'random'
+  | 'guide'
 
 /** Botão físico (nomes do Go) -> ação. Confirma com o botão de baixo. */
 export function padAction(button: string): Action | null {
@@ -33,6 +34,7 @@ export function padAction(button: string): Action | null {
     r1: 'nextTab',
     select: 'search',
     r3: 'random',
+    home: 'guide',
   }
   return map[button] ?? null
 }
@@ -67,6 +69,8 @@ export function keyAction(key: string, typing: boolean): Action | null {
     '/': 'search',
     r: 'random',
     R: 'random',
+    g: 'guide',
+    G: 'guide',
   }
   return map[key] ?? null
 }
@@ -151,7 +155,7 @@ export function glyph(button: string, family: Family): string {
     playstation: { south: '✕', east: '○', west: '□', north: '△', l1: 'L1', r1: 'R1', l2: 'L2', r2: 'R2', select: 'Create', start: 'Options', home: 'PS' },
     '8bitdo': { south: 'B', east: 'A', west: 'Y', north: 'X', l1: 'L', r1: 'R', l2: 'L2', r2: 'R2', select: 'Select', start: 'Start', home: 'Home' },
     nintendo: { south: 'B', east: 'A', west: 'Y', north: 'X', l1: 'L', r1: 'R', l2: 'ZL', r2: 'ZR', select: '−', start: '+', home: 'Home' },
-    keyboard: { south: 'Enter', east: 'Esc', west: 'I', north: 'F', l1: 'Q', r1: 'E', start: 'M' },
+    keyboard: { south: 'Enter', east: 'Esc', west: 'I', north: 'F', l1: 'Q', r1: 'E', start: 'M', home: 'G' },
   }
   const common: Record<string, string> = { up: '↑', down: '↓', left: '←', right: '→', l3: 'L3', r3: 'R3' }
   const table = face[family] ?? face.xbox

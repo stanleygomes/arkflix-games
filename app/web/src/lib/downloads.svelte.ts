@@ -26,7 +26,7 @@ export async function downloadGame(g: Game | undefined) {
     await api.downloadGame(g.id)
     downloads[g.id] = 0
     play('accept')
-    toast(`Baixando ${g.name}…`, 'info', 2500)
+    toast(`Baixando ${g.name}…`, 'info', 2500, 'download')
   } catch (err) {
     play('error')
     toast((err as Error).message, 'error')

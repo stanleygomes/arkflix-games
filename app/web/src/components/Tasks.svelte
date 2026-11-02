@@ -1,23 +1,11 @@
 <script lang="ts">
-  // Tarefas longas (baixar capas): barra de progresso enquanto roda, aviso no fim.
-  import { on } from '../lib/api'
-  import { toast } from '../lib/state.svelte'
-  import type { TaskEvent } from '../lib/types'
+  // Tarefas longas em andamento (downloads, capas, instalação): barra de
+  // progresso flutuante. O aviso do fim e o histórico ficam na central.
+  import { activity } from '../lib/activity.svelte'
+  import { app } from '../lib/state.svelte'
 
-  let tasks = $state<TaskEvent[]>([])
-
-  $effect(() =>
-    on<TaskEvent>('task', (ev) => {
-      const i = tasks.findIndex((t) => t.id === ev.id)
-      if (ev.state === 'running') {
-        if (i >= 0) tasks[i] = ev
-        else tasks.push(ev)
-        return
-      }
-      if (i >= 0) tasks.splice(i, 1)
-      toast(ev.state === 'done' ? `${ev.label}: ${ev.message}` : `${ev.label} falhou: ${ev.message}`, ev.state === 'done' ? 'ok' : 'error', 7000)
-    }),
-  )
+  // na própria central a barra seria repetida
+  const tasks = $derived(app.stack[app.stack.length - 1].name === 'activity' ? [] : activity.tasks.filter((t) => t.state === 'running').slice(0, 3))
 </script>
 
 {#if tasks.length}

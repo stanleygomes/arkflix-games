@@ -300,8 +300,7 @@ func (s *Service) DownloadGame(id string) error {
 	if name == "" {
 		name = e.game.Title
 	}
-	ok := s.runTask("download:"+id, "Baixando "+name, func(progress func(float64)) (string, error) {
-		ctx := context.Background()
+	ok := s.runTaskCtx("download:"+id, "Baixando "+name, func(ctx context.Context, progress func(float64)) (string, error) {
 		rom, err := c.Rom(ctx, e.romID)
 		if err != nil {
 			return "", err

@@ -60,6 +60,7 @@ export interface ScreensaverSettings {
   enabled: boolean
   minutes: number
   mode: 'snake' | 'showcase'
+  rest: number // minutos de protetor até o descanso (0 = nunca)
 }
 
 export interface MediaItem {
@@ -135,10 +136,15 @@ export interface RemoteInfo {
   updated: number
 }
 
+export interface GuideInfo {
+  game: string // jogo aberto ('' = nenhum)
+  commands: boolean // salvar/carregar estado pelo guia
+}
+
 export interface TaskEvent {
   id: string
   label: string
-  state: 'running' | 'done' | 'error'
+  state: 'running' | 'done' | 'error' | 'cancelled'
   progress: number
   message?: string
 }

@@ -8,6 +8,7 @@
   import HelpBar from '../components/HelpBar.svelte'
   import Icon, { type IconName } from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
+  import { activity, unread } from '../lib/activity.svelte'
   import { api } from '../lib/api'
   import { avatarName } from '../lib/avatars'
   import { bytes } from '../lib/format'
@@ -44,11 +45,14 @@
           .join(' · ')
       : ''
     const pad = app.pads.length ? app.pads.map((p) => p.name).join(', ') : 'nenhum controle conectado'
+    const news = unread()
+    const busy = activity.tasks.filter((t) => t.state === 'running').length
     const items: Item[] = [
+      { id: 'activity', label: 'Central', icon: 'bell', value: busy ? `${busy} em andamento` : news ? `${news} aviso${news === 1 ? '' : 's'} novo${news === 1 ? '' : 's'}` : 'downloads e avisos', open: to({ name: 'activity' }) },
       { id: 'stats', label: 'Estatísticas', icon: 'chart', value: `${hours} h jogadas · ${played} jogos`, open: to({ name: 'stats' }) },
     ]
     if (!kids) {
-      items.unshift({ id: 'profile', label: 'Perfil', icon: 'pencil', value: `${me?.name ?? ''} · ${avatarName(me?.avatar ?? '')}${me?.hasPIN ? ' · com PIN' : ''}`, open: to({ name: 'profile', id: me?.id }) })
+      items.splice(1, 0, { id: 'profile', label: 'Perfil', icon: 'pencil', value: `${me?.name ?? ''} · ${avatarName(me?.avatar ?? '')}${me?.hasPIN ? ' · com PIN' : ''}`, open: to({ name: 'profile', id: me?.id }) })
       items.push(
         { id: 'controls', label: 'Controles', icon: 'pad', value: pad, open: to({ name: 'settings', tab: 'controls' }) },
         { id: 'a11y', label: 'Acessibilidade e som', icon: 'sliders', value: access, open: to({ name: 'settings', tab: 'a11y' }) },

@@ -6,6 +6,7 @@ import type {
   Boot,
   Game,
   GameList,
+  GuideInfo,
   ImportItem,
   ImportResult,
   InputResult,
@@ -141,4 +142,9 @@ export const api = {
   quit: () => call<void>('Quit'),
   minimize: () => call<void>('Minimize'),
   isFullscreen: () => call<boolean>('IsFullscreen'),
+  cancelTask: (id: string) => call<void>('CancelTask', id),
+  guide: () => call<GuideInfo>('Guide'),
+  showGuide: () => call<void>('ShowGuide'),
+  resumeGame: () => call<void>('ResumeGame'),
+  gameCommand: (cmd: 'save' | 'load' | 'quit') => call<void>('GameCommand', cmd),
 }

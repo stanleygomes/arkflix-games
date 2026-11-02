@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
   import ConfirmDialog from './components/ConfirmDialog.svelte'
+  import Guide from './components/Guide.svelte'
   import Playing from './components/Playing.svelte'
   import PromptDialog from './components/PromptDialog.svelte'
   import PinDialog from './components/PinDialog.svelte'
@@ -13,6 +14,7 @@
   import { api, on } from './lib/api'
   import { startInput } from './lib/input'
   import { watchDownloads } from './lib/downloads.svelte'
+  import { watchTasks } from './lib/activity.svelte'
   import { focusDefault, setReducedMotion } from './lib/nav'
   import { configure, pauseMusic, play } from './lib/sound'
   import { app, applyBoot, isKids, resetTo, screen, toast } from './lib/state.svelte'
@@ -29,6 +31,7 @@
   import ProfileEditor from './screens/ProfileEditor.svelte'
   import Welcome from './screens/Welcome.svelte'
   import You from './screens/You.svelte'
+  import Activity from './screens/Activity.svelte'
 
   const current = $derived(screen())
 
@@ -83,6 +86,7 @@
     })
     startInput(native, padsChanged)
     watchDownloads()
+    watchTasks()
     await tick()
     focusDefault()
     api.ready().catch(() => {})
@@ -148,6 +152,8 @@
       <Welcome />
     {:else if current.name === 'you'}
       <You />
+    {:else if current.name === 'activity'}
+      <Activity />
     {/if}
     </div>
   {/key}
@@ -161,6 +167,7 @@
 <PinDialog />
 <PixelWipe />
 <PowerMenu />
+<Guide />
 <Screensaver />
 
 <style>

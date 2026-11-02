@@ -8,6 +8,7 @@ import { keyAction, padAction, type Action } from './keys'
 import { current, move, type Dir } from './nav'
 import { play, unlock } from './sound'
 import { app, back, go, screen } from './state.svelte'
+import { openGuide } from './guide'
 import type { Pad, PadEvent } from './types'
 
 export type Source = 'pad' | 'key'
@@ -45,7 +46,12 @@ export function onPad(fn: (e: PadEvent) => void): () => void {
 export function dispatch(action: Action, src: Source = 'key') {
   unlock()
   if (wake()) return
-  if (app.playing?.state === 'running') return
+  // o guia abre de qualquer lugar, até por cima do jogo
+  if (action === 'guide' && !app.guide && !app.pin && !app.prompt && !app.confirm) {
+    openGuide()
+    return
+  }
+  if (app.playing?.state === 'running' && !app.guide) return
   for (let i = handlers.length - 1; i >= 0; i--) {
     if (handlers[i](action, src) === true) return
   }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { unread } from '../lib/activity.svelte'
   import { app, currentProfile, go } from '../lib/state.svelte'
   import Avatar from './Avatar.svelte'
   import Icon from './Icon.svelte'
@@ -11,6 +12,7 @@
     return () => clearInterval(t)
   })
   const me = $derived(currentProfile())
+  const news = $derived(unread())
   const clock = $derived(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
   const padLabel = $derived(
     app.pads.length === 0 ? 'Nenhum controle conectado' : `${app.pads.length} controle(s): ${app.pads.map((p) => p.name).join(', ')}`,
@@ -27,8 +29,9 @@
       </button>
       {#if me}
         <!-- o avatar abre "Você": perfil, configurações, estatísticas, energia -->
-        <button class="profile-btn" data-nav aria-label={`Você: ${me.name} (perfil e configurações)`} onclick={() => go({ name: 'you' })}>
+        <button class="profile-btn" data-nav aria-label={`Você: ${me.name} (perfil e configurações)${news ? `, ${news} aviso${news === 1 ? '' : 's'} novo${news === 1 ? '' : 's'}` : ''}`} onclick={() => go({ name: 'you' })}>
           <Avatar avatar={me.avatar} color={me.color} size="2.1rem" />
+          {#if news}<span class="dot" aria-hidden="true"></span>{/if}
         </button>
       {/if}
     {/if}
@@ -41,7 +44,17 @@
 </header>
 
 <style>
+  .dot {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    width: 0.8rem;
+    height: 0.8rem;
+    background: var(--focus);
+    box-shadow: 0 0 8px var(--focus);
+  }
   .profile-btn {
+    position: relative;
     padding: 0;
     background: none;
     border: 3px solid transparent;

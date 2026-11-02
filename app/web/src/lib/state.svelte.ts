@@ -14,6 +14,7 @@ export type Screen =
   | { name: 'profile'; id?: string; setup?: boolean; suggest?: string }
   | { name: 'welcome' }
   | { name: 'you' }
+  | { name: 'activity' }
 
 export type SettingsTab = 'library' | 'server' | 'storage' | 'controls' | 'a11y' | 'about'
 
@@ -21,6 +22,17 @@ export interface Toast {
   id: number
   text: string
   kind: 'info' | 'ok' | 'error'
+}
+
+/** Aviso guardado na central (os toasts somem; isto fica). */
+export interface Notice {
+  id: number
+  text: string
+  kind: Toast['kind']
+  at: number
+  read: boolean
+  group: string // avisos do mesmo grupo seguidos viram um só ("3 avisos de download")
+  count: number
 }
 
 export interface Confirm {
@@ -63,6 +75,8 @@ export const app = $state({
   stack: [{ name: 'home' }] as Screen[],
   playing: null as GameEvent | null,
   toasts: [] as Toast[],
+  notices: [] as Notice[],
+  guide: false,
   confirm: null as Confirm | null,
   prompt: null as Prompt | null,
   pin: null as PinAsk | null,
@@ -108,13 +122,25 @@ export function back(): boolean {
 }
 
 let nextToast = 1
-export function toast(text: string, kind: Toast['kind'] = 'info', ms = 5000) {
+export function toast(text: string, kind: Toast['kind'] = 'info', ms = 5000, group = '') {
   const id = nextToast++
   app.toasts.push({ id, text, kind })
+  notice(id, text, kind, group)
   setTimeout(() => {
     const i = app.toasts.findIndex((t) => t.id === id)
     if (i >= 0) app.toasts.splice(i, 1)
   }, ms)
+}
+
+// guarda na central; aviso do mesmo grupo logo em seguida (10 min) junta
+function notice(id: number, text: string, kind: Toast['kind'], group: string) {
+  const top = app.notices[0]
+  if (group && top && top.group === group && !top.read && Date.now() - top.at < 600_000) {
+    Object.assign(top, { text, kind: top.kind === 'error' ? 'error' : kind, at: Date.now(), count: top.count + 1 })
+    return
+  }
+  app.notices.unshift({ id, text, kind, at: Date.now(), read: false, group, count: 1 })
+  app.notices.splice(50)
 }
 
 export function confirm(text: string, ok = 'Confirmar', danger = false): Promise<boolean> {
