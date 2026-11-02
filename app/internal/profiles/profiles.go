@@ -47,13 +47,17 @@ var (
 
 // Profile é um perfil gravado. PIN guarda sal e hash, nunca o número.
 type Profile struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Avatar  string `json:"avatar"`
-	Color   string `json:"color"`
-	Kids    bool   `json:"kids"`
-	PIN     string `json:"pin,omitempty"`
-	Created int64  `json:"created"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
+	Color  string `json:"color"`
+	Kids   bool   `json:"kids"`
+	// DailyMinutes e Bedtime só valem no perfil infantil: minutos de jogo por
+	// dia (0 = sem limite) e hora de dormir "HH:MM" (vazio = sem).
+	DailyMinutes int    `json:"dailyMinutes,omitempty"`
+	Bedtime      string `json:"bedtime,omitempty"`
+	PIN          string `json:"pin,omitempty"`
+	Created      int64  `json:"created"`
 	// New: o principal criado sozinho na primeira vez, ainda sem nome e
 	// avatar escolhidos (a interface abre a configuração do perfil).
 	New bool `json:"new,omitempty"`
@@ -68,10 +72,14 @@ type View struct {
 	Kids   bool   `json:"kids"`
 	HasPIN bool   `json:"hasPIN"`
 	Main   bool   `json:"main"`
+
+	DailyMinutes int    `json:"dailyMinutes"`
+	Bedtime      string `json:"bedtime"`
 }
 
 func (p Profile) View() View {
-	return View{ID: p.ID, Name: p.Name, Avatar: p.Avatar, Color: p.Color, Kids: p.Kids, HasPIN: p.PIN != "", Main: p.ID == Main}
+	return View{ID: p.ID, Name: p.Name, Avatar: p.Avatar, Color: p.Color, Kids: p.Kids, HasPIN: p.PIN != "", Main: p.ID == Main,
+		DailyMinutes: p.DailyMinutes, Bedtime: p.Bedtime}
 }
 
 // Store lê e grava profiles.json na pasta de dados.
@@ -216,6 +224,26 @@ func (s *Store) SetKids(id string, kids bool) (Profile, error) {
 			return errors.New("o perfil principal não pode ser infantil")
 		}
 		p.Kids = kids
+		return nil
+	})
+}
+
+// MaxDailyMinutes: o maior limite por dia (12 h).
+const MaxDailyMinutes = 12 * 60
+
+// SetLimits define o tempo por dia (0 = sem limite) e a hora de dormir
+// ("HH:MM", vazio = sem) do perfil.
+func (s *Store) SetLimits(id string, minutes int, bedtime string) (Profile, error) {
+	if minutes < 0 || minutes > MaxDailyMinutes {
+		return Profile{}, fmt.Errorf("o limite por dia vai de 0 a %d minutos", MaxDailyMinutes)
+	}
+	if bedtime != "" {
+		if _, err := time.Parse("15:04", bedtime); err != nil || len(bedtime) != 5 {
+			return Profile{}, errors.New("hora de dormir no formato HH:MM")
+		}
+	}
+	return s.change(id, func(p *Profile) error {
+		p.DailyMinutes, p.Bedtime = minutes, bedtime
 		return nil
 	})
 }

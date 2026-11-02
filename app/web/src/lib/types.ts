@@ -446,6 +446,24 @@ export interface Profile {
   kids: boolean
   hasPIN: boolean
   main: boolean
+  dailyMinutes: number // perfil infantil: minutos por dia (0 = sem limite)
+  bedtime: string // "HH:MM" ("" = sem hora de dormir)
+}
+
+/** Tempo de jogo do perfil infantil hoje. */
+export interface KidsTimeInfo {
+  limited: boolean
+  minutesLeft: number
+  bedtime: string
+  playedToday: number
+  reason: string // por que não dá pra jogar ("" = dá)
+}
+
+/** Aviso do vigia do perfil infantil (evento "limit"). */
+export interface LimitEvent {
+  game: string
+  minutesLeft: number
+  message: string
 }
 
 export interface ProfileState {

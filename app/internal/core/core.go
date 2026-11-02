@@ -164,6 +164,8 @@ type Options struct {
 	RemotePlay remoteplay.Backend
 	// Update: atualização automática. Zero = não olha sozinho (testes).
 	Update UpdateOptions
+	// Now: relógio (testes do limite infantil). Vazio = time.Now.
+	Now func() time.Time
 }
 
 type entry struct {
@@ -532,6 +534,9 @@ func (s *Service) Play(id, stateID string) error {
 	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()
+	if _, reason, _ := s.kidsLeft(u); reason != nil {
+		return reason
+	}
 	spec := s.launchSpec()
 	if spec.Bin == "" {
 		prepareEmulator(sys.Emulator, s.saveDirs())
@@ -574,7 +579,7 @@ func (s *Service) Play(id, stateID string) error {
 	s.mu.Lock()
 	name := s.view(e, settings.State{}).Name
 	s.mu.Unlock()
-	started := time.Now()
+	started := s.now()
 	s.opt.Emitter.Emit("game", GameEvent{State: "running", ID: id, Name: name})
 	s.opt.Hooks.Run(hooks.GameStart, g.Launch, name, sys.Slug)
 	// A janela só some depois que o emulador teve tempo de abrir: enquanto
@@ -592,8 +597,12 @@ func (s *Service) Play(id, stateID string) error {
 	}()
 	gctx, stop := context.WithCancel(context.Background())
 	s.mu.Lock()
-	s.game = &gameRun{id: id, emulator: sys.Emulator, stop: stop, started: started}
+	run := &gameRun{id: id, emulator: sys.Emulator, stop: stop, started: started, user: u}
+	s.game = run
 	s.mu.Unlock()
+	if u.kids && u.limits.on() {
+		go s.watchKids(u, run, gctx.Done())
+	}
 	go func() {
 		defer stop()
 		res, err := launcher.Run(gctx, args, nil)

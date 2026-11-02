@@ -63,3 +63,9 @@ func SetMoveChunk(fn func(dst string)) {
 	}
 	moveChunk = fn
 }
+
+// SetClock troca o relógio do serviço (limite do perfil infantil).
+func SetClock(s *Service, now func() time.Time) { s.opt.Now = now }
+
+// SetKidsTimers encurta o vigia do perfil infantil.
+func SetKidsTimers(tick, warn time.Duration) { kidsTick, kidsWarn = tick, warn }

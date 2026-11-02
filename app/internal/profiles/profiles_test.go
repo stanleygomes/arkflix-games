@@ -104,3 +104,27 @@ func TestLimit(t *testing.T) {
 		t.Fatal("limite de perfis")
 	}
 }
+
+func TestSetLimits(t *testing.T) {
+	dir := t.TempDir()
+	s := &profiles.Store{Dir: dir}
+	p, err := s.Create("Nina", "cat", profiles.Colors[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []struct {
+		min int
+		bed string
+	}{{-1, ""}, {profiles.MaxDailyMinutes + 1, ""}, {30, "25:00"}, {30, "9:00"}, {30, "noite"}} {
+		if _, err := s.SetLimits(p.ID, bad.min, bad.bed); err == nil {
+			t.Errorf("limite inválido aceito: %+v", bad)
+		}
+	}
+	if _, err := s.SetLimits(p.ID, 60, "21:00"); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := (&profiles.Store{Dir: dir}).Get(p.ID)
+	if v := got.View(); v.DailyMinutes != 60 || v.Bedtime != "21:00" {
+		t.Fatalf("limites não persistiram: %+v", v)
+	}
+}

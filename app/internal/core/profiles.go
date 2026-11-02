@@ -24,6 +24,7 @@ type user struct {
 	lists  *lists.Store
 	inputs input.Store
 	kids   bool           // perfil infantil: só jogos liberados, nada de configurar
+	limits limits         // tempo por dia e hora de dormir (só infantil)
 	plays  map[string]int // mexido só com Service.mu
 }
 
@@ -81,6 +82,7 @@ func (s *Service) loadUser(id string) (*user, error) {
 	}
 	u := &user{
 		id: id, dir: dir, store: store, kids: p.Kids,
+		limits: limits{daily: p.DailyMinutes, bedtime: p.Bedtime},
 		hist:   &history.Log{Path: filepath.Join(dir, "sessions.jsonl"), MinPlay: s.opt.MinPlay},
 		lists:  &lists.Store{Path: filepath.Join(dir, "lists.json")},
 		inputs: input.Store{Dir: dir},
