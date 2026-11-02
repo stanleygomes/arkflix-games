@@ -5,6 +5,7 @@
   import HeroVideo from '../components/HeroVideo.svelte'
   import Icon from '../components/Icon.svelte'
   import TopBar from '../components/TopBar.svelte'
+  import ConsoleIcon from '../components/ConsoleIcon.svelte'
   import { api } from '../lib/api'
   import { pushHandler } from '../lib/input'
   import { current, focusEl } from '../lib/nav'
@@ -219,26 +220,27 @@
     <div class="backdrop" in:shade style:background-image={hero ? `url("${hero}")` : 'none'} aria-hidden="true"></div>
   {/key}
   <HeroVideo game={selected} />
-  <TopBar>
-    <nav class="tabs" aria-label="Consoles" use:indicator={app.homeTab}>
-      {#each tabs as t (t.slug)}
-        <button
-          class="tab pixel"
-          class:collection={t.kind === 'collection' || t.kind === 'list'}
-          class:first-system={t.kind === 'system' && tabs.find((x) => x.kind === 'system') === t}
-          data-nav
-          data-tab={t.slug}
-          data-nav-group="tabs"
-          data-nav-default={t.slug === app.homeTab ? '' : undefined}
-          aria-current={t.slug === app.homeTab ? 'page' : undefined}
-          onfocus={() => selectTab(t.slug)}
-          onclick={() => selectTab(t.slug)}
-        >
-          {t.short}{#if t.name !== t.short}<span class="sr-only"> ({t.name})</span>{/if}
-        </button>
-      {/each}
-    </nav>
-  </TopBar>
+  <TopBar />
+  <!-- consoles como no PS5: blocos com o desenho de cada um; o escolhido cresce e mostra o nome -->
+  <nav class="tabs" aria-label="Consoles" use:indicator={app.homeTab}>
+    {#each tabs as t (t.slug)}
+      <button
+        class="tab"
+        class:first-system={t.kind === 'system' && tabs.find((x) => x.kind === 'system') === t}
+        data-nav
+        data-tab={t.slug}
+        data-nav-group="tabs"
+        data-nav-default={t.slug === app.homeTab ? '' : undefined}
+        aria-current={t.slug === app.homeTab ? 'page' : undefined}
+        onfocus={() => selectTab(t.slug)}
+        onclick={() => selectTab(t.slug)}
+      >
+        <span class="sr-only">{t.short}{#if t.name !== t.short} ({t.name}){/if}</span>
+        <ConsoleIcon slug={t.slug} size={t.slug === app.homeTab ? '4.2rem' : '3rem'} />
+        {#if t.slug === app.homeTab}<span class="caption" aria-hidden="true">{t.name}</span>{/if}
+      </button>
+    {/each}
+  </nav>
 
   <main class="content" aria-labelledby="hero-title">
     {#if visible.length}
@@ -396,27 +398,26 @@
   .tabs {
     position: relative;
     display: flex;
-    gap: 0.4rem;
+    align-items: flex-start;
+    gap: 0.9rem;
     overflow-x: auto;
     scrollbar-width: none;
-    padding: 0.5rem;
+    padding: 0.4rem 2.5rem 2.2rem;
+    min-height: 9.4rem;
   }
-  /* luz da aba ativa: desliza entre os consoles (lib/indicator.ts) */
+  /* luz do console escolhido: desliza entre os blocos (lib/indicator.ts) */
   .tabs :global(.tab-light) {
     position: absolute;
     left: 0;
     top: 0;
-    background: var(--accent);
+    border: 3px solid var(--accent);
     box-shadow: var(--glow);
     transition:
       transform 200ms steps(5),
       width 200ms steps(5),
-      background 300ms;
+      height 200ms steps(5),
+      border-color 300ms;
     pointer-events: none;
-  }
-  .tab {
-    position: relative;
-    z-index: 1;
   }
   .typing {
     animation: typing calc(var(--letters) * 28ms + 60ms) both;
@@ -430,26 +431,34 @@
     }
   }
   .tab {
-    font-size: 1.05rem;
-    color: var(--muted);
-    background: transparent;
-    border: 3px solid transparent;
-    padding: 0.4rem 0.9rem;
+    position: relative;
+    z-index: 1;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 5rem;
+    height: 5rem;
+    background: color-mix(in srgb, var(--surface) 75%, transparent);
+    border: 2px solid color-mix(in srgb, var(--text) 18%, transparent);
     cursor: pointer;
-    white-space: nowrap;
   }
-  .tab.collection {
-    font-family: var(--font-body);
-    font-weight: 700;
-    font-size: 0.95rem;
+  .tab[aria-current='page'] {
+    width: 6.8rem;
+    height: 6.8rem;
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+    border-color: transparent;
   }
   .tab.first-system {
     margin-left: 0.8rem;
-    box-shadow: -0.8rem 0 0 -0.7rem color-mix(in srgb, var(--text) 40%, transparent);
   }
-  .tab[aria-current='page'] {
-    color: var(--on-accent);
-    border-color: transparent;
+  .caption {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    white-space: nowrap;
+    font-size: 1.15rem;
+    color: #fff;
+    text-shadow: 0 0 8px var(--accent);
   }
   .hud {
     display: flex;
@@ -516,9 +525,15 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
+  /* nome do jogo como o logo no destaque do PS5: bem grande */
   .title {
-    font-size: clamp(2rem, 4.5vw, 3.6rem);
-    line-height: 1.05;
+    font-size: clamp(2.8rem, 6.5vw, 6rem);
+    line-height: 1;
+    color: #fff;
+    text-shadow:
+      0 0 14px var(--accent),
+      4px 4px 0 color-mix(in srgb, var(--accent) 70%, #000);
+    max-width: 18ch;
   }
   .meta {
     display: flex;
