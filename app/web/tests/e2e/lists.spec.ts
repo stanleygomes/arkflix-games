@@ -1,9 +1,9 @@
-import { axe, expect, goTab, open, test } from './fixtures'
+import { axe, expect, gameOption, goTab, open, test } from './fixtures'
 
 test('listas: criar pela página do jogo, ver a fileira, renomear e apagar', async ({ page, app }) => {
   await open(page, app)
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').click()
-  await page.getByRole('button', { name: /^Listas/ }).click()
+  await gameOption(page, /^Listas/)
   const picker = page.getByRole('dialog', { name: 'Listas' })
   await expect(picker).toContainText('Nenhuma lista ainda')
   await axe(page, 'seletor de listas')
@@ -19,7 +19,10 @@ test('listas: criar pela página do jogo, ver a fileira, renomear e apagar', asy
   await expect(dialog).toBeHidden()
   await expect(picker.getByRole('checkbox', { name: /Plataforma raiz/ })).toHaveAttribute('aria-checked', 'true')
   await picker.getByRole('button', { name: 'Pronto' }).click()
-  await expect(page.getByRole('button', { name: 'Listas (1)' })).toBeVisible()
+  await page.getByRole('button', { name: 'Opções', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Opções' }).getByRole('button', { name: 'Listas (1)' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog', { name: 'Opções' })).toBeHidden()
   const saved = JSON.parse(app.read(`${app.data}/lists.json`))
   expect(saved[0]).toMatchObject({ name: 'Plataforma raiz', games: [expect.any(String)] })
 
@@ -47,7 +50,7 @@ test('listas: criar pela página do jogo, ver a fileira, renomear e apagar', asy
 test('nova lista só com o controle (teclado na tela)', async ({ page, app }) => {
   await open(page, app)
   await page.locator('.shelf [data-game][aria-label^="Mega Man X"]').click()
-  await page.getByRole('button', { name: /^Listas/ }).click()
+  await gameOption(page, /^Listas/)
   await page.getByRole('button', { name: 'Nova lista' }).click()
   for (const key of ['a', 'c', 'a', 'o']) {
     await page.locator(`.osk [data-key="${key}"]`).focus()

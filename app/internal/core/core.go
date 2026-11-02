@@ -119,6 +119,7 @@ type GameView struct {
 	Manual     string   `json:"manual"`
 	Video      string   `json:"video"`
 	Favorite   bool     `json:"favorite"`
+	Hidden     bool     `json:"hidden"` // oculto pelo perfil (só a página e a lista de ocultos mostram)
 	LastPlayed int64    `json:"lastPlayed"`
 	PlayTime   int64    `json:"playTime"`
 	Plays      int      `json:"plays"`
@@ -300,7 +301,7 @@ func (s *Service) view(e entry, st settings.State) GameView {
 	g := e.game
 	v := GameView{
 		Game: g, Name: g.Title, Summary: e.info.Summary, Year: e.info.Year, Genres: e.info.Genres,
-		Players: e.info.Players, Favorite: st.Favorites[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
+		Players: e.info.Players, Favorite: st.Favorites[g.ID], Hidden: st.Hidden[g.ID], LastPlayed: st.LastPlay[g.ID], PlayTime: st.PlayTime[g.ID],
 		Plays: s.cur().plays[g.ID], HasSaves: e.hasSaves, Developer: e.info.Developer,
 		Rating: e.edit.Rating, Completed: e.edit.Completed, Broken: e.edit.Broken, Edited: !e.edit.Empty(),
 		KidsOK: e.edit.KidsOK, Remote: e.remote,
@@ -436,6 +437,31 @@ func (s *Service) SetFavorite(id string, fav bool) (GameView, error) {
 	return s.view(e, st), nil
 }
 
+// SetHidden oculta ou mostra o jogo na biblioteca do perfil (não apaga nada).
+func (s *Service) SetHidden(id string, hidden bool) (GameView, error) {
+	if err := s.adult(); err != nil {
+		return GameView{}, err
+	}
+	e, _, err := s.find(id)
+	if err != nil {
+		return GameView{}, err
+	}
+	err = s.cur().store.UpdateState(func(st *settings.State) {
+		if hidden {
+			st.Hidden[id] = true
+		} else {
+			delete(st.Hidden, id)
+		}
+	})
+	if err != nil {
+		return GameView{}, err
+	}
+	st := s.cur().store.State()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.view(e, st), nil
+}
+
 // hideDelay: quanto o app espera o emulador abrir antes de esconder a janela.
 const hideDelay = 1500 * time.Millisecond
 
@@ -499,15 +525,14 @@ func (s *Service) Play(id, stateID string) error {
 	}
 	cfg := s.opt.Store.Settings()
 	u := s.cur()
-	spec := s.opt.Emulators
+	spec := s.launchSpec()
 	if spec.Bin == "" {
 		prepareEmulator(sys.Emulator, s.saveDirs())
-		spec.Exe = map[string]string{catalog.RetroArch: cfg.Emulators.RetroArch, catalog.PPSSPP: cfg.Emulators.PPSSPP, catalog.PCSX2: cfg.Emulators.PCSX2}
-		if cfg.Emulators.Cores != "" {
-			spec.Cores = cfg.Emulators.Cores
-		}
 	}
 	spec.Fullscreen, spec.RAAppend, spec.Work = cfg.Fullscreen, append(u.raAppend(), s.guideCfg(u)...), u.dir
+	if sys.Emulator == catalog.RetroArch {
+		s.applyGameConfig(u, id, &spec)
+	}
 	args, err := launcher.Command(sys, g.Launch, spec, resume)
 	if err != nil {
 		return err

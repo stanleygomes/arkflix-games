@@ -1,10 +1,10 @@
 import { join } from 'node:path'
-import { axe, expect, open, test } from './fixtures'
+import { axe, expect, gameOption, open, test } from './fixtures'
 
 test('editor de metadados: edita, valida, aparece em todo lugar e restaura', async ({ page, app }) => {
   await open(page, app)
   await page.locator('.shelf [data-game][aria-label^="Super Mario World"]').click()
-  await page.getByRole('button', { name: 'Editar' }).click()
+  await gameOption(page, 'Editar informações')
   await expect(page.getByRole('heading', { name: 'Editar: Super Mario World' })).toBeVisible()
   const nameField = page.getByRole('button', { name: /^Nome Super Mario World automático/ })
   await expect(nameField).toBeFocused()
@@ -51,7 +51,7 @@ test('editor de metadados: edita, valida, aparece em todo lugar e restaura', asy
   // restaurar só o nome, depois tudo
   await page.keyboard.press('Escape')
   await page.locator('.shelf [data-game][aria-label^="SMW clássico"]').first().click()
-  await page.getByRole('button', { name: 'Editar' }).click()
+  await gameOption(page, 'Editar informações')
   await page.getByRole('button', { name: 'Restaurar nome automático' }).click()
   await expect(page.getByRole('button', { name: /^Nome Super Mario World automático/ })).toBeVisible()
   await page.getByRole('button', { name: 'Restaurar tudo' }).click()

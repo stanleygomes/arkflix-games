@@ -179,6 +179,7 @@ type State struct {
 	LastPlay  map[string]int64 `json:"lastPlay"`
 	PlayTime  map[string]int64 `json:"playTime"`
 	Seen      map[string]int64 `json:"seen"`
+	Hidden    map[string]bool  `json:"hidden"` // fora do Início, consoles e busca
 }
 
 // Store lê e grava os dois arquivos com escrita atômica (tmp + rename).
@@ -219,6 +220,9 @@ func (s *State) init() {
 	}
 	if s.Seen == nil {
 		s.Seen = map[string]int64{}
+	}
+	if s.Hidden == nil {
+		s.Hidden = map[string]bool{}
 	}
 }
 
@@ -289,6 +293,7 @@ func (s *Store) State() State {
 		LastPlay:  maps.Clone(s.state.LastPlay),
 		PlayTime:  maps.Clone(s.state.PlayTime),
 		Seen:      maps.Clone(s.state.Seen),
+		Hidden:    maps.Clone(s.state.Hidden),
 	}
 }
 

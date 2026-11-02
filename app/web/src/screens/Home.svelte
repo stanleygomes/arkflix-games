@@ -16,16 +16,19 @@
   import { shade } from '../lib/motion'
   import { pickRandom, sortGames } from '../lib/library'
   import { sortOf, sourceGames, sourceTitle } from '../lib/sources'
-  import { app, currentProfile, go, isKids, system, toast } from '../lib/state.svelte'
+  import { app, currentProfile, go, isKids, shown, system, toast } from '../lib/state.svelte'
   import type { Game, GameCheevos, SaveState } from '../lib/types'
   import { ago, playTime } from '../lib/format'
+
+  // ocultos ficam fora do Início (a página do jogo ainda abre)
+  const visible = $derived(shown())
 
   // abas: só o Início e os consoles. Coleções e listas viram fileiras do Início.
   type Tab = { slug: string; short: string; name: string; kind: 'home' | 'collection' | 'list' | 'system' }
   const tabs = $derived<Tab[]>([
     { slug: 'home', short: 'Início', name: 'Início', kind: 'home' },
     ...app.systems
-      .filter((s) => app.games.some((g) => g.system === s.slug))
+      .filter((s) => visible.some((g) => g.system === s.slug))
       .map((s) => ({ slug: s.slug, short: s.short, name: s.name, kind: 'system' as const })),
   ])
 
@@ -38,29 +41,29 @@
     if (app.homeTab !== 'home') {
       const sys = system(app.homeTab)
       const games = sortGames(
-        app.games.filter((g) => g.system === app.homeTab),
+        visible.filter((g) => g.system === app.homeTab),
         sortOf(`system:${app.homeTab}`),
       )
       return [{ id: app.homeTab, title: `${sys?.name ?? ''} · ${games.length} jogo${games.length === 1 ? '' : 's'}`, games, source: `system:${app.homeTab}` }]
     }
     const out: Row[] = []
-    const recent = app.games.filter((g) => g.lastPlayed > 0).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 12)
+    const recent = visible.filter((g) => g.lastPlayed > 0).sort((a, b) => b.lastPlayed - a.lastPlayed).slice(0, 12)
     if (recent.length) out.push({ id: 'recent', title: 'Continuar jogando', games: recent, source: 'collection:recent' })
-    const favs = app.games.filter((g) => g.favorite)
+    const favs = visible.filter((g) => g.favorite)
     if (favs.length) out.push({ id: 'favorites', title: 'Favoritos', games: favs, source: 'collection:favorites' })
     for (const l of app.lists) {
       const games = sourceGames(`list:${l.id}`)
       if (games.length) out.push({ id: `list-${l.id}`, title: l.name, games, source: `list:${l.id}`, smart: !!l.rule })
     }
-    const remote = app.games.filter((g) => g.remote)
+    const remote = visible.filter((g) => g.remote)
     if (remote.length) out.push({ id: 'server', title: `No servidor · ${remote.length}`, games: remote.slice(0, 20), source: 'collection:server' })
     // a biblioteca toda, sempre por último (ou sozinha, no começo)
-    const all = sortGames(app.games, sortOf('collection:all'))
-    out.push({ id: 'all', title: `Sua biblioteca · ${app.games.length} jogo${app.games.length === 1 ? '' : 's'}`, games: all.slice(0, 30), source: 'collection:all' })
+    const all = sortGames(visible, sortOf('collection:all'))
+    out.push({ id: 'all', title: `Sua biblioteca · ${visible.length} jogo${visible.length === 1 ? '' : 's'}`, games: all.slice(0, 30), source: 'collection:all' })
     return out
   })
 
-  const selected = $derived(app.games.find((g) => g.id === app.selected) ?? rows[0]?.games[0])
+  const selected = $derived(visible.find((g) => g.id === app.selected) ?? rows[0]?.games[0])
   const selSystem = $derived(selected ? system(selected.system) : undefined)
   const canResume = $derived(!!selected && selected.lastPlayed > 0 && selSystem?.emulator === 'retroarch')
 
@@ -109,7 +112,7 @@
 
   function focusedGame(): Game | undefined {
     const id = current()?.dataset.game
-    return id ? app.games.find((g) => g.id === id) : selected
+    return id ? visible.find((g) => g.id === id) : selected
   }
 
   let lastRandom = ''
@@ -118,7 +121,7 @@
   // Surpresa: roleta rápida pelas capas e para num jogo da aba atual
   async function surprise() {
     if (spinning) return
-    const pool = app.homeTab === 'home' ? app.games : rows.flatMap((r) => r.games)
+    const pool = app.homeTab === 'home' ? visible : rows.flatMap((r) => r.games)
     const pick = pickRandom(pool, lastRandom)
     if (!pick) return
     lastRandom = pick.id
@@ -204,7 +207,7 @@
   const me = $derived(currentProfile())
   // placar de fliperama: o "recorde" é o tempo total jogado (HHH:MM)
   const hiScore = $derived.by(() => {
-    const total = app.games.reduce((sum, g) => sum + (g.playTime || 0), 0)
+    const total = visible.reduce((sum, g) => sum + (g.playTime || 0), 0)
     const h = Math.floor(total / 3600)
     const m = Math.floor((total % 3600) / 60)
     return `${String(h).padStart(3, '0')}:${String(m).padStart(2, '0')}`
@@ -238,14 +241,14 @@
   </TopBar>
 
   <main class="content" aria-labelledby="hero-title">
-    {#if app.games.length}
+    {#if visible.length}
       <div class="hud pixel" aria-label="Placar">
         <p><span>1UP</span> {(me?.name ?? 'Jogador').toUpperCase()}</p>
         <p><span>HI-SCORE</span> {hiScore}</p>
-        <p><span>JOGOS</span> {String(app.games.length).padStart(3, '0')}</p>
+        <p><span>JOGOS</span> {String(visible.length).padStart(3, '0')}</p>
       </div>
     {/if}
-    {#if app.games.length === 0}
+    {#if visible.length === 0}
       <section class="empty panel">
         <h1 class="pixel" id="hero-title">Nenhum jogo ainda</h1>
         <p class="muted">Importe ROMs ou aponte suas pastas de jogos nas configurações.</p>

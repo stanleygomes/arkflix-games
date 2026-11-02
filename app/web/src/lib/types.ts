@@ -43,6 +43,7 @@ export interface Game {
   manual?: string
   video?: string
   favorite: boolean
+  hidden?: boolean
   lastPlayed: number
   playTime: number
   plays: number
@@ -54,6 +55,27 @@ export interface Game {
   edited?: boolean
   kidsOk?: boolean
   remote?: boolean
+}
+
+/** O que apagar o jogo libera (GameSize). */
+export interface GameSizeInfo {
+  size: number
+  files: number
+  server: boolean // está no servidor: volta como "no servidor"
+}
+
+/** Configuração de um jogo no RetroArch (vazio = padrão). */
+export interface GameSettings {
+  core: string
+  image: '' | 'sharp' | 'smooth' | 'crt'
+  aspect: '' | '4:3' | 'full'
+}
+
+export interface GameConfigInfo {
+  supported: boolean
+  settings: GameSettings
+  cores: { id: string; name: string; default: boolean }[]
+  crt: boolean
 }
 
 export interface ScreensaverSettings {

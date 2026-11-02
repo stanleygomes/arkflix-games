@@ -132,3 +132,11 @@ export async function switchProfile(page: Page) {
   await page.getByRole('button', { name: /^Você: / }).click()
   await page.getByRole('button', { name: 'Trocar perfil' }).click()
 }
+
+/** Abre o menu Opções da página do jogo e escolhe um item ("Listas", "Editar informações"...). */
+export async function gameOption(page: Page, label: string | RegExp) {
+  await page.getByRole('button', { name: 'Opções', exact: true }).click()
+  const menu = page.getByRole('dialog', { name: 'Opções' })
+  await expect(menu).toBeVisible()
+  await menu.getByRole('button', { name: label }).click()
+}

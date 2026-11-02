@@ -8,16 +8,16 @@
   import { search } from '../lib/library'
   import { focusEl } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
-  import { app, go, isKids } from '../lib/state.svelte'
+  import { app, go, isKids, shown } from '../lib/state.svelte'
   import { shortcuts, type Shortcut } from '../lib/shortcuts'
   import Icon from '../components/Icon.svelte'
 
   let query = $state('')
-  const results = $derived(search(app.games, query))
+  const results = $derived(search(shown(), query))
   const extra = $derived(
     shortcuts(query, {
       systems: app.systems,
-      withGames: new Set(app.games.map((g) => g.system)),
+      withGames: new Set(shown().map((g) => g.system)),
       lists: app.lists,
       kids: isKids(),
       desktop: app.mode === 'desktop',

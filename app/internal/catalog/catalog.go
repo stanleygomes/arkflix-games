@@ -124,6 +124,43 @@ var aliases = map[string]string{
 	"playstation": "psx", "fbneo": "arcade", "mame": "arcade", "ds": "nds",
 }
 
+// coreAlternatives: cores do RetroArch que também rodam o console (o padrão
+// do System.Core vem primeiro). A configuração por jogo escolhe entre eles.
+var coreAlternatives = map[string][]string{
+	"nes":     {"mesen", "nestopia", "fceumm"},
+	"snes":    {"snes9x", "bsnes"},
+	"genesis": {"genesis_plus_gx", "picodrive"},
+	"gbc":     {"gambatte", "sameboy", "mgba"},
+	"n64":     {"mupen64plus_next", "parallel_n64"},
+	"psx":     {"mednafen_psx", "swanstation", "pcsx_rearmed"},
+	"arcade":  {"fbneo", "mame2003_plus"},
+}
+
+// CoreNames: nome de cada core como o RetroArch mostra.
+var CoreNames = map[string]string{
+	"mesen": "Mesen", "nestopia": "Nestopia UE", "fceumm": "FCEUmm",
+	"snes9x": "Snes9x", "bsnes": "bsnes",
+	"genesis_plus_gx": "Genesis Plus GX", "picodrive": "PicoDrive",
+	"gambatte": "Gambatte", "sameboy": "SameBoy", "mgba": "mGBA",
+	"mupen64plus_next": "Mupen64Plus-Next", "parallel_n64": "ParaLLEl N64",
+	"mednafen_psx": "Beetle PSX", "swanstation": "SwanStation", "pcsx_rearmed": "PCSX ReARMed",
+	"fbneo": "FinalBurn Neo", "mame2003_plus": "MAME 2003-Plus", "melondsds": "melonDS DS",
+}
+
+// Cores lista os cores que rodam o console, o padrão primeiro (vazio fora do RetroArch).
+func (s System) Cores() []string {
+	if s.Emulator != RetroArch || s.Core == "" {
+		return nil
+	}
+	out := []string{s.Core}
+	for _, c := range coreAlternatives[s.Slug] {
+		if c != s.Core {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
 // ByExtension lista os consoles que aceitam a extensão do arquivo.
 // Extensões ambíguas (.iso, .chd, .zip) devolvem mais de um ou nenhum certo:
 // quem chama decide olhando o conteúdo.

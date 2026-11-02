@@ -4,7 +4,7 @@
   // capas da coleção em estilo attract mode de fliperama. Qualquer entrada sai.
   import { idle, idleFor, sleep, watchPointer } from '../lib/idle.svelte'
   import { choose, newGame, rng, step, stuck, type Snake } from '../lib/snake'
-  import { app, system } from '../lib/state.svelte'
+  import { app, shown as visible, system } from '../lib/state.svelte'
   import type { Game } from '../lib/types'
 
   const W = 32
@@ -103,7 +103,7 @@
   })
 
   // ---- vitrine
-  const covers = $derived(app.games.filter((g) => g.cover))
+  const covers = $derived(visible().filter((g) => g.cover))
   let shown = $state<Game | null>(null)
   $effect(() => {
     if (!idle.active || resting || cfg?.mode !== 'showcase') return

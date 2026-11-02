@@ -94,3 +94,21 @@ func TestByExtension(t *testing.T) {
 		t.Errorf(".iso devia ser ambíguo (psp, ps2): %v", got)
 	}
 }
+
+func TestCores(t *testing.T) {
+	snes, _ := catalog.Find("snes")
+	if got := snes.Cores(); len(got) != 2 || got[0] != "snes9x" || got[1] != "bsnes" {
+		t.Fatalf("snes: %v", got)
+	}
+	psp, _ := catalog.Find("psp")
+	if psp.Cores() != nil {
+		t.Fatal("PSP não é RetroArch")
+	}
+	for _, s := range catalog.Systems {
+		for _, c := range s.Cores() {
+			if catalog.CoreNames[c] == "" {
+				t.Errorf("core %s sem nome", c)
+			}
+		}
+	}
+}
