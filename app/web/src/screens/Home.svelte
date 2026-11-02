@@ -324,7 +324,7 @@
       { button: 'r1', label: 'Próximo console' },
       { button: 'select', label: 'Buscar' },
       { button: 'r3', label: 'Surpresa' },
-      { button: 'start', label: 'Configurações' },
+      ...(isKids() ? [] : [{ button: 'start', label: 'Configurações' }]),
     ]}
   />
 </div>
@@ -436,8 +436,9 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 2rem;
-    flex: 1;
-    min-height: 0;
+    /* nunca encolhe abaixo do destaque: com várias fileiras, a tela rola
+       (o foco leva a fileira até a vista) em vez de uma cobrir a outra */
+    flex: 1 0 auto;
   }
   .hero-art {
     width: clamp(10rem, 18vw, 17rem);
