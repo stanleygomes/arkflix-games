@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   // Servidor RomM: entrar (endereço, usuário e senha), ver o estado, atualizar
   // a lista e sair. A senha vai direto pro login; o app guarda só um token.
   import Icon from '../../components/Icon.svelte'
@@ -26,9 +27,10 @@
   })
 
   // a lista nova chega pelo evento "library"
+  // (sem ler o info aqui dentro: o load muda o info e o efeito rodaria em loop)
   $effect(() => {
     void app.games
-    if (info?.connected) load()
+    if (untrack(() => info?.connected)) load()
   })
 
   async function ask(title: string, value: string, max = 120) {
