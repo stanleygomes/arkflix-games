@@ -153,6 +153,10 @@ func TestKidsProfile(t *testing.T) {
 	blocked["BluetoothForget"] = h.svc.BluetoothForget(bt.FakeEightBitDo)
 	blocked["BluetoothPower"] = h.svc.BluetoothPower(false)
 	blocked["OpenBluetoothSettings"] = h.svc.OpenBluetoothSettings()
+	blocked["InstallRemotePlay"] = h.svc.InstallRemotePlay()
+	blocked["StartRemotePlay"] = h.svc.StartRemotePlay()
+	blocked["StopRemotePlay"] = h.svc.StopRemotePlay()
+	blocked["OpenRemotePlayPage"] = h.svc.OpenRemotePlayPage()
 	for name, err := range blocked {
 		if err != core.ErrKids {
 			t.Errorf("%s devia ser bloqueado no perfil infantil: %v", name, err)

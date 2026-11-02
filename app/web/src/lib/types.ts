@@ -179,6 +179,22 @@ export interface BTInfo {
   devices: BTDevice[]
 }
 
+// Jogar em outro aparelho: o Sunshine desta máquina (o Moonlight recebe)
+export interface RemotePlayInfo {
+  supported: boolean
+  platform: string
+  autoInstall: boolean
+  installed: boolean
+  running: boolean
+  started: boolean
+  url: string
+  pairUrl: string
+  download?: string
+  lanIP: string
+  reason?: string
+  busy: boolean
+}
+
 export interface CheevosInfo {
   connected: boolean
   user: string

@@ -30,6 +30,7 @@ import (
 	"github.com/stanleygomes/arkflix-games/app/internal/gamepad"
 	"github.com/stanleygomes/arkflix-games/app/internal/httpapi"
 	"github.com/stanleygomes/arkflix-games/app/internal/launcher"
+	"github.com/stanleygomes/arkflix-games/app/internal/remoteplay"
 	"github.com/stanleygomes/arkflix-games/app/internal/settings"
 )
 
@@ -150,7 +151,7 @@ func main() {
 	if f.web != "" {
 		broker := httpapi.NewBroker()
 		svc, err := core.New(core.Options{Version: version, Mode: "web", Store: store, Pads: pads, Emitter: broker, MinPlay: minPlay(f), Cache: cacheDir(f), Emulators: emu,
-			BrowserPads: f.fixture != "" && os.Getenv("ARKFLIX_FIXTURE_BROWSER_PADS") == "1", Bluetooth: bluetooth(f), Update: fixtureUpdate(f)})
+			BrowserPads: f.fixture != "" && os.Getenv("ARKFLIX_FIXTURE_BROWSER_PADS") == "1", Bluetooth: bluetooth(f), RemotePlay: remotePlay(f), Update: fixtureUpdate(f)})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -184,6 +185,14 @@ func bluetooth(f flags) bt.Backend {
 		return bt.NewFake()
 	}
 	return bt.New()
+}
+
+// remotePlay: no ambiente falso, Sunshine de mentira (nada instala nem roda).
+func remotePlay(f flags) remoteplay.Backend {
+	if f.fixture != "" {
+		return remoteplay.NewFake()
+	}
+	return remoteplay.New()
 }
 
 // cacheDir: capas baixadas e bancos do libretro (~/.cache/arkflix-games no

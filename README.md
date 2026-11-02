@@ -43,6 +43,8 @@ os emuladores vêm prontos.
 - Central de downloads e avisos, com cancelar e histórico.
 - Conquistas do RetroAchievements por perfil, com troféus na página do jogo.
 - Pareamento de controle Bluetooth pela tela (Linux).
+- Jogar em outro aparelho da casa: instala e liga o Sunshine (o Moonlight
+  recebe na TV ou no celular) e mostra o IP e como parear.
 - Emuladores instalados e atualizados pelo próprio app, nos três sistemas.
 - Atualização automática do app pela última release.
 - Busca global (jogos, consoles, listas e configurações), sons de interface,
