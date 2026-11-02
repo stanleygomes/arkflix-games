@@ -14,6 +14,9 @@
   import LibraryPanel from './settings/LibraryPanel.svelte'
   import ServerPanel from './settings/ServerPanel.svelte'
   import StoragePanel from './settings/StoragePanel.svelte'
+  import EmulatorsPanel from './settings/EmulatorsPanel.svelte'
+  import BluetoothPanel from './settings/BluetoothPanel.svelte'
+  import CheevosPanel from './settings/CheevosPanel.svelte'
 
   let { tab = 'controls' }: { tab?: SettingsTab } = $props()
   let active = $state<SettingsTab>('controls')
@@ -25,9 +28,12 @@
   const tabs: { id: SettingsTab; label: string; icon: IconName; group: string }[] = [
     { id: 'controls', label: 'Controles', icon: 'pad', group: 'Só pra você' },
     { id: 'a11y', label: 'Acessibilidade', icon: 'sliders', group: 'Só pra você' },
+    { id: 'cheevos', label: 'Conquistas', icon: 'trophy', group: 'Só pra você' },
     { id: 'library', label: 'Biblioteca', icon: 'folder', group: 'Deste console' },
     { id: 'server', label: 'Servidor', icon: 'cloud', group: 'Deste console' },
     { id: 'storage', label: 'Armazenamento', icon: 'disc', group: 'Deste console' },
+    { id: 'emulators', label: 'Emuladores', icon: 'pad', group: 'Deste console' },
+    { id: 'bluetooth', label: 'Bluetooth', icon: 'bluetooth', group: 'Deste console' },
     { id: 'about', label: 'Sobre', icon: 'info', group: 'Deste console' },
   ]
 
@@ -96,6 +102,12 @@
         <ServerPanel />
       {:else if active === 'storage'}
         <StoragePanel />
+      {:else if active === 'emulators'}
+        <EmulatorsPanel />
+      {:else if active === 'bluetooth'}
+        <BluetoothPanel />
+      {:else if active === 'cheevos'}
+        <CheevosPanel />
       {:else if active === 'controls'}
         <ControlsPanel />
       {:else if active === 'a11y'}

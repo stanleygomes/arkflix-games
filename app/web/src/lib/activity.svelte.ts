@@ -18,7 +18,7 @@ export function running(): Task[] {
 
 /** O que dá pra cancelar: downloads e instalações. */
 export function cancellable(t: TaskEvent): boolean {
-  return t.state === 'running' && /^(download|emulators|update):/.test(t.id + ':')
+  return t.state === 'running' && /^(download|emulators):/.test(t.id + ':')
 }
 
 let started = false

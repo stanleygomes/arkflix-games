@@ -1,8 +1,42 @@
 <script lang="ts">
   import Glyph from '../../components/Glyph.svelte'
-  import { api } from '../../lib/api'
-  import { app, glyphFamily } from '../../lib/state.svelte'
-  import type { ScriptsInfo } from '../../lib/types'
+  import Icon from '../../components/Icon.svelte'
+  import { api, on } from '../../lib/api'
+  import { bytes } from '../../lib/format'
+  import { app, glyphFamily, toast } from '../../lib/state.svelte'
+  import type { ScriptsInfo, UpdateInfo } from '../../lib/types'
+  import { saveSoon } from './save.svelte'
+
+  let update = $state<UpdateInfo | null>(null)
+  let checking = $state(false)
+  $effect(() => {
+    api.updateStatus().then((u) => (update = u)).catch(() => {})
+    return on<UpdateInfo>('update', (u) => (update = u))
+  })
+
+  async function check() {
+    checking = true
+    try {
+      update = await api.checkUpdate()
+      if (!update.available) toast(`Você está na versão mais nova (${update.current})`, 'ok', 3000)
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    } finally {
+      checking = false
+    }
+  }
+
+  async function download() {
+    try {
+      await api.downloadUpdate()
+    } catch (err) {
+      toast((err as Error).message, 'error')
+    }
+  }
+
+  function toggleAuto() {
+    if (app.settings) saveSoon({ ...app.settings, autoUpdate: !app.settings.autoUpdate })
+  }
 
   const family = $derived(glyphFamily())
   let scripts = $state<ScriptsInfo | null>(null)
@@ -23,6 +57,31 @@
     <dd>{app.games.length} em {app.systems.filter((s) => app.games.some((g) => g.system === s.slug)).length} consoles</dd>
   </dl>
 
+  <section class="update" aria-labelledby="update-title">
+    <h3 id="update-title">Atualização</h3>
+    {#if update?.state === 'ready'}
+      <p class="status"><Icon name="check" /> A versão <strong>{update.latest}</strong> já baixou: instala quando você fechar o app.</p>
+    {:else if update?.state === 'downloading'}
+      <p>Baixando a versão {update.latest}… {Math.round(update.progress * 100)}%</p>
+      <div class="energy" role="progressbar" aria-label="Baixando atualização" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(update.progress * 100)}>
+        <span style:width={`${Math.floor(update.progress * 20) * 5}%`}></span>
+      </div>
+    {:else if update?.available}
+      <p class="status"><Icon name="download" /> Versão nova: <strong>{update.latest}</strong>{update.size ? ` (${bytes(update.size)})` : ''}.</p>
+      {#if update.notes}<pre class="notes">{update.notes}</pre>{/if}
+      {#if update.error}<p class="error" role="alert">{update.error}</p>{/if}
+      <button class="btn primary" data-nav onclick={download}><Icon name="download" /> Baixar agora</button>
+    {:else}
+      <p class="muted">{update?.error || 'Nenhuma versão nova encontrada ainda.'}</p>
+    {/if}
+    <div class="actions">
+      <button class="btn" data-nav disabled={checking || update?.state === 'downloading'} onclick={check}><Icon name="resume" /> {checking ? 'Procurando…' : 'Procurar atualização'}</button>
+      {#if app.settings}
+        <button class="btn" data-nav role="switch" aria-checked={app.settings.autoUpdate} onclick={toggleAuto}>Atualizar sozinho</button>
+      {/if}
+    </div>
+  </section>
+
   <h3>Na interface</h3>
   <ul class="keys">
     <li><Glyph button="south" {family} /> abrir / confirmar</li>
@@ -30,7 +89,8 @@
     <li><Glyph button="north" {family} /> favorito (ou apagar o ponto salvo em foco)</li>
     <li><Glyph button="west" {family} /> detalhes do jogo</li>
     <li><Glyph button="l1" {family} /> <Glyph button="r1" {family} /> trocar console / seção</li>
-    <li><Glyph button="start" {family} /> configurações</li>
+    <li><Glyph button="start" {family} /> você e configurações</li>
+    <li><Glyph button="home" {family} /> guia rápido (até com o jogo aberto) · G</li>
     <li>Teclado: setas, Enter, Esc, F (favorito), I (detalhes), Q/E (seções), F11 (tela cheia)</li>
   </ul>
 
@@ -67,6 +127,37 @@
 </div>
 
 <style>
+  .update {
+    display: grid;
+    gap: 0.7rem;
+    justify-items: start;
+  }
+  .update p {
+    margin: 0;
+  }
+  .status {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .notes {
+    max-height: 8rem;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .update .energy {
+    width: 100%;
+  }
+  .actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
   .panel-body {
     display: flex;
     flex-direction: column;

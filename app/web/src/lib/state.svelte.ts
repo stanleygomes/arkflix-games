@@ -16,7 +16,7 @@ export type Screen =
   | { name: 'you' }
   | { name: 'activity' }
 
-export type SettingsTab = 'library' | 'server' | 'storage' | 'controls' | 'a11y' | 'about'
+export type SettingsTab = 'library' | 'server' | 'storage' | 'emulators' | 'bluetooth' | 'cheevos' | 'controls' | 'a11y' | 'about'
 
 export interface Toast {
   id: number

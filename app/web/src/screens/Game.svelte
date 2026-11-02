@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte'
+  import Cheevos from '../components/Cheevos.svelte'
   import GameArt from '../components/GameArt.svelte'
   import ListPicker from '../components/ListPicker.svelte'
   import MediaViewer from '../components/MediaViewer.svelte'
@@ -193,6 +194,8 @@
             </ul>
           </section>
         {/if}
+
+        {#if !g.remote}<Cheevos {id} />{/if}
 
         <section class="saves" aria-labelledby="saves-title">
           <h2 id="saves-title">Pontos salvos</h2>

@@ -15,12 +15,16 @@
   import { focusDefault } from '../lib/nav'
   import { applyPalette, highContrastPalette, homePalette } from '../lib/palette'
   import { app, currentProfile, go, isKids, type Screen } from '../lib/state.svelte'
-  import type { RemoteInfo, StorageInfo } from '../lib/types'
+  import type { BTInfo, CheevosInfo, EmulatorsInfo, RemoteInfo, StorageInfo, UpdateInfo } from '../lib/types'
 
   const me = $derived(currentProfile())
   const kids = $derived(isKids())
   let remote = $state<RemoteInfo | null>(null)
   let storage = $state<StorageInfo | null>(null)
+  let emus = $state<EmulatorsInfo | null>(null)
+  let blue = $state<BTInfo | null>(null)
+  let cheevos = $state<CheevosInfo | null>(null)
+  let update = $state<UpdateInfo | null>(null)
 
   $effect(() => {
     applyPalette(app.settings?.a11y.highContrast ? highContrastPalette : homePalette)
@@ -28,11 +32,21 @@
     if (isKids()) return
     api.remoteStatus().then((r) => (remote = r)).catch(() => {})
     api.storage().then((s) => (storage = s)).catch(() => {})
+    api.emulatorStatus().then((e) => (emus = e)).catch(() => {})
+    api.btStatus().then((b) => (blue = b)).catch(() => {})
+    api.cheevosStatus().then((c) => (cheevos = c)).catch(() => {})
+    api.updateStatus().then((u) => (update = u)).catch(() => {})
   })
 
   const hours = $derived(Math.floor(app.games.reduce((t, g) => t + (g.playTime || 0), 0) / 3600))
   const played = $derived(app.games.filter((g) => g.lastPlayed > 0).length)
   const favs = $derived(app.games.filter((g) => g.favorite).length)
+
+  function emuSummary(): string {
+    if (!emus) return '…'
+    const miss = emus.emulators.filter((e) => !e.installed).length + emus.cores.filter((c) => !c.installed).length
+    return miss ? `faltam ${miss} (instalar)` : 'tudo instalado'
+  }
 
   type Item = { id: string; label: string; icon: IconName; value: string; open: () => void }
   const to = (s: Screen) => () => go(s)
@@ -56,6 +70,7 @@
       items.push(
         { id: 'controls', label: 'Controles', icon: 'pad', value: pad, open: to({ name: 'settings', tab: 'controls' }) },
         { id: 'a11y', label: 'Acessibilidade e som', icon: 'sliders', value: access, open: to({ name: 'settings', tab: 'a11y' }) },
+        { id: 'cheevos', label: 'Conquistas', icon: 'trophy', value: cheevos ? (cheevos.connected ? `RetroAchievements: ${cheevos.user}` : 'desligadas') : '…', open: to({ name: 'settings', tab: 'cheevos' }) },
       )
     }
     return items
@@ -70,9 +85,11 @@
       { id: 'import', label: 'Importar jogos', icon: 'plus', value: 'de qualquer pasta ou pendrive', open: to({ name: 'import' }) },
       { id: 'server', label: 'Servidor RomM', icon: 'cloud', value: remote ? (remote.connected ? `conectado · ${remote.games} jogos` : 'offline') : '…', open: to({ name: 'settings', tab: 'server' }) },
       { id: 'storage', label: 'Armazenamento', icon: 'disc', value: storage ? (storage.total > 0 ? `${bytes(storage.free)} livres de ${bytes(storage.total)}` : 'jogos: ' + bytes(storage.games)) : '…', open: to({ name: 'settings', tab: 'storage' }) },
+      { id: 'emulators', label: 'Emuladores', icon: 'pad', value: emuSummary(), open: to({ name: 'settings', tab: 'emulators' }) },
+      { id: 'bluetooth', label: 'Bluetooth', icon: 'bluetooth', value: blue ? (blue.supported ? (blue.powered ? `${blue.devices.filter((d) => d.gamepad && d.connected).length} controle(s) conectado(s)` : 'desligado') : 'pelo sistema') : '…', open: to({ name: 'settings', tab: 'bluetooth' }) },
       { id: 'profiles', label: 'Perfis da casa', icon: 'lock', value: `${app.profile?.profiles.length ?? 1} perfil${(app.profile?.profiles.length ?? 1) === 1 ? '' : 's'} · modo infantil`, open: to({ name: 'profiles' }) },
       { id: 'saver', label: 'Protetor de tela', icon: 'resume', value: saver?.enabled ? `${saver.mode === 'snake' ? 'cobrinha' : 'vitrine'} · ${saver.minutes} min` : 'desligado', open: to({ name: 'settings', tab: 'a11y' }) },
-      { id: 'about', label: 'Sobre', icon: 'info', value: `versão ${app.version}`, open: to({ name: 'settings', tab: 'about' }) },
+      { id: 'about', label: 'Sobre', icon: 'info', value: update?.state === 'ready' ? `versão ${update.latest} instala ao fechar` : update?.available ? `versão ${update.latest} disponível` : `versão ${app.version}`, open: to({ name: 'settings', tab: 'about' }) },
     ]
     if (app.mode === 'desktop') items.push({ id: 'power', label: 'Energia', icon: 'power', value: 'minimizar, tela cheia, fechar', open: () => (app.power = true) })
     return items

@@ -63,6 +63,7 @@ export interface ScreensaverSettings {
   rest: number // minutos de protetor até o descanso (0 = nunca)
 }
 
+
 export interface MediaItem {
   src: string
   caption: string
@@ -136,6 +137,91 @@ export interface RemoteInfo {
   updated: number
 }
 
+export interface EmulatorInfo {
+  id: string
+  name: string
+  installed: boolean
+  path: string
+  version: string
+}
+
+export interface CoreInfo {
+  id: string
+  systems: string[]
+  installed: boolean
+}
+
+export interface EmulatorsInfo {
+  platform: string
+  canInstall: boolean
+  reason?: string
+  emulators: EmulatorInfo[]
+  cores: CoreInfo[]
+  coresDir: string
+  busy: boolean
+}
+
+export interface BTDevice {
+  address: string
+  name: string
+  paired: boolean
+  connected: boolean
+  trusted: boolean
+  gamepad: boolean
+  battery: number // -1 = não sabe
+}
+
+export interface BTInfo {
+  supported: boolean
+  powered: boolean
+  scanning: boolean
+  reason?: string
+  devices: BTDevice[]
+}
+
+export interface CheevosInfo {
+  connected: boolean
+  user: string
+  hardcore: boolean
+  since?: number
+}
+
+export interface Cheevo {
+  id: number
+  title: string
+  description: string
+  points: number
+  badgeUrl: string
+  unlocked: boolean
+  hardcore: boolean
+}
+
+export interface GameCheevos {
+  connected: boolean
+  supported: boolean
+  reason?: string
+  raGameId: number
+  title: string
+  total: number
+  unlocked: number
+  points: number
+  pointsUnlocked: number
+  list: Cheevo[] | null
+}
+
+export interface UpdateInfo {
+  current: string
+  latest: string
+  available: boolean
+  notes: string
+  url: string
+  asset: string
+  size: number
+  state: 'idle' | 'downloading' | 'ready' | 'error'
+  progress: number
+  error?: string
+}
+
 export interface GuideInfo {
   game: string // jogo aberto ('' = nenhum)
   commands: boolean // salvar/carregar estado pelo guia
@@ -160,6 +246,7 @@ export interface Settings {
   screensaver: ScreensaverSettings
   saves: SaveDirs
   emulators: EmulatorPaths
+  autoUpdate: boolean
 }
 
 export interface Mapping {
