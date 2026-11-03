@@ -23,8 +23,8 @@
   import { ago, playTime } from '../lib/format'
 
   // ocultos ficam fora do Início (a página do jogo ainda abre). Duas visões,
-  // como o Games/Media do PS5: Biblioteca (o que está neste PC) e Loja (o que está
-  // no servidor pra baixar). Perfil infantil não vê a Loja.
+  // como o Games/Media do PS5: Biblioteca (o que está neste PC) e Catálogo (o que está
+  // no servidor pra baixar). Perfil infantil não vê o Catálogo.
   const store = $derived(app.homeView === 'store' && !isKids())
   const remoteCount = $derived(shown().filter((g) => g.remote).length)
   const visible = $derived(shown().filter((g) => (store ? g.remote : !g.remote)))
@@ -60,7 +60,7 @@
       return [{ id: app.homeTab, title: `${sys?.name ?? ''} · ${games.length} jogo${games.length === 1 ? '' : 's'}${store ? ' pra baixar' : ''}`, games, source: `${store ? 'store' : 'system'}:${app.homeTab}` }]
     }
     if (store) {
-      // Loja: tudo do servidor e uma fileira por console
+      // Catálogo: tudo do servidor e uma fileira por console
       const out: Row[] = [{ id: 'store-all', title: `No servidor · ${visible.length} jogo${visible.length === 1 ? '' : 's'}`, games: sortGames(visible, 'name').slice(0, 30), source: 'store:' }]
       for (const s of app.systems) {
         const games = sortGames(visible.filter((g) => g.system === s.slug), 'name')
@@ -244,7 +244,7 @@
       <nav class="views" aria-label="Visão">
         <button class="view" data-nav data-view="games" aria-current={!store ? 'page' : undefined} onclick={() => setView('games')}>Biblioteca</button>
         <button class="view" data-nav data-view="store" aria-current={store ? 'page' : undefined} onclick={() => setView('store')}>
-          Loja{#if remoteCount}<span class="count">{remoteCount}</span>{/if}
+          Catálogo{#if remoteCount}<span class="count">{remoteCount}</span>{/if}
         </button>
       </nav>
     {/if}
@@ -273,8 +273,8 @@
   <main class="content" aria-labelledby="hero-title">
     {#if visible.length === 0 && store}
       <section class="empty panel">
-        <h1 class="pixel" id="hero-title">Loja vazia</h1>
-        <p class="muted">A Loja mostra os jogos do seu servidor RomM que ainda não estão neste PC. Conecte o servidor (ou já baixou tudo).</p>
+        <h1 class="pixel" id="hero-title">Catálogo vazio</h1>
+        <p class="muted">O Catálogo mostra os jogos do seu servidor RomM que ainda não estão neste PC. Conecte o servidor (ou já baixou tudo).</p>
         <div class="actions">
           <button class="btn primary" data-nav data-nav-default onclick={() => go({ name: 'you', item: 'server' })}><Icon name="cloud" /> Servidor RomM</button>
           <button class="btn" data-nav onclick={() => setView('games')}><Icon name="pad" /> Ir pra Biblioteca</button>
@@ -283,9 +283,9 @@
     {:else if visible.length === 0}
       <section class="empty panel">
         <h1 class="pixel" id="hero-title">Nenhum jogo ainda</h1>
-        <p class="muted">{remoteCount ? `Tem ${remoteCount} jogo${remoteCount === 1 ? '' : 's'} no servidor esperando: baixe pela Loja.` : 'Importe ROMs ou aponte suas pastas de jogos nas configurações.'}</p>
+        <p class="muted">{remoteCount ? `Tem ${remoteCount} jogo${remoteCount === 1 ? '' : 's'} no servidor esperando: baixe pelo Catálogo.` : 'Importe ROMs ou aponte suas pastas de jogos nas configurações.'}</p>
         <div class="actions">
-          {#if remoteCount && !isKids()}<button class="btn primary" data-nav data-nav-default onclick={() => setView('store')}><Icon name="download" /> Abrir a Loja</button>{/if}
+          {#if remoteCount && !isKids()}<button class="btn primary" data-nav data-nav-default onclick={() => setView('store')}><Icon name="download" /> Abrir o Catálogo</button>{/if}
           <button class="btn" class:primary={!remoteCount} data-nav data-nav-default={remoteCount ? undefined : ''} onclick={() => go({ name: 'import' })}><Icon name="plus" /> Importar jogos</button>
           <button class="btn" data-nav onclick={() => go({ name: 'you' })}><Icon name="gear" /> Configurações</button>
         </div>

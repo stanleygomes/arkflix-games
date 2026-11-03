@@ -37,7 +37,7 @@ export function activeCollections(games: Game[]): Collection[] {
 export function sourceTitle(source: string): string {
   const [kind, id] = source.split(':')
   if (kind === 'system') return system(id)?.name ?? id
-  if (kind === 'store') return id ? `${system(id)?.name ?? id} na Loja` : 'Loja'
+  if (kind === 'store') return id ? `${system(id)?.name ?? id} no Catálogo` : 'Catálogo'
   if (source === HIDDEN) return 'Jogos ocultos'
   if (kind === 'collection') return collection(id)?.label ?? id
   if (kind === 'list') return app.lists.find((l) => l.id === id)?.name ?? 'Lista'

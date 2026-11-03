@@ -19,7 +19,7 @@ async function connect(page: Page, app: App) {
   await expect(page.getByText(/3 jogos no servidor/).first()).toBeVisible()
   await page.keyboard.press('Escape') // Você
   await page.keyboard.press('Escape') // Início
-  await page.locator('[data-view="store"]').click() // os do servidor ficam na Loja
+  await page.locator('[data-view="store"]').click() // os do servidor ficam no Catálogo
 }
 
 async function download(page: Page, name: string) {

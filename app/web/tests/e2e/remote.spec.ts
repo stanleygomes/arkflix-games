@@ -33,9 +33,9 @@ test('servidor RomM: entra, lista, baixa um jogo e sai', async ({ page, app }) =
   await page.keyboard.press('Escape') // volta pra tela Você
   await page.keyboard.press('Escape') // e pro Início
   await expect(page.locator('.shelf [data-game][aria-label*="no servidor"]')).toHaveCount(0) // Biblioteca: só os baixados
-  await page.locator('[data-view="store"]').click() // os do servidor ficam na Loja
+  await page.locator('[data-view="store"]').click() // os do servidor ficam no Catálogo
   await expect(page.locator('[data-view="store"]')).toContainText('2')
-  await axe(page, 'loja')
+  await axe(page, 'catálogo')
   const dkc = page.locator('.shelf [data-game][aria-label^="Donkey Kong Country"]').first()
   await expect(dkc).toHaveAttribute('aria-label', /no servidor/)
   const server = page.locator('.shelf', { has: page.locator('h2', { hasText: 'No servidor' }) })
@@ -60,7 +60,7 @@ test('servidor RomM: entra, lista, baixa um jogo e sai', async ({ page, app }) =
   expect(app.exists(`${app.data}/romm.json`)).toBe(false)
   await page.keyboard.press('Escape') // Você
   await page.keyboard.press('Escape') // Início
-  await expect(page.getByRole('heading', { name: 'Loja vazia' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Catálogo vazio' })).toBeVisible()
   await page.locator('[data-view="games"]').click()
   await expect(page.locator('.shelf [data-game][aria-label*="no servidor"]')).toHaveCount(0)
   await expect(page.locator('.shelf [data-game][aria-label^="Donkey Kong Country"]').first()).toBeVisible()

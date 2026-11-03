@@ -91,7 +91,7 @@ export const app = $state({
   platform: 'linux',
   lists: [] as GameList[],
   homeTab: 'home',
-  homeView: 'games' as 'games' | 'store', // Jogos (baixados) ou Loja (do servidor)
+  homeView: 'games' as 'games' | 'store', // Jogos (baixados) ou Catálogo (do servidor)
   selected: '',
   error: '',
 })
