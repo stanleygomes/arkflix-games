@@ -3,7 +3,7 @@
   import Boot from './components/Boot.svelte'
   import Crt from './components/Crt.svelte'
   import Synthwave from './components/Synthwave.svelte'
-  import { glitch } from './lib/glitch'
+  import { glitch, startAmbient } from './lib/glitch'
   import { idle } from './lib/idle.svelte'
   import ConfirmDialog from './components/ConfirmDialog.svelte'
   import Guide from './components/Guide.svelte'
@@ -98,6 +98,8 @@
       app.games = await api.refresh()
     })
     startInput(native, padsChanged)
+    // glitches de ambiente: nunca com protetor de tela ou jogo aberto
+    startAmbient(() => idle.active || !!app.playing)
     watchDownloads()
     watchTasks()
     await tick()
@@ -133,7 +135,10 @@
   let lastNav = 0
   $effect(() => {
     const seq = app.nav.seq
-    if (seq !== lastNav && lastNav !== 0) play('swoosh')
+    if (seq !== lastNav && lastNav !== 0) {
+      play('swoosh')
+      glitch('snow') // chuvisco rápido na troca de canal
+    }
     lastNav = seq || -1
   })
 

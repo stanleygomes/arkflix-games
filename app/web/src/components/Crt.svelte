@@ -39,6 +39,8 @@
   {#if !paused}<canvas class="grain" bind:this={canvas} width="480" height="270"></canvas>{/if}
   <div class="lines"></div>
   <div class="tracking"></div>
+  <div class="hum"></div>
+  <div class="roll"></div>
   <div class="bulge"></div>
   <div class="glass"></div>
   <div class="flicker"></div>
@@ -119,6 +121,51 @@
       opacity: 0;
     }
   }
+  /* barra de zumbido: faixa clara larga descendo devagar (interferência de
+     rede elétrica dos CRTs), quase invisível sobre o texto */
+  .hum {
+    bottom: auto;
+    height: 18vh;
+    background: linear-gradient(transparent, rgb(255 255 255 / 0.035) 45%, rgb(255 255 255 / 0.05) 50%, rgb(255 255 255 / 0.035) 55%, transparent);
+    animation: hum 11s steps(66) infinite;
+  }
+  @keyframes hum {
+    from {
+      transform: translateY(-20vh);
+    }
+    to {
+      transform: translateY(105vh);
+    }
+  }
+  /* linha clara que rola rápido (glitch "bar", disparado pelo lib/glitch.ts) */
+  .roll {
+    bottom: auto;
+    height: 1.2vh;
+    opacity: 0;
+    background: linear-gradient(transparent, rgb(255 255 255 / 0.22), transparent);
+  }
+  :global(html[data-glitch='bar']) .roll {
+    animation: roll 0.9s steps(12) both;
+  }
+  @keyframes roll {
+    from {
+      opacity: 1;
+      transform: translateY(-2vh);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(102vh);
+    }
+  }
+  /* chuvisco: o grão sobe e a imagem dá uma queda de brilho */
+  :global(html[data-glitch='snow']) .grain {
+    opacity: 0.22;
+  }
+  :global(html[data-glitch='snow']) .flicker {
+    animation: none;
+    opacity: 0.12;
+  }
+
   /* bojo: centro levemente aceso, borda escura, quatro cantos fundos */
   .bulge {
     background:
@@ -148,10 +195,10 @@
       opacity: 0;
     }
     62% {
-      opacity: 0.06;
+      opacity: 0.1;
     }
     89% {
-      opacity: 0.09;
+      opacity: 0.14;
     }
   }
   /* moldura: o tubo tem cantos arredondados, o resto é o gabinete */
@@ -166,12 +213,14 @@
   :global(body.high-contrast) .crt {
     display: none;
   }
-  :global(body.reduce-motion) :is(.flicker, .tracking) {
+  :global(body.reduce-motion) :is(.flicker, .tracking, .hum, .roll) {
     display: none;
   }
   @media (prefers-reduced-motion: reduce) {
     .flicker,
-    .tracking {
+    .tracking,
+    .hum,
+    .roll {
       display: none;
     }
   }
