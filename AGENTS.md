@@ -44,8 +44,10 @@ Segue a skill `retro-design` (Noemi), com estas decisões já tomadas:
   de fósforo só nos títulos (`h1`) e no foco, nunca no texto corrido.
 - **Chão synthwave** (`components/Synthwave.svelte`) só no Início, Perfis e
   Boas-vindas (lista `FLOOR` no `App.svelte`). Nunca atrás de formulário.
-- **Glitch analógico** (`lib/glitch.ts`) só em evento: erro = estática,
-  trocar perfil = desmagnetizar, fechar jogo = rolagem vertical.
+- **Glitch analógico** (`lib/glitch.ts`): por evento (erro = estática,
+  trocar perfil = desmagnetizar, fechar jogo = rolagem, trocar tela =
+  chuvisco) e ambiente (títulos a cada 4-9 s, tela a cada 12-20 s).
+  Só em títulos (h1/h2/h3, `.pixel`): texto corrido fica limpo.
 - **Neobrutalismo**: botão pílula com sombra dura que sobe/afunda, painel como
   janela de RPG 16-bit, um selo "NOVO" por tela, um número gigante (Estatísticas).
 - Fontes do projeto mantidas (Atkinson no texto). Só tema escuro. Paleta neon
