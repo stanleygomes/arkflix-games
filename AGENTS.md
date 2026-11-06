@@ -35,6 +35,23 @@ Leia o [README](README.md) antes. Resumo do que importa:
   controle e teclado (`data-nav`).
 - Dependência nova (Go ou npm): versão exata, publicada há pelo menos duas semanas.
 
+## Visual
+
+Segue a skill `retro-design` (Noemi), com estas decisões já tomadas:
+
+- **Monitor CRT no app inteiro** (`components/Crt.svelte`): moldura, cantos,
+  bojo, reflexo, grão e linhas que somem no centro. Separação de cor e brilho
+  de fósforo só nos títulos (`h1`) e no foco, nunca no texto corrido.
+- **Chão synthwave** (`components/Synthwave.svelte`) só no Início, Perfis e
+  Boas-vindas (lista `FLOOR` no `App.svelte`). Nunca atrás de formulário.
+- **Glitch analógico** (`lib/glitch.ts`) só em evento: erro = estática,
+  trocar perfil = desmagnetizar, fechar jogo = rolagem vertical.
+- **Neobrutalismo**: botão pílula com sombra dura que sobe/afunda, painel como
+  janela de RPG 16-bit, um selo "NOVO" por tela, um número gigante (Estatísticas).
+- Fontes do projeto mantidas (Atkinson no texto). Só tema escuro. Paleta neon
+  por console mantida; sombras duras na cor dela, sem blur.
+- Alto contraste desliga tubo, chão e glitch; "reduzir animações" congela tudo.
+
 ## Git: commit + push sempre
 
 Toda iteração que mudar arquivo termina com commit e push. Sem perguntar.
