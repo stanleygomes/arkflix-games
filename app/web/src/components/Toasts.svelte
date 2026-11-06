@@ -15,8 +15,8 @@
 <style>
   .toasts {
     position: fixed;
-    right: 2rem;
-    bottom: 4.5rem;
+    right: calc(2rem + var(--safe));
+    bottom: calc(4.5rem + var(--safe));
     display: flex;
     flex-direction: column;
     gap: 0.6rem;

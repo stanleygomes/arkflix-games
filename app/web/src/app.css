@@ -66,6 +66,9 @@
   --glow-focus: 0 0 1px var(--focus), 0 0 8px var(--focus), 0 0 22px color-mix(in srgb, var(--focus) 45%, transparent);
   --edge: 3px;
   --tube: clamp(6px, 0.9vmin, 12px); /* espessura da moldura do tubo */
+  /* área segura: o conteúdo fica longe da curva e dos cantos escuros do tubo
+     (como a margem de segurança das TVs); o fundo continua até a borda */
+  --safe: clamp(16px, 2.6vmin, 36px);
   --ease: steps(4, end);
   --t: 160ms;
   color-scheme: dark;

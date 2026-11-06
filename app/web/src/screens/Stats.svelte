@@ -136,7 +136,7 @@
     color: var(--accent-2);
   }
   .page {
-    height: 100vh;
+    height: 100%;
     display: flex;
     flex-direction: column;
   }

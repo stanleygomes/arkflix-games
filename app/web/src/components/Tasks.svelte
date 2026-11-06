@@ -25,8 +25,8 @@
 <style>
   .tasks {
     position: fixed;
-    left: 2rem;
-    bottom: 4.5rem;
+    left: calc(2rem + var(--safe));
+    bottom: calc(4.5rem + var(--safe));
     z-index: 50;
     display: grid;
     gap: 0.5rem;

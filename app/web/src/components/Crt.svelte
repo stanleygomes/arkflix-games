@@ -122,11 +122,11 @@
   /* bojo: centro levemente aceso, borda escura, quatro cantos fundos */
   .bulge {
     background:
-      radial-gradient(circle at 0 0, rgb(0 0 0 / 0.85), transparent 22%),
-      radial-gradient(circle at 100% 0, rgb(0 0 0 / 0.85), transparent 22%),
-      radial-gradient(circle at 0 100%, rgb(0 0 0 / 0.85), transparent 22%),
-      radial-gradient(circle at 100% 100%, rgb(0 0 0 / 0.85), transparent 22%),
-      radial-gradient(ellipse 80% 75% at 50% 45%, rgb(255 255 255 / 0.03), transparent 60%, rgb(0 0 0 / 0.55) 100%);
+      radial-gradient(circle at 0 0, rgb(0 0 0 / 0.6), transparent 16%),
+      radial-gradient(circle at 100% 0, rgb(0 0 0 / 0.6), transparent 16%),
+      radial-gradient(circle at 0 100%, rgb(0 0 0 / 0.6), transparent 16%),
+      radial-gradient(circle at 100% 100%, rgb(0 0 0 / 0.6), transparent 16%),
+      radial-gradient(ellipse 80% 75% at 50% 45%, rgb(255 255 255 / 0.03), transparent 65%, rgb(0 0 0 / 0.4) 100%);
   }
   /* reflexo no vidro, canto superior esquerdo */
   .glass {

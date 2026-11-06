@@ -205,7 +205,7 @@
 <style>
   .layer {
     position: fixed;
-    inset: 0;
+    inset: var(--safe); /* longe da borda do tubo */
     transform-origin: center;
   }
   .fatal,
