@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
   import Boot from './components/Boot.svelte'
+  import Crt from './components/Crt.svelte'
+  import Synthwave from './components/Synthwave.svelte'
+  import { glitch } from './lib/glitch'
+  import { idle } from './lib/idle.svelte'
   import ConfirmDialog from './components/ConfirmDialog.svelte'
   import Guide from './components/Guide.svelte'
   import Playing from './components/Playing.svelte'
@@ -36,6 +40,9 @@
   import Activity from './screens/Activity.svelte'
 
   const current = $derived(screen())
+
+  // chão synthwave só atrás das telas de jogo (nunca atrás de formulário)
+  const FLOOR = new Set(['home', 'profiles', 'welcome'])
 
   // telas "especiais" ligam como uma TV; o resto desliza na direção da navegação
   const CRT = new Set(['you', 'profiles', 'welcome'])
@@ -86,6 +93,7 @@
       } else {
         const min = Math.round((e.seconds ?? 0) / 60)
         toast(min > 0 ? `${e.name}: ${min} min jogados` : `${e.name} fechado`, 'ok')
+        glitch('hold') // a imagem rola ao desligar o jogo
       }
       app.games = await api.refresh()
     })
@@ -113,6 +121,14 @@
     configure(a)
   })
 
+  // trocar de perfil desmagnetiza o tubo
+  let lastProfile: string | undefined
+  $effect(() => {
+    const p = app.profile?.current
+    if (lastProfile !== undefined && p !== lastProfile) glitch('degauss')
+    lastProfile = p ?? ''
+  })
+
   // som de troca de tela (o da primeira tela é o do boot)
   let lastNav = 0
   $effect(() => {
@@ -137,6 +153,8 @@
 {:else if !app.ready}
   <main class="loading" aria-busy="true"><p class="pixel">Carregando…</p></main>
 {:else}
+  <!-- com o protetor de tela ligado, o chão sai (nada animando por trás) -->
+  {#if FLOOR.has(current.name) && !idle.active}<Synthwave />{/if}
   {#key app.stack.length + current.name + (current.name === 'game' ? current.id : current.name === 'library' ? current.source : '') + (app.profile?.current ?? '')}
     <div class="layer" in:screenIn={motionFor(current.name)} out:screenOut={motionFor(current.name)}>
     {#if current.name === 'home'}
@@ -181,6 +199,7 @@
 <Guide />
 <Screensaver />
 <Restarting />
+<Crt paused={idle.active} />
 {#if app.ready}<Boot />{/if}
 
 <style>

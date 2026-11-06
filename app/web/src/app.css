@@ -1,7 +1,9 @@
-/* Visual: fliperama neon. Fundo de tubo de TV, contorno neon com brilho, o
-   item em foco em amarelo de seleção. A cor neon vem da paleta do console em
-   foco (lib/palette.ts); títulos na fonte de letreiro (Press Start 2P), texto
-   corrido na Atkinson Hyperlegible (leitura fácil). */
+/* Visual: monitor CRT + synthwave (skill retro-design da Noemi). O app inteiro
+   roda dentro de um tubo de TV (components/Crt.svelte); atrás das telas de
+   jogo corre o chão synthwave (components/Synthwave.svelte). Estrutura de
+   impresso/16-bit: borda grossa, sombra dura (sem blur), janelas de RPG. O
+   neon vem da paleta do console em foco (lib/palette.ts) e só brilha no que
+   está em destaque (título, foco). Texto corrido na Atkinson Hyperlegible. */
 
 @font-face {
   font-family: 'Pixelify Sans';
@@ -55,9 +57,15 @@
   --font-display: 'Bungee', 'Pixelify Sans', sans-serif;
   --font-sub: 'Pixelify Sans', 'Press Start 2P', sans-serif;
   --font-hud: 'VT323', 'Press Start 2P', monospace;
-  --glow: 0 0 6px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
-  --glow-2: 0 0 6px color-mix(in srgb, var(--accent-2) 70%, transparent);
-  --glow-focus: 0 0 10px var(--focus), 0 0 28px color-mix(in srgb, var(--focus) 55%, transparent);
+  /* sombras duras na cor do console escurecida (sem blur: impresso/16-bit) */
+  --press: color-mix(in srgb, var(--accent) 38%, #000);
+  --press-2: color-mix(in srgb, var(--accent-2) 32%, #000);
+  --glow: 5px 5px 0 var(--press);
+  --glow-2: 5px 5px 0 var(--press-2);
+  /* fósforo: brilho só no que está em destaque (foco) */
+  --glow-focus: 0 0 1px var(--focus), 0 0 8px var(--focus), 0 0 22px color-mix(in srgb, var(--focus) 45%, transparent);
+  --edge: 3px;
+  --tube: clamp(6px, 0.9vmin, 12px); /* espessura da moldura do tubo */
   --ease: steps(4, end);
   --t: 160ms;
   color-scheme: dark;
@@ -85,16 +93,6 @@ body {
   transition: background-color 300ms;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
-}
-
-/* cantos escuros do tubo */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9998;
-  box-shadow: inset 0 0 120px 10px rgba(0, 0, 0, 0.7);
 }
 
 body.no-pixel {
@@ -137,8 +135,10 @@ body.no-pixel :is(h1, h2, h3, .pixel, .sub) {
   font-size-adjust: none;
   font-weight: 700;
 }
+/* título = fósforo aceso: brilho quente + separação de cor do tubo */
 h1 {
-  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 80%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent), 3px 3px 0 #000;
+  text-shadow: 0 0 1px var(--accent), 0 0 8px color-mix(in srgb, var(--accent) 80%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 40%, transparent), 3px 3px 0 #000;
+  filter: url(#crt-chroma);
 }
 .hud {
   font-family: var(--font-hud);
@@ -166,14 +166,15 @@ p {
   border: 0;
 }
 
-/* Botões de fliperama: contorno neon, brilho, "aperta" ao clicar. */
+/* Botões: pílula de borda grossa e sombra dura; sobe no hover, afunda ao apertar. */
 .btn {
   font: inherit;
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--accent-2);
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  border: 2px solid var(--accent-2);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  border: var(--edge) solid var(--accent-2);
+  border-radius: 999px;
   padding: 0.75rem 1.4rem;
   box-shadow: var(--glow-2);
   cursor: pointer;
@@ -188,9 +189,16 @@ p {
 }
 .btn:hover {
   background: color-mix(in srgb, var(--accent-2) 14%, var(--bg));
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--press-2);
 }
 .btn:active {
-  transform: translateY(2px);
+  transform: translate(5px, 5px);
+  box-shadow: none;
+}
+.btn.primary:hover {
+  filter: brightness(1.06);
+  box-shadow: 7px 7px 0 var(--press);
 }
 .btn.primary {
   background: var(--accent);
@@ -202,7 +210,7 @@ p {
   background: transparent;
   color: #ff6b81;
   border-color: #ff6b81;
-  box-shadow: 0 0 8px rgba(255, 107, 129, 0.6);
+  box-shadow: 5px 5px 0 #4a1019;
 }
 .btn.small {
   padding: 0.5rem 1rem;
@@ -256,8 +264,10 @@ input[type='text'] {
   font: inherit;
   color: var(--text);
   background: #000;
-  border: 2px solid var(--accent-2);
-  padding: 0.55rem 0.7rem;
+  border: var(--edge) solid var(--accent-2);
+  border-radius: 10px;
+  box-shadow: var(--glow-2);
+  padding: 0.55rem 0.8rem;
   width: 100%;
   min-height: 2.75rem;
 }
@@ -265,10 +275,16 @@ input[type='text']:focus {
   border-color: var(--focus);
 }
 
+/* janela de RPG 16-bit: degradê da superfície, borda clara, anel escuro por
+   fora, brilho fino por dentro e sombra dura na cor do console */
 .panel {
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 50%, transparent), inset 0 0 24px color-mix(in srgb, var(--accent) 10%, transparent);
+  background: linear-gradient(color-mix(in srgb, var(--surface) 92%, var(--accent) 8%), var(--surface));
+  border: var(--edge) solid color-mix(in srgb, var(--accent) 70%, #fff);
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 3px #000,
+    inset 0 0 0 2px color-mix(in srgb, #fff 10%, transparent),
+    8px 8px 0 3px var(--press);
   padding: 1.25rem;
 }
 
@@ -281,7 +297,8 @@ input[type='text']:focus {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 0 0.55rem;
-  border: 2px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+  border: var(--edge) solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+  border-radius: 6px;
   color: var(--accent-2);
 }
 
@@ -301,10 +318,10 @@ body.high-contrast {
   --glow-2: none;
   --glow-focus: none;
 }
-body.high-contrast::before,
 body.high-contrast h1 {
   box-shadow: none;
   text-shadow: none;
+  filter: none;
 }
 body.high-contrast .btn,
 body.high-contrast .panel,
@@ -391,14 +408,93 @@ html {
   width: min(22rem, 100%);
   height: 0.9rem;
   padding: 2px;
-  border: 2px solid var(--accent-2);
+  border: var(--edge) solid var(--accent-2);
   background: #000;
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-2) 60%, transparent);
+  box-shadow: 4px 4px 0 var(--press-2);
 }
 .energy > span {
   display: block;
   height: 100%;
   background: repeating-linear-gradient(90deg, var(--focus) 0 10px, transparent 10px 13px);
-  box-shadow: 0 0 6px var(--focus);
   transition: width 120ms steps(1);
+}
+
+/* glitch analógico (lib/glitch.ts): sinal de TV, sempre ligado a um evento */
+html[data-glitch] .layer {
+  will-change: transform, filter;
+}
+html[data-glitch='static'] .layer {
+  animation: sig-static 0.26s steps(4) both;
+}
+html[data-glitch='static'] .crt .grain {
+  opacity: 0.35;
+}
+html[data-glitch='jitter'] .layer {
+  animation: sig-jitter 0.26s steps(4) both;
+}
+html[data-glitch='degauss'] .layer {
+  animation: sig-degauss 1s steps(10) both;
+}
+html[data-glitch='hold'] .layer {
+  animation: sig-hold 0.7s steps(9) both;
+}
+@keyframes sig-static {
+  0% {
+    filter: brightness(0.55) contrast(1.2);
+    transform: translateX(2px);
+  }
+  50% {
+    filter: brightness(0.7);
+    transform: translateX(-1px);
+  }
+  100% {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes sig-jitter {
+  25% {
+    transform: translate(2px, -1px);
+  }
+  50% {
+    transform: translate(-1px, 1px);
+  }
+  75% {
+    transform: translate(1px, 0);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes sig-degauss {
+  0% {
+    filter: hue-rotate(90deg) saturate(1.6);
+    transform: skewX(4deg);
+  }
+  30% {
+    filter: hue-rotate(-50deg) saturate(1.3);
+    transform: skewX(-2.5deg);
+  }
+  60% {
+    filter: hue-rotate(20deg);
+    transform: skewX(1deg);
+  }
+  100% {
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes sig-hold {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14vh);
+  }
+  51% {
+    transform: translateY(12vh);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }

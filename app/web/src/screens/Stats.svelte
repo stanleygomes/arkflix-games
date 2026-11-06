@@ -58,7 +58,7 @@
     </header>
     {#if data}
       <dl class="tiles">
-        <div class="tile"><dt>Tempo jogando</dt><dd class="pixel">{dur(data.totalSeconds)}</dd></div>
+        <div class="tile giant"><dt>Tempo jogando</dt><dd>{dur(data.totalSeconds)}</dd></div>
         <div class="tile"><dt>Partidas</dt><dd class="pixel">{data.plays}</dd></div>
         <div class="tile"><dt>Jogos jogados</dt><dd class="pixel">{data.gamesPlayed} <small>de {data.libraryGames}</small></dd></div>
         <div class="tile">
@@ -170,9 +170,21 @@
   }
   .tile {
     background: #000;
-    border: 2px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+    border: 3px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+    border-radius: 10px;
     box-shadow: var(--glow-2);
     padding: 0.9rem 1rem;
+  }
+  /* o número gigante da tela (um só): tempo total jogado */
+  .tile.giant {
+    grid-column: 1 / -1;
+  }
+  .tile.giant dd {
+    font-family: var(--font-display);
+    font-size: clamp(44px, 8vw, 92px);
+    line-height: 1;
+    color: var(--accent-2);
+    text-shadow: 6px 6px 0 var(--press-2);
   }
   dt {
     color: var(--muted);

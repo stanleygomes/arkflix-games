@@ -231,6 +231,10 @@
   let menuFor = $state('')
 
   const hero = $derived(selected?.cover ?? '')
+
+  // selo "NOVO": jogo que entrou na biblioteca nesta semana (um por tela)
+  const WEEK = 7 * 24 * 3600
+  const fresh = $derived(!!selected && !selected.remote && selected.added > Date.now() / 1000 - WEEK)
 </script>
 
 <div class="home">
@@ -293,7 +297,9 @@
     {:else if selected}
       <div class="stage">
       <section class="hero">
-        <p class="system-pill pixel">{selSystem?.name ?? selected.system}</p>
+        <p class="system-pill pixel">
+          {selSystem?.name ?? selected.system}{#if fresh}<span class="sticker">Novo</span>{/if}
+        </p>
         {#key selected.id}
           <!-- título digitado letra por letra (um degrau por letra) -->
           <h1 class="pixel title typing" id="hero-title" style:--letters={selected.name.length} style:animation-timing-function={`steps(${Math.max(1, selected.name.length)})`}>{selected.name}</h1>
@@ -488,7 +494,9 @@
     left: 0;
     top: 0;
     border: 3px solid var(--accent);
-    box-shadow: var(--glow);
+    border-radius: 6px;
+    /* console escolhido = destaque: aqui o fósforo acende */
+    box-shadow: 0 0 1px var(--accent), 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
     transition:
       transform 200ms steps(5),
       width 200ms steps(5),
@@ -605,6 +613,23 @@
     font-size: 1rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+  }
+  /* selo colado e torto (neobrutalismo): só um por tela */
+  .sticker {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    font-size-adjust: none;
+    letter-spacing: 0.04em;
+    color: #1b1b1f;
+    background: #f7b500;
+    border: 3px solid #1b1b1f;
+    border-radius: 6px;
+    padding: 6px 8px;
+    box-shadow: 4px 4px 0 #000;
+    transform: rotate(3deg);
   }
   /* nome do jogo como o logo no destaque do PS5: bem grande */
   .title {
@@ -730,10 +755,11 @@
     padding: 0;
     border: none;
     background: none;
-    /* contorno neon da cor do console (o foco troca por amarelo) */
+    border-radius: 6px;
+    /* borda grossa na cor do console + sombra dura (o foco troca por amarelo) */
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--accent) 75%, transparent),
-      0 0 14px color-mix(in srgb, var(--accent) 35%, transparent);
+      0 0 0 3px color-mix(in srgb, var(--accent) 80%, #000),
+      6px 6px 0 3px var(--press);
     cursor: pointer;
     scroll-snap-align: center;
     transition: transform var(--t) var(--ease);

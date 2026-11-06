@@ -27,9 +27,12 @@
 
 {#if show}
   <div class="boot" aria-hidden="true">
-    <p class="logo pixel">ARK<span>FLIX</span></p>
-    <p class="sub pixel">GAMES</p>
-    <div class="scan"></div>
+    <!-- TV ligando: uma linha no meio abre até a tela cheia, com um clarão -->
+    <div class="tube">
+      <p class="logo pixel">ARK<span>FLIX</span></p>
+      <p class="sub pixel">GAMES</p>
+      <div class="scan"></div>
+    </div>
   </div>
 {/if}
 
@@ -39,11 +42,35 @@
     inset: 0;
     z-index: 20000;
     background: #000;
+    animation: boot-out 1.7s steps(1) forwards;
+  }
+  .tube {
+    position: absolute;
+    inset: 0;
     display: grid;
     place-content: center;
     justify-items: center;
     gap: 0.8rem;
-    animation: boot-out 1.7s steps(1) forwards;
+    background: radial-gradient(ellipse at center, #0c0608, #000 75%);
+    animation: power-on 0.45s steps(5) both;
+  }
+  @keyframes power-on {
+    0% {
+      transform: scale(0.6, 0.004);
+      filter: brightness(4);
+    }
+    40% {
+      transform: scale(1, 0.004);
+      filter: brightness(3);
+    }
+    80% {
+      transform: scale(1, 1);
+      filter: brightness(1.8);
+    }
+    100% {
+      transform: none;
+      filter: none;
+    }
   }
   .logo {
     font-size: clamp(3rem, 9vw, 7rem);
